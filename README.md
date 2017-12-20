@@ -8,6 +8,9 @@ https://www.autodesk.com/solutions/manufacturing/cam
 The repository for the extension is hosted at:
 https://github.com/Autodesk/cam-posteditor
 
+You can get the installation for Visual Studio Code at:
+https://marketplace.visualstudio.com/items?itemName=Autodesk.hsm-post-processor
+
 
 
 The extension is distributed under the MIT license. See LICENSE.txt.
