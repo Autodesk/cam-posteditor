@@ -466,8 +466,9 @@ function handleChange(event) {
       var lineData = [];
       var lineToMoveTo = 0;
       var currentIndex = 0;
+
       for (var i = 0; i < array.length; i++) {
-        if (!array[i].includes("!DEBUG")) {
+        if (!array[i].includes("!DEBUG") && writeOutput) {
           if (currentIndex == selectedLine) {
             if (selectedLine == lastSelectedLine) {
               try {
@@ -644,10 +645,18 @@ function postProcess(cnc, postLocation) {
         var array = data.toString().split('\n');
         var lines = "";
         var lineData = "!DEBUG:" + postLocation + '\n';
+        var writeOutput = true;
         for (var i = 0; i < array.length; i++) {
-          if (!array[i].includes("!DEBUG")) {
+          if (!writeOutput && array[i].includes("!DEBUG")) {
+            writeOutput = true;            
+          }
+          if (array[i].includes("!DEBUG") && (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL"))) {
+            writeOutput = false;
+          }
+          if (!array[i].includes("!DEBUG") && writeOutput) {
             lines = lines + array[i] + '\n';
           }
+          
           lineData += array[i] + '\n';
         }
         var file = fs.createWriteStream(outputpath);
