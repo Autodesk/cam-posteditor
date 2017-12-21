@@ -1,4 +1,13 @@
 # Change Log
+## 1.10.2
+Fixed:
+-Minor bug fix
+
+## 1.10.1
+Fixed:
+- Notes being displayed in the ouput
+- Material being displayed in the output
+
 ## 1.9.2
 Added:
 - Support for deleting custom CNC files by right clicking on them in the CNC tree
