@@ -468,7 +468,7 @@ function handleChange(event) {
       var currentIndex = 0;
 
       for (var i = 0; i < array.length; i++) {
-        if (!array[i].includes("!DEBUG") && writeOutput) {
+        if (!array[i].includes("!DEBUG")) {
           if (currentIndex == selectedLine) {
             if (selectedLine == lastSelectedLine) {
               try {

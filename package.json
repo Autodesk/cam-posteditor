@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.9.2",
+	"version": "1.10.2",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
