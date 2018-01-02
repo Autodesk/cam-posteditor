@@ -1,7 +1,11 @@
 # Change Log
+## 1.10.3
+Fixed:
+- Line jumping when using operation notes
+
 ## 1.10.2
 Fixed:
--Minor bug fix
+- Minor bug fix
 
 ## 1.10.1
 Fixed:

@@ -466,9 +466,18 @@ function handleChange(event) {
       var lineData = [];
       var lineToMoveTo = 0;
       var currentIndex = 0;
+      var notNotes = true;
 
       for (var i = 0; i < array.length; i++) {
-        if (!array[i].includes("!DEBUG")) {
+        // support for notes. These are not output on debug lines, so they must be skipped
+        if (array[i].includes("!DEBUG")) {
+          notNotes = true;
+          if (array[i].includes("notes")) {
+            notNotes = false;
+          }          
+        }
+
+        if (!array[i].includes("!DEBUG") && notNotes) {
           if (currentIndex == selectedLine) {
             if (selectedLine == lastSelectedLine) {
               try {
