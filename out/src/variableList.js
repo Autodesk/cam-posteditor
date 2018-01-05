@@ -52,14 +52,15 @@ class variableListDataProvider {
                     for (var child = 0; child < parents[i][1].length; ++child) {
                         vsc.window.showInformationMessage(parents[i][1][child]);
                         var treeItem = new vsc.TreeItem(parents[i][1][child][0], vsc.TreeItemCollapsibleState.None);
-                        element.html = parents[i][1][child][1];    
-                        treeItem.command = {
+                        treeItem.html = parents[i][1][child][1];    
+                        /*treeItem.command = {
                             command: "showCHM",
                             title: "",
                             arguments: [
                                 element
                             ]
-                        }
+                        }*/
+                        treeItem.contextValue = "child";
                         items.push(treeItem);
                     }
                 }

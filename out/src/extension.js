@@ -119,6 +119,10 @@ function activate(context) {
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteCNCFile', (element) => {
+    if (!element) {
+      vscode.window.showErrorMessage("This command can only be executed from the CNC selector tree");
+      return;
+    }
     let src = element.src;
     fs.unlinkSync(src);
     if (fs.existsSync(customCNC + "\\" + path.basename(src))) {
@@ -181,14 +185,10 @@ function activate(context) {
     });
   }));
 
-  var disposable = vscode.commands.registerCommand('showCHM', (element) => {
-    var htmlHelp = resLocation + "\\varList\\fullHTML\\" + element.html.split('#')[0];
-    var lines = fs.readFileSync(htmlHelp);
-    var uri = vscode.Uri.file(htmlHelp);
-    // ToDo: Add open html
-    // vscode.commands.executeCommand("vscode.previewHtml", uri, vscode.ViewColumn.Two);
+  vscode.commands.registerCommand('hsm.showVarHelpFile', (element) => {
+    vscode.commands.executeCommand('vscode.open', vscode.Uri.parse('http://cam.autodesk.com/posts/reference/' + (element ? element.html.split('#')[0] : "")));
   });
-
+  
   const functionSelectionProvider = new functionNodes.functionListProvider(context);
   vscode.window.registerTreeDataProvider('functionList', functionSelectionProvider);
 

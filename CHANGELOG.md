@@ -1,4 +1,11 @@
 # Change Log
+## 1.10.4
+Added:
+- Post help function
+  - Open by right clicking on a variable in the variable list
+  - Open by running the command 'HSM: Post help'
+- Additional error checking
+
 ## 1.10.3
 Fixed:
 - Line jumping when using operation notes
@@ -9,7 +16,7 @@ Fixed:
 
 ## 1.10.1
 Fixed:
-- Notes being displayed in the ouput
+- Notes being displayed in the output
 - Material being displayed in the output
 
 ## 1.9.2
@@ -18,7 +25,7 @@ Added:
 - Custom CNC check on installation
 
 Notes:
-From this version on, custom CNC files will be stored in your temporary files, as well as the extension directory. These files are then copied to the extension directory, from the temporary directory if the exension is re-installed / updated.
+From this version on, custom CNC files will be stored in your temporary files, as well as the extension directory. These files are then copied to the extension directory, from the temporary directory if the extension is re-installed / updated.
 
 ## 1.9.0
 Fixed:
@@ -27,7 +34,7 @@ Fixed:
 ## 1.8.9
 Added:
 - 'Auto update' to the function list
-- Setting to turn off auto updating the funciton list
+- Setting to turn off auto updating the functiton list
 - Current function indicator to the function list
 - New command 'HSM: Download CNC exporting post processor', used to download a CPS file which can be used to export CNC files to be used in VS Code.
 

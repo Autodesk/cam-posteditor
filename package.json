@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.10.3",
+	"version": "1.10.4",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -31,7 +31,8 @@
 		"commands": [
 			{
 				"command": "extension.startHSMPlugin",
-				"title": "HSM Post Utility"
+				"title": "Post Utility",
+				"category": "HSM"
 			},
 			{
 				"command": "variableList.searchVars",
@@ -48,7 +49,8 @@
 			},
 			{
 				"command": "hsm.disableLineSelection",
-				"title": "HSM: Disable auto line selection"
+				"title": "Disable auto line selection",
+				"category": "HSM"
 			},
 			{
 				"command": "hsm.showDebuggedCode",
@@ -61,16 +63,23 @@
 			},
 			{
 				"command": "hsm.changePostExe",
-				"title": "HSM: Change post executable"
+				"title": "Change post executable",
+				"category": "HSM"
 			},
 			{
 				"command": "hsm.downloadCNCExtractor",
-				"title": "HSM: Download CNC exporting post processor"
+				"title": "Download CNC exporting post processor",
+				"category": "HSM"
 			},
 			{
 				"command": "hsm.deleteCNCFile",
 				"title": "Delete CNC File",
-				"category": "cncList"
+				"category": "HSM"
+			},
+			{
+				"command": "hsm.showVarHelpFile",
+				"title": "Post help",
+				"category": "HSM"
 			}
 		],
 		"keybindings": [
@@ -126,6 +135,10 @@
 				{
 					"command": "hsm.deleteCNCFile",
 					"when": "view == cncList&&viewItem == customFile"
+				},
+				{
+					"command": "hsm.showVarHelpFile",
+					"when": "view == variableList&&viewItem == child"
 				}
 			]
 		},
@@ -165,7 +178,7 @@
 	},
 	"__metadata": {
 		"id": "da746f7c-d627-49de-a2c4-7adecc8e7073",
-		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
-		"publisherDisplayName": "Autodesk"
+		"publisherDisplayName": "Autodesk",
+		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d"
 	}
 }
