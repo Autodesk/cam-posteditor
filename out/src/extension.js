@@ -459,7 +459,9 @@ function locatePostEXE(val) {
 function handleChange(event) {
   if (vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") && !vscode.window.activeTextEditor.document.fileName.includes(".log")) {
     var selectedLine = vscode.window.activeTextEditor.selection.start.line;
-    var fs = require('fs');
+    if (selectedLine != lastSelectedLine) {
+      amountToMove = 0;
+    }
     fs.readFile(debugOutputpath, function(err, data) {
       if (err) throw err;
       var array = data.toString().split('\n');
@@ -467,7 +469,6 @@ function handleChange(event) {
       var lineToMoveTo = 0;
       var currentIndex = 0;
       var notNotes = true;
-
       for (var i = 0; i < array.length; i++) {
         // support for notes. These are not output on debug lines, so they must be skipped
         if (array[i].includes("!DEBUG")) {
