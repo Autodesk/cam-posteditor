@@ -157,6 +157,11 @@ function activate(context) {
     if (selectedFile.toLowerCase().includes(".cnc")) {
       cncFile = selectedFile;
       vscode.window.setStatusBarMessage("CNC file set", 2000);
+      var config = vscode.workspace.getConfiguration("HSMPostUtility");
+      var postOnSelection = config.get("postOnCNCSelection");
+      if (postOnSelection) {
+        vscode.commands.executeCommand('HSM.postProcess');
+      }
     }
   }));
 
