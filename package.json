@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.10.4",
+	"version": "1.11.0",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -160,6 +160,20 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Updates the function list automatically, without the need for refreshing"
+				},
+				"HSMPostUtility.shortenOutputCode": {
+					"type": "boolean",
+					"default": true,
+					"description": "Limits the outputted movement blocks to 50, making the outputted code easier to navigate"
+				},
+				"HSMPostUtility.outputUnits": {
+					"type": "string",
+					"enum": [
+						"MM",
+						"IN"
+					],
+					"default": "MM",
+					"description": "Sets the desired output units for post processing"
 				}
 			}
 		}

@@ -1,4 +1,12 @@
 # Change Log
+## 1.11.0
+Added:
+- User setting 'HSMPostUtility.shortenOutputCode' to let users disable the code shortening post option
+- User setting 'HSMPostUtility.outputUnits' to specify outputted units, rather than having a prompt on CNC file selection
+
+Updated:
+- Active function icon now uses #00a1ff to support the light color theme
+
 ## 1.10.4
 Added:
 - Post help function
