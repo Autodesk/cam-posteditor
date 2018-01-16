@@ -156,8 +156,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setCNC', selectedFile => {
     if (selectedFile.toLowerCase().includes(".cnc")) {
       cncFile = selectedFile;
-      selectUnits();
-      vscode.window.setStatusBarMessage("CNC file set", 1000);
+      vscode.window.setStatusBarMessage("CNC file set", 2000);
     }
   }));
 
@@ -547,7 +546,6 @@ function selectSub(dir) {
       vscode.window.showOpenDialog({openFiles: true, filters: {'CNC Files': ['cnc']}}).then(val => {
         var selectedPath = val[0].path.substr(1, val[0].path.length);
         cncFile = selectedPath;
-        selectUnits();
       });
     } else {
       checkDirSize(dir + "\\" + val)
@@ -596,7 +594,6 @@ function selectedCNCFile(picked, fullList) {
 
   if (itemToUse) {
     cncFile = itemToUse;
-    selectUnits();
   }
   var htmlPath = cncFile.substring(0, cncFile.length - 3) + "html";
   if (fs.existsSync(htmlPath)) {
@@ -607,13 +604,17 @@ function selectedCNCFile(picked, fullList) {
 }
 
 function selectUnits() {
-  vscode.window.showInformationMessage("Please select the required units", "MM", "INCH").then(val => {
-    if (val == "MM") {
+  var config = vscode.workspace.getConfiguration("HSMPostUtility");
+  switch (config.get("outputUnits")) {
+    case "MM":
       units = 1;
-    } else if (val == "INCH") {
-      units = 0;
-    }
-  });
+      break;
+    case "IN":
+      units = 0;  
+      break;
+    default:
+      units = 1;
+  }
 }
 
 function postProcess(cnc, postLocation) {
@@ -626,11 +627,17 @@ function postProcess(cnc, postLocation) {
     postFile = vscode.window.activeTextEditor.document.fileName.toString();
   }
 
+  var config = vscode.workspace.getConfiguration("HSMPostUtility");
+  var shorten = config.get("shortenOutputCode");
+  selectUnits();
   if (showDebugOutput) {
     parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
-  } else {
+  } else if(shorten) {
     parameters = ["--noeditor", "--quiet", "--debugall", "--shorten", "50", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
+  } else {
+    parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   }
+
   var passed = false;
   child(executablePath, parameters, function(err, data) {
     if (err) {
