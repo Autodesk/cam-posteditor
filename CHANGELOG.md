@@ -3,6 +3,7 @@
 Added:
 - User setting 'HSMPostUtility.shortenOutputCode' to let users disable the code shortening post option
 - User setting 'HSMPostUtility.outputUnits' to specify outputted units, rather than having a prompt on CNC file selection
+- User setting 'HSMPostUtility.postOnCNCSelection' which when enabled, post processes when a CNC file is selected
 
 Updated:
 - Active function icon now uses #00a1ff to support the light color theme
