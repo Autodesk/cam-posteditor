@@ -1,4 +1,9 @@
 # Change Log
+## 1.11.2
+Added:
+- User setting to enable a color-coded output of lines
+  - User settings to allow color override for movements
+  
 ## 1.11.1
 Fixed: 
 - Line jumping issue when the Inventor material appears on multiple lines

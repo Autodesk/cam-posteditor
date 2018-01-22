@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.11.1",
+	"version": "1.11.2",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -179,6 +179,23 @@
 					"type": "boolean",
 					"default": false,
 					"description": "If true, post processing will occur as soon as a CNC file is selected"
+				},
+				"HSMPostUtility.colorOutput":{
+					"type": "boolean",
+					"default": false,
+					"description": "If true, the code output from onLinear, onRapid and onCircular are colored"
+				},
+				"HSMPostUtility.linearColor":{
+					"type": "string",
+					"default": "lightgreen"
+				},
+				"HSMPostUtility.rapidColor":{
+					"type": "string",
+					"default": "yellow"
+				},
+				"HSMPostUtility.circularColor":{
+					"type": "string",
+					"default": "lightblue"
 				}
 			}
 		}
