@@ -477,7 +477,7 @@ function handleChange(event) {
         // support for notes. These are not output on debug lines, so they must be skipped
         if (array[i].includes("!DEBUG")) {
           notNotes = true;
-          if (array[i].includes("notes")) {
+          if (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL")) {
             notNotes = false;
           }          
         }
