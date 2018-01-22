@@ -660,41 +660,86 @@ function postProcess(cnc, postLocation) {
   wait(2000);
 
   if (fs.existsSync(outputpath)) {
-    vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two);
-    if (!showDebugOutput) {
-      wait(100);
-      fs.readFile(outputpath, function(err, data) {
-        var array = data.toString().split('\n');
-        var lines = "";
-        var lineData = "!DEBUG:" + postLocation + '\n';
-        var writeOutput = true;
-        for (var i = 0; i < array.length; i++) {
-          if (!writeOutput && array[i].includes("!DEBUG")) {
-            writeOutput = true;            
-          }
-          if (array[i].includes("!DEBUG") && (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL"))) {
-            writeOutput = false;
-          }
-          if (!array[i].includes("!DEBUG") && writeOutput) {
-            lines = lines + array[i] + '\n';
-          }
-          
-          lineData += array[i] + '\n';
-        }
-        var file = fs.createWriteStream(outputpath);
-        file.on('error', function(errors) { /* error handling */});
-        file.write(lines);
-        file.end();
+    let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two).then(x => {
+      if (!showDebugOutput) {
+        wait(100);
 
-        file = fs.createWriteStream(debugOutputpath);
-        file.on('error', function(errors) { /* error handling */});
-        file.write(lineData);
-        file.end();
-      });
-    }
+        fs.readFile(outputpath, function(err, data) {
+          let rapids = [];
+          let linears = [];
+          let circs = [];
+          let other = [];
+          let lineAt = 0;
+          let type = 0; // 0 = other, 1 = rapid, 2 = linear, 3 = circular
+          var array = data.toString().split('\n');
+          var lines = "";
+          var lineData = "!DEBUG:" + postLocation + '\n';
+          var writeOutput = true;
+          for (var i = 0; i < array.length; i++) {
+
+            if (array[i].includes("!DEBUG")) {
+              if (array[i].toUpperCase().includes("ONRAPID")) {
+                type = 1;
+              } else if (array[i].toUpperCase().includes("ONLINEAR")) {
+                type = 2;
+              } else if (array[i].toUpperCase().includes("ONCIRCULAR")) {
+                type = 3;
+              }
+            }
+
+            if (!writeOutput && array[i].includes("!DEBUG")) {
+              writeOutput = true;
+            }
+            if (array[i].includes("!DEBUG") && (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL"))) {
+              writeOutput = false;
+            }
+
+            if (!array[i].includes("!DEBUG") && writeOutput) {
+              type = 0;
+              lines = lines + array[i] + '\n';
+            }
+
+            let pos = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i + 1, 0));
+            switch (type) {
+              case 0:
+                other.push(pos);
+                break;
+              case 1:
+                rapids.push(pos);
+                break;
+              case 2:
+                linears.push(pos);
+                break;
+              case 3:
+                circs.push(pos);
+                break;
+            }
+            lineData += array[i] + '\n';
+
+          }
+          var file = fs.createWriteStream(outputpath);
+          file.on('error', function(errors) {});
+          file.write(lines);
+          file.end();
+
+          file = fs.createWriteStream(debugOutputpath);
+          file.on('error', function(errors) {});
+          file.write(lineData);
+          file.end();
+          var config = vscode.workspace.getConfiguration("HSMPostUtility");
+          if (config.get("colorOutput")) {
+            var rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
+            var linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
+            var circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
+            x.setDecorations(rapidDecoration, rapids);
+            x.setDecorations(linearDecoration, linears);
+            x.setDecorations(circDecoration, circs);
+          }
+        });
+      }
+    });
   }
 
-  vscode.window.visibleTextEditors[0].selection.start.line = 10;
 }
 
 function wait(ms) {
