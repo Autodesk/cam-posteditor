@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.11.0",
+	"version": "1.11.1",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -175,7 +175,7 @@
 					"default": "MM",
 					"description": "Sets the desired output units for post processing"
 				},
-				"HSMPostUtility.postOnCNCSelection":{
+				"HSMPostUtility.postOnCNCSelection": {
 					"type": "boolean",
 					"default": false,
 					"description": "If true, post processing will occur as soon as a CNC file is selected"
@@ -197,7 +197,7 @@
 	},
 	"__metadata": {
 		"id": "da746f7c-d627-49de-a2c4-7adecc8e7073",
-		"publisherDisplayName": "Autodesk",
-		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d"
+		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
+		"publisherDisplayName": "Autodesk"
 	}
 }

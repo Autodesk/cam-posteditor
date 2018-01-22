@@ -1,4 +1,8 @@
 # Change Log
+## 1.11.1
+Fixed: 
+- Line jumping issue when the Inventor material appears on multiple lines
+
 ## 1.11.0
 Added:
 - User setting 'HSMPostUtility.shortenOutputCode' to let users disable the code shortening post option
