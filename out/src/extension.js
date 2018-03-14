@@ -49,7 +49,7 @@ let tmpCPSFile = [];
 let lastSelectedLine = undefined;
 let amountToMove = 0;
 // if enabled, auto line-selection will occur (when selecting a line in the outputted code)
-let enableLineSelection = true;
+let enableLineSelection = vscode.workspace.getConfiguration("HSMPostUtility").get("enableAutoLineSelection");
 // used to determine whether to show the full debugged code output, or just the generated code
 let showDebugOutput = false;
 // set the output paths
@@ -60,6 +60,10 @@ let ListItems = undefined;
 // set the location of the stored CNC files
 const cncFilesLocation = resLocation + "\\CNC files";
 let units = 1;
+let config = vscode.workspace.getConfiguration("HSMPostUtility");
+let rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
+let linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
+let circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
 
 function activate(context) {
   // set an event handler for the saving of a document. This is used to post on-save
@@ -157,7 +161,7 @@ function activate(context) {
     if (selectedFile.toLowerCase().includes(".cnc")) {
       cncFile = selectedFile;
       vscode.window.setStatusBarMessage("CNC file set", 2000);
-      var config = vscode.workspace.getConfiguration("HSMPostUtility");
+      config = vscode.workspace.getConfiguration("HSMPostUtility");
       var postOnSelection = config.get("postOnCNCSelection");
       if (postOnSelection) {
         vscode.commands.executeCommand('HSM.postProcess');
@@ -172,7 +176,7 @@ function activate(context) {
         enableLineSelection = false;
       } else if (val == "False") {
         showDebugOutput = false;
-        enableLineSelection = true;
+        enableLineSelection = vscode.workspace.getConfiguration("HSMPostUtility").get("enableAutoLineSelection");
       }
     });
   }));
@@ -180,8 +184,10 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.disableLineSelection', () => {
     vscode.window.showQuickPick(["True", "False"]).then(val => {
       if (val == "True") {
+        vscode.workspace.getConfiguration("HSMPostUtility").update("enableAutoLineSelection", false);
         enableLineSelection = false;
       } else if (val == "False") {
+        vscode.workspace.getConfiguration("HSMPostUtility").update("enableAutoLineSelection", true);
         if (!showDebugOutput) {
           enableLineSelection = true;
         }
@@ -355,7 +361,7 @@ function savedoc() {
       }
     }
   }
-  var config = vscode.workspace.getConfiguration("HSMPostUtility");
+  config = vscode.workspace.getConfiguration("HSMPostUtility");
   var postOnSave = config.get("postOnSave");
 
   if (isDebugOpen && postOnSave) {
@@ -609,7 +615,7 @@ function selectedCNCFile(picked, fullList) {
 }
 
 function selectUnits() {
-  var config = vscode.workspace.getConfiguration("HSMPostUtility");
+  config = vscode.workspace.getConfiguration("HSMPostUtility");
   switch (config.get("outputUnits")) {
     case "MM":
       units = 1;
@@ -623,6 +629,9 @@ function selectUnits() {
 }
 
 function postProcess(cnc, postLocation) {
+  rapidDecoration.dispose();
+  linearDecoration.dispose();
+  circDecoration.dispose();
   var child = require('child_process').execFile;
   var executablePath = postLoc;
   var parameters = [];
@@ -631,8 +640,7 @@ function postProcess(cnc, postLocation) {
   if (vscode.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
     postFile = vscode.window.activeTextEditor.document.fileName.toString();
   }
-
-  var config = vscode.workspace.getConfiguration("HSMPostUtility");
+  config = vscode.workspace.getConfiguration("HSMPostUtility");
   var shorten = config.get("shortenOutputCode");
   selectUnits();
   if (showDebugOutput) {
@@ -726,20 +734,21 @@ function postProcess(cnc, postLocation) {
           file.on('error', function(errors) {});
           file.write(lineData);
           file.end();
-          var config = vscode.workspace.getConfiguration("HSMPostUtility");
+          config = vscode.workspace.getConfiguration("HSMPostUtility");
           if (config.get("colorOutput")) {
-            var rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
-            var linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
-            var circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
+            rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
+            linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
+            circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
             x.setDecorations(rapidDecoration, rapids);
             x.setDecorations(linearDecoration, linears);
             x.setDecorations(circDecoration, circs);
           }
+
         });
       }
+      vscode.commands.executeCommand('workbench.action.previousEditor');
     });
   }
-
 }
 
 function wait(ms) {
