@@ -642,11 +642,12 @@ function postProcess(cnc, postLocation) {
   }
   config = vscode.workspace.getConfiguration("HSMPostUtility");
   var shorten = config.get("shortenOutputCode");
+  var lineLimit = config.get("shortenOutputLineLimit");
   selectUnits();
   if (showDebugOutput) {
     parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   } else if(shorten) {
-    parameters = ["--noeditor", "--quiet", "--debugall", "--shorten", "50", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
+    parameters = ["--noeditor", "--quiet", "--debugall", "--shorten", lineLimit, "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   } else {
     parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   }

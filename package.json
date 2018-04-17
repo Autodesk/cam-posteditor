@@ -164,7 +164,12 @@
 				"HSMPostUtility.shortenOutputCode": {
 					"type": "boolean",
 					"default": true,
-					"description": "Limits the outputted movement blocks to 50, making the outputted code easier to navigate"
+					"description": "Limits the outputted movement blocks to the value set by shortenOutputLineLimit setting, making the outputted code easier to navigate"
+				},
+				"HSMPostUtility.shortenOutputLineLimit": {
+					"type": "integer",
+					"default": 50,
+					"description": "Set the number of movement blocks to be used by the Shorten Output setting"
 				},
 				"HSMPostUtility.outputUnits": {
 					"type": "string",
