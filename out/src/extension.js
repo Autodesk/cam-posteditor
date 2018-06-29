@@ -212,6 +212,7 @@ function activate(context) {
   }));
 
   disposable = vscode.commands.registerCommand('HSM.postProcess', () => {
+    vscode.commands.executeCommand('notifications.clearAll');
     if (vscode.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
       postFile = vscode.window.activeTextEditor.document.fileName.toString();
     }
