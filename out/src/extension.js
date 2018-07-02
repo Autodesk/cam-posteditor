@@ -212,7 +212,6 @@ function activate(context) {
   }));
 
   disposable = vscode.commands.registerCommand('HSM.postProcess', () => {
-    vscode.commands.executeCommand('notifications.clearAll');
     if (vscode.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
       postFile = vscode.window.activeTextEditor.document.fileName.toString();
     }
@@ -630,6 +629,7 @@ function selectUnits() {
 }
 
 function postProcess(cnc, postLocation) {
+  vscode.commands.executeCommand('notifications.clearAll');
   rapidDecoration.dispose();
   linearDecoration.dispose();
   circDecoration.dispose();
