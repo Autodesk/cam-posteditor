@@ -629,6 +629,7 @@ function selectUnits() {
 }
 
 function postProcess(cnc, postLocation) {
+  vscode.commands.executeCommand('notifications.clearAll');
   rapidDecoration.dispose();
   linearDecoration.dispose();
   circDecoration.dispose();
