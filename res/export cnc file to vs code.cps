@@ -26,6 +26,8 @@ function onClose() {
   }
   var path = FileSystem.getTemporaryFile("post");
 
+  //VSCode can now be installed in local user context, so we need to check which version, and find exe path appropriately.
+
   var registryPaths = [
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{F8A2A208-72B3-4D61-95FC-8A65D340689B}_is1",
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{C26E74D1-022E-4238-8B9D-1E7564A36CC9}_is1",
@@ -34,18 +36,34 @@ function onClose() {
   ];
 
   var exePath;
-  for (var i = 0; i < registryPaths.length; ++i) {
-    if (hasRegistryValue(registryPaths[i], "InstallLocation")) {
-      exePath = getRegistryString(registryPaths[i], "InstallLocation");
-      break; // found
+  
+  try {
+    for (var i = 0; i < registryPaths.length; ++i) {
+      if (hasRegistryValue(registryPaths[i], "InstallLocation")) {
+        exePath = getRegistryString(registryPaths[i], "InstallLocation");
+        break; // found
+      }
     }
   }
 
-  if (exePath) {
-    exePath = FileSystem.getCombinedPath(exePath, "\\bin\\code.cmd");
-  } else {
-    error(localize("Visual Studio Code not found."));
-    return;
+  catch (ex) {
+
+  }
+
+  try {
+    if (!exePath) {
+      var userData = getEnvironmentVariable("LOCALAPPDATA");
+      exePath = FileSystem.getCombinedPath(userData, "\\Programs\\Microsoft VS Code\\");
+    }
+  }
+
+  finally {
+    if (exePath) {
+      exePath = FileSystem.getCombinedPath(exePath, "\\bin\\code.cmd");
+    } else {
+      error(localize("Visual Studio Code not found."));
+      return;
+    }
   }
 
   var a = "code --list-extensions --show-versions";
