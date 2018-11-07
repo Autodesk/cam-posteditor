@@ -134,10 +134,19 @@ function activate(context) {
     }
     vscode.window.showInformationMessage(element.label + " deleted");
     cncTree.refreshTree();
-  }))
+  }));
+
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.openFolder', (element) => {
+    if (!element) {
+      vscode.window.showErrorMessage("This command can only be executed from the CNC selector tree");
+      return;
+    }
+    let folderLocation = cncFilesLocation + "\\" + element.label;
+    require('child_process').exec('start "" "' + folderLocation + '"');
+  }));
 
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => {
-    locatePostEXE(false);
+      locatePostEXE(false);
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('hsm.downloadCNCExtractor', () => {
@@ -237,12 +246,10 @@ function activate(context) {
         var postExists = true;
         if (postLoc) {
           if (!fs.existsSync(postLoc)) {
-            postExists = false
             locatePostEXE(true);
           }
         } else {
           locatePostEXE(true);
-          postExists = false;
         }
         if (postExists) {
           if (cncFile) {
@@ -422,27 +429,49 @@ function showSetupSheet(lines, name) {
 }
 
 function locatePostEXE(val) {
-  var post = true;
   if (val) {
-    vscode.window.showErrorMessage("Post processor executable cannot be found. Please select your post executable location", "Browse...").then((val) => {
-      if (val == "Browse...") {
-        vscode.window.showOpenDialog({openFiles: true, filters: {}}).then(val => {
-          var selectedPath = val[0].path.substr(1, val[0].path.length);
-          if (fs.existsSync(selectedPath) && selectedPath.toLowerCase().includes("post")) {
-            postLoc = selectedPath;
-            var JSONData = {"postLocation": selectedPath};
+    /** check to see if Fusion is installed. If it is, use the post EXE from there */
+    let fusionDataFile = process.env.LOCALAPPDATA + "\\autodesk\\webdeploy\\production\\6a0c9611291d45bb9226980209917c3d\\FusionLauncher.exe.ini";
+    if (fs.existsSync(fusionDataFile)) {
+      var data = fs.readFileSync(fusionDataFile, "utf16le");
+      let lines = data.split("\n");
+      for (let j = 0; j < lines.length; ++j) {
+        let activeLine = lines[j];
+        if (activeLine.toLowerCase().includes("fusion360.exe")) {
+          let fusionInstallLocation = activeLine.substring(8, activeLine.length - 16);
+          fusionInstallLocation += "\\Applications\\CAM360\\post.exe";
+          if (fs.existsSync(fusionInstallLocation)) {
+            postLoc = fusionInstallLocation;
+            var JSONData = {"postLocation": fusionInstallLocation};
             var file = fs.createWriteStream(settingsLocation);
             file.on('error', function(errors) {});
             file.write(JSON.stringify(JSONData));
             file.end();
-            vscode.window.showInformationMessage("Post processor location updated correctly.")
-          } else {
-            vscode.window.showInformationMessage("The post EXE you selected is invalid or does not exist.");
+            return;
           }
-          return false;
-        });
+        }
       }
-    });
+    } else {
+      vscode.window.showErrorMessage("Post processor executable cannot be found. Please select your post executable location", "Browse...").then((val) => {
+        if (val == "Browse...") {
+          vscode.window.showOpenDialog({openFiles: true, filters: {}}).then(val => {
+            var selectedPath = val[0].path.substr(1, val[0].path.length);
+            if (fs.existsSync(selectedPath) && selectedPath.toLowerCase().includes("post")) {
+              postLoc = selectedPath;
+              var JSONData = {"postLocation": selectedPath};
+              var file = fs.createWriteStream(settingsLocation);
+              file.on('error', function(errors) {});
+              file.write(JSON.stringify(JSONData));
+              file.end();
+              vscode.window.showInformationMessage("Post processor location updated correctly.")
+            } else {
+              vscode.window.showInformationMessage("The post EXE you selected is invalid or does not exist.");
+            }
+            return false;
+          });
+        }
+      });
+    }
   } else {
     vscode.window.showInformationMessage("Please select your post excutable", "Browse...").then((val) => {
       if (val == "Browse...") {
@@ -466,12 +495,26 @@ function locatePostEXE(val) {
   }
 }
 
+let secondClick = false;
+
 function handleChange(event) {
   if (vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") && !vscode.window.activeTextEditor.document.fileName.includes(".log")) {
     var selectedLine = vscode.window.activeTextEditor.selection.start.line;
+
+    config = vscode.workspace.getConfiguration("HSMPostUtility");
+    let needTwoClicks = config.get("twoClickLineJumping");
+
     if (selectedLine != lastSelectedLine) {
       amountToMove = 0;
+      secondClick = false;
     }
+
+    if (!secondClick && needTwoClicks) {
+      secondClick = true;
+      lastSelectedLine = selectedLine;
+      return;
+    }
+
     fs.readFile(debugOutputpath, function(err, data) {
       if (err) throw err;
       var array = data.toString().split('\n');
@@ -496,14 +539,14 @@ function handleChange(event) {
                 if (isNaN(lineToMoveTo)) {
                   amountToMove = 0;
                   lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
-                } else {
-                  amountToMove = amountToMove + 1;
                 }
               } catch (e) {
                 amountToMove = 0;
+                lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
               }
             }
             moveLine(lineToMoveTo);
+            amountToMove = amountToMove + 1; 
           }
           currentIndex += 1;
         }
@@ -606,12 +649,8 @@ function selectedCNCFile(picked, fullList) {
   if (itemToUse) {
     cncFile = itemToUse;
   }
-  var htmlPath = cncFile.substring(0, cncFile.length - 3) + "html";
-  if (fs.existsSync(htmlPath)) {
-    var lines = fs.readFileSync(htmlPath);
-    showSetupSheet(lines.toString());
-  }
 
+  vscode.commands.executeCommand('HSM.postProcess');
 }
 
 function selectUnits() {
@@ -628,8 +667,25 @@ function selectUnits() {
   }
 }
 
+function findErrorLine(log) {
+  fs.readFile(log, function(err, data) {
+    if (err) throw err;
+    var array = data.toString().split('\n');
+
+    for (var i = array.length - 1; i > 0; --i) {
+      if (array[i].toUpperCase().includes("ERROR(") && array[i].includes("):") && array[i].toUpperCase().includes(".CPS:")) {
+        // found the stack dum. error line is next
+          let line = array[i];
+          let errorLine = line.split(".cps:")[1].split("):")[0];
+        moveLine(+errorLine);
+        return;
+      }
+    }
+  });
+}
+
 function postProcess(cnc, postLocation) {
-  vscode.commands.executeCommand('notifications.clearAll');
+  vscode.commands.executeCommand('notifications.clearAll'); 
   rapidDecoration.dispose();
   linearDecoration.dispose();
   circDecoration.dispose();
@@ -638,6 +694,7 @@ function postProcess(cnc, postLocation) {
   var parameters = [];
   var activeEdit = vscode.window.activeTextEditor;
   var currentLine = vscode.window.activeTextEditor.selection.start.line;
+
   if (vscode.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
     postFile = vscode.window.activeTextEditor.document.fileName.toString();
   }
@@ -658,27 +715,23 @@ function postProcess(cnc, postLocation) {
     if (err) {
       if (fs.existsSync(logPath)) {
         vscode.window.showInformationMessage("Post processing failed, see the log for details");
-        vscode.window.showTextDocument(vscode.workspace.openTextDocument(logPath), vscode.ViewColumn.Two);
+        vscode.window.showTextDocument(vscode.workspace.openTextDocument(logPath), vscode.ViewColumn.Two, true);
+        findErrorLine(logPath);
       } else {
         vscode.window.showInformationMessage("Post processing failed");
       }
+      return;
     }
     console.log(err)
     console.log(data.toString());
-  });
-
-  wait(2000);
-
-  if (fs.existsSync(outputpath)) {
-    let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two).then(x => {
+  
+    if (fs.existsSync(outputpath)) { 
+      let rapids = [];
+      let linears = [];
+      let circs = [];
+      let other = [];
       if (!showDebugOutput) {
-        wait(100);
-
         fs.readFile(outputpath, function(err, data) {
-          let rapids = [];
-          let linears = [];
-          let circs = [];
-          let other = [];
           let lineAt = 0;
           let type = 0; // 0 = other, 1 = rapid, 2 = linear, 3 = circular
           var array = data.toString().split('\n');
@@ -686,7 +739,6 @@ function postProcess(cnc, postLocation) {
           var lineData = "!DEBUG:" + postLocation + '\n';
           var writeOutput = true;
           for (var i = 0; i < array.length; i++) {
-
             if (array[i].includes("!DEBUG")) {
               if (array[i].toUpperCase().includes("ONRAPID")) {
                 type = 1;
@@ -696,19 +748,20 @@ function postProcess(cnc, postLocation) {
                 type = 3;
               }
             }
-
+  
             if (!writeOutput && array[i].includes("!DEBUG")) {
               writeOutput = true;
             }
+  
             if (array[i].includes("!DEBUG") && (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL"))) {
               writeOutput = false;
             }
-
+  
             if (!array[i].includes("!DEBUG") && writeOutput) {
               type = 0;
               lines = lines + array[i] + '\n';
             }
-
+  
             let pos = new vscode.Range(new vscode.Position(i, 0), new vscode.Position(i + 1, 0));
             switch (type) {
               case 0:
@@ -725,32 +778,33 @@ function postProcess(cnc, postLocation) {
                 break;
             }
             lineData += array[i] + '\n';
-
+  
           }
-          var file = fs.createWriteStream(outputpath);
-          file.on('error', function(errors) {});
-          file.write(lines);
-          file.end();
+    
 
+          wait(200);
+
+          var file = fs.createWriteStream(outputpath);
+          file.on('error', function(errors) {
+          });
+          file.write(lines);
+          file.end(function(finished) {
+            wait(300);
+            let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two, true);
+          });
+  
           file = fs.createWriteStream(debugOutputpath);
-          file.on('error', function(errors) {});
+          file.on('error', function(errors) {
+          });
           file.write(lineData);
           file.end();
-          config = vscode.workspace.getConfiguration("HSMPostUtility");
-          if (config.get("colorOutput")) {
-            rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
-            linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
-            circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
-            x.setDecorations(rapidDecoration, rapids);
-            x.setDecorations(linearDecoration, linears);
-            x.setDecorations(circDecoration, circs);
-          }
-
         });
+      } else {
+        wait(500);
+        let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two, true);
       }
-      vscode.commands.executeCommand('workbench.action.previousEditor');
-    });
-  }
+    }
+  });
 }
 
 function wait(ms) {
@@ -776,25 +830,18 @@ function moveLine(line) {
   if (docFound) {
     if (enableLineSelection) {
       vscode.window.showTextDocument(docToShow.document, vscode.ViewColumn.One);
-      vscode.commands.executeCommand("cursorMove", {
-        to: "up",
-        by: "line",
-        select: false,
-        value: 100000
-      });
+      docToShow.selection = new vscode.Selection(new vscode.Position(line - 1, 0), new vscode.Position(line - 1, 0));
       vscode.commands.executeCommand("cursorMove", {
         to: "down",
         by: "line",
         select: false,
-        value: line - 1
+        value: 0
       });
       vscode.commands.executeCommand("cursorMove", {
-        to: "wrappedLineEnd",
-        select: false
-      });
-      vscode.commands.executeCommand("cursorMove", {
-        to: "wrappedLineStart",
-        select: true
+        to: "up",
+        by: "line",
+        select: false,
+        value: 0
       });
     }
   } else {
