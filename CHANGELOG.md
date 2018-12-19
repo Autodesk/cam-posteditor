@@ -1,4 +1,55 @@
 # Change Log
+
+## 2.0.6
+Fixed:
+  - line selection only working on the first instance of the stack trace
+
+## 2.0.5
+Added:
+  - Added some logic to determine the Fusion install location and automatically select the post.exe location
+  
+## 2.0.4
+Updated:
+  - Modified export CPS file to support new VSCode update
+  
+## 2.0.0
+Added:
+  - Option for two click line jumping
+  - Open folder right click option to CNC tree
+  - Auto focus on a line which causes an error (if possible)
+  - Auto clear notifications
+
+Fixed:
+  - Peck drilling CNC file
+  - Coolant CNC files
+
+## 1.11.7
+Added:
+- 'All files' option to the CNC list
+- User setting to specify the shorten code line limit
+
+Fixed:
+- Log file not opening when NC appears for failed toolpaths
+
+## 1.11.6
+Fixed:
+- Log stays open after the post failure
+
+Updated:
+- Major post processor speed improvement
+
+## 1.11.5
+Fixed:
+- Stopped the output window from being 'reloaded' when post processing
+
+## 1.11.4
+Fixed:
+- Keep post window active when post processing
+
+## 1.11.3
+Added:
+- User setting to keep the 'disable auto line selection' state between sessions
+ 
 ## 1.11.2
 Added:
 - User setting to enable a color-coded output of lines

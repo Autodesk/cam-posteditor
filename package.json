@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "1.11.2",
+	"version": "2.0.6",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -77,6 +77,11 @@
 				"category": "HSM"
 			},
 			{
+				"command": "hsm.openFolder",
+				"title": "Open folder",
+				"category": "HSM"
+			},
+			{
 				"command": "hsm.showVarHelpFile",
 				"title": "Post help",
 				"category": "HSM"
@@ -137,6 +142,10 @@
 					"when": "view == cncList&&viewItem == customFile"
 				},
 				{
+					"command": "hsm.openFolder",
+					"when": "view == cncList&&viewItem == openFolder"
+				},
+				{
 					"command": "hsm.showVarHelpFile",
 					"when": "view == variableList&&viewItem == child"
 				}
@@ -185,22 +194,32 @@
 					"default": false,
 					"description": "If true, post processing will occur as soon as a CNC file is selected"
 				},
-				"HSMPostUtility.colorOutput":{
+				"HSMPostUtility.colorOutput": {
 					"type": "boolean",
 					"default": false,
 					"description": "If true, the code output from onLinear, onRapid and onCircular are colored"
 				},
-				"HSMPostUtility.linearColor":{
+				"HSMPostUtility.twoClickLineJumping": {
+					"type": "boolean",
+					"default": false,
+					"description": "If true, it takes two clicks for the line jumping to work"
+				},
+				"HSMPostUtility.linearColor": {
 					"type": "string",
 					"default": "lightgreen"
 				},
-				"HSMPostUtility.rapidColor":{
+				"HSMPostUtility.rapidColor": {
 					"type": "string",
 					"default": "yellow"
 				},
-				"HSMPostUtility.circularColor":{
+				"HSMPostUtility.circularColor": {
 					"type": "string",
 					"default": "lightblue"
+				},
+				"HSMPostUtility.enableAutoLineSelection": {
+					"type": "boolean",
+					"default": true,
+					"description": "If true, the auto line selection will be enabled"
 				}
 			}
 		}
@@ -219,7 +238,7 @@
 	},
 	"__metadata": {
 		"id": "da746f7c-d627-49de-a2c4-7adecc8e7073",
-		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
-		"publisherDisplayName": "Autodesk"
+		"publisherDisplayName": "Autodesk",
+		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d"
 	}
 }

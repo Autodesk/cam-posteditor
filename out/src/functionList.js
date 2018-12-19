@@ -85,6 +85,7 @@ class functionListProvider {
             if (editor) {
                 getSettings();
                 let funcs = yield this.getFunctionList(editor.document);
+                if (!funcs) return;
                 if (topLevel.indexOf(-1) < 0) funcs = funcs.filter(func => topLevel.indexOf(func.kind) >= 0);
                 const functions = funcs.map(func => new functionNode(func));
                 let treeFunctions = [];

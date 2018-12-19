@@ -29,6 +29,7 @@ const path = require("path");
 const exten = require("./extension");
 var resLocation = vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath + "\\res";
 var files = [];
+var allFilesName = "All files";
 
 class cncDataProvider {
     constructor(_context) {
@@ -36,20 +37,27 @@ class cncDataProvider {
         this._onDidChangeTreeData = new vsc.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         files = [];
-        files = findFiles(resLocation + "\\CNC files")
+        files = findFiles(resLocation + "\\CNC files");
+        files.unshift(allFilesName);
     }
 
     getChildren(element) {
         var items = [];
         if (!element) {
             for (let i = 0; i < files.length; ++i) {
-                let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
-                    .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
-                items.push(treeItem);
+                if (files[i] != allFilesName) {
+                    let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
+                        .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                    treeItem.contextValue = "openFolder";
+                    items.push(treeItem);
+                } else {
+                    let treeItem = new vsc.TreeItem(allFilesName, vsc.TreeItemCollapsibleState.Collapsed);
+                    items.push(treeItem);
+                }
             }
         } else {
             for (let i = 0; i < files.length; ++i) {
-                if (element.label == files[i][0]) {
+                if (element.label == files[i][0] && element.label != allFilesName) {
                     if (files[i][0].toLowerCase().includes(".cnc")) {
                         exten.setCNC(files[i][1]);
                     } else {
@@ -63,14 +71,30 @@ class cncDataProvider {
                             }
                             items.push(treeItem);
                         }
-                        for (var tf = 0; tf < tempFiles.length; tf++) { files.push(tempFiles[tf]); }
+                        for (var tf = 0; tf < tempFiles.length; tf++) {files.push(tempFiles[tf]);}
+                    }
+                    break;
+                } else if (element.label == allFilesName) {
+                    if (files[i][0].toLowerCase().includes(".cnc")) {
+                        exten.setCNC(files[i][1]);
+                    } else {
+                        let allFiles = getFilesFromDir(resLocation + "\\CNC files", [".cnc"]);;
+                        for (let j = 0; j < allFiles.length; ++j) {
+                            let fullPath = resLocation + "\\CNC files" + allFiles[j];
+                            let name = allFiles[j].replace(/^.*[\\\/]/, '');
+                            let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
+                            treeItem.command = {command: "hsm.setCNC", title: "", arguments: [fullPath]};
+                            treeItem.src = fullPath;
+                            items.push(treeItem);
+                        }
+                        for (var tf = 0; tf < allFiles.length; tf++) {files.push(allFiles[tf]);}
                     }
                     break;
                 }
             }
         }
         return items;
-        
+
     }
 
     getTreeItem(element) {
@@ -79,20 +103,48 @@ class cncDataProvider {
 
     refreshTree() {
         files = [];
-        files = findFiles(resLocation + "\\CNC files")
+        files = findFiles(resLocation + "\\CNC files");
+        files.unshift(allFilesName);
         this._onDidChangeTreeData.fire();
     }
 }
 exports.cncDataProvider = cncDataProvider;
 
+function getFilesFromDir(dir, fileTypes) {
+    var filesToReturn = [];
+    function walkDir(currentPath) {
+        var files = fs.readdirSync(currentPath);
+        for (var i in files) {
+            var curFile = path.join(currentPath, files[i]);
+            if (fs.statSync(curFile).isFile() && fileTypes.indexOf(path.extname(curFile)) != -1) {
+                filesToReturn.push(curFile.replace(dir, ''));
+            } else if (fs.statSync(curFile).isDirectory()) {
+                walkDir(curFile);
+            }
+        }
+    };
+    walkDir(dir);
+    return filesToReturn;
+}
+
 function findFiles(dir) {
     var cncFiles = getFiles(dir);
     var tempList = [];
-    for (var i = 0; i < cncFiles.length; ++i){
+    for (var i = 0; i < cncFiles.length; ++i) {
         if (fs.statSync(dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
-        tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')]);
+            tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')]);
     }
     return tempList;
+}
+
+function findAllFiles(dir) {
+    var cncFiles = getFiles(dir);
+    var tempList = [];
+    for (var i = 0; i < cncFiles.length; ++i) {
+        if (fs.statSync(dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
+            tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')]);
+    }
+    return cncFiles;
 }
 
 function getFiles(srcpath) {

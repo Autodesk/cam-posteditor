@@ -496,14 +496,13 @@ function locatePostEXE(val) {
 }
 
 let secondClick = false;
-
+let times = 2;
+// this seems to get called twice for each event, which is messing things up. Added times mod 2 to only call it once
 function handleChange(event) {
-  if (vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") && !vscode.window.activeTextEditor.document.fileName.includes(".log")) {
+  if (vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") && !vscode.window.activeTextEditor.document.fileName.includes(".log") && times % 2 == 0) {
     var selectedLine = vscode.window.activeTextEditor.selection.start.line;
-
     config = vscode.workspace.getConfiguration("HSMPostUtility");
     let needTwoClicks = config.get("twoClickLineJumping");
-
     if (selectedLine != lastSelectedLine) {
       amountToMove = 0;
       secondClick = false;
@@ -522,6 +521,7 @@ function handleChange(event) {
       var lineToMoveTo = 0;
       var currentIndex = 0;
       var notNotes = true;
+      var moved = false;
       for (var i = 0; i < array.length; i++) {
         // support for notes. These are not output on debug lines, so they must be skipped
         if (array[i].includes("!DEBUG")) {
@@ -531,7 +531,7 @@ function handleChange(event) {
           }          
         }
 
-        if (!array[i].includes("!DEBUG") && notNotes) {
+        if (!array[i].includes("!DEBUG") && notNotes && !moved) {
           if (currentIndex == selectedLine) {
             if (selectedLine == lastSelectedLine) {
               try {
@@ -547,6 +547,7 @@ function handleChange(event) {
             }
             moveLine(lineToMoveTo);
             amountToMove = amountToMove + 1; 
+            moved = true;
           }
           currentIndex += 1;
         }
@@ -555,6 +556,7 @@ function handleChange(event) {
     });
     lastSelectedLine = selectedLine;
   }
+  times += 1;
 }
 
 function onPickedItem(picked) {
@@ -703,11 +705,11 @@ function postProcess(cnc, postLocation) {
   var lineLimit = config.get("shortenOutputLineLimit");
   selectUnits();
   if (showDebugOutput) {
-    parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
+    parameters = ["--noeditor", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   } else if(shorten) {
-    parameters = ["--noeditor", "--quiet", "--debugall", "--shorten", lineLimit, "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
+    parameters = ["--noeditor", "--debugall", "--shorten", lineLimit, "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   } else {
-    parameters = ["--noeditor", "--quiet", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
+    parameters = ["--noeditor", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   }
 
   var passed = false;
@@ -816,35 +818,20 @@ function wait(ms) {
 }
 
 function moveLine(line) {
-  var docToShow = undefined;
   var docFound = false;
-
   for (var i = 0; i < vscode.window.visibleTextEditors.length; i++) {
     var activeFile = vscode.window.visibleTextEditors[i];
     if (activeFile.document.fileName == postFile) {
       docFound = true;
-      docToShow = activeFile;
+      if (enableLineSelection) {
+        vscode.window.visibleTextEditors[i].selection = new vscode.Selection(new vscode.Position(line - 1, 0), new vscode.Position(line - 1, 0));
+        vscode.window.showTextDocument(vscode.window.visibleTextEditors[i].document, vscode.ViewColumn.One);
+        vscode.window.visibleTextEditors[i].revealRange(vscode.window.visibleTextEditors[i].selection, vscode.TextEditorRevealType.InCenter);
+      }
     }
   }
 
-  if (docFound) {
-    if (enableLineSelection) {
-      vscode.window.showTextDocument(docToShow.document, vscode.ViewColumn.One);
-      docToShow.selection = new vscode.Selection(new vscode.Position(line - 1, 0), new vscode.Position(line - 1, 0));
-      vscode.commands.executeCommand("cursorMove", {
-        to: "down",
-        by: "line",
-        select: false,
-        value: 0
-      });
-      vscode.commands.executeCommand("cursorMove", {
-        to: "up",
-        by: "line",
-        select: false,
-        value: 0
-      });
-    }
-  } else {
+  if (!docFound) {
     if (!enableLineSelection) {
       vscode.window.showErrorMessage("The post processor (" + postFile + ") that created this output has been closed!");
     }
