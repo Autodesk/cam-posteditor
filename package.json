@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk HSM Post Processor",
 	"description": "Autodesk HSM post processor utility.",
-	"version": "2.0.6",
+	"version": "2.1.0",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -24,7 +24,8 @@
 		"*",
 		"onView:variableList",
 		"onView:functionList",
-		"onView:cncList"
+		"onView:cncList",
+		"onView:propertyList"
 	],
 	"main": "./out/src/extension",
 	"contributes": {
@@ -62,6 +63,11 @@
 				"icon": "res/icons/ref.svg"
 			},
 			{
+				"command": "propertyList.initializePropertyList",
+				"title": "Initialize Property List",
+				"icon": "res/icons/ref.svg"
+			},
+			{
 				"command": "hsm.changePostExe",
 				"title": "Change post executable",
 				"category": "HSM"
@@ -84,6 +90,16 @@
 			{
 				"command": "hsm.showVarHelpFile",
 				"title": "Post help",
+				"category": "HSM"
+			},
+			{
+				"command": "hsm.changeProperty",
+				"title": "Change...",
+				"category": "HSM"
+			},
+			{
+				"command": "hsm.resetProperty",
+				"title": "Reset to default...",
 				"category": "HSM"
 			}
 		],
@@ -110,6 +126,10 @@
 				{
 					"id": "cncList",
 					"name": "CNC Selector"
+				},
+				{
+					"id": "propertyList",
+					"name": "Post Properties"
 				}
 			]
 		},
@@ -134,6 +154,11 @@
 					"command": "cncList.refreshCNCList",
 					"when": "view == cncList",
 					"group": "navigation"
+				},
+				{
+					"command": "propertyList.initializePropertyList",
+					"when": "view == propertyList",
+					"group": "navigation"
 				}
 			],
 			"view/item/context": [
@@ -148,6 +173,14 @@
 				{
 					"command": "hsm.showVarHelpFile",
 					"when": "view == variableList&&viewItem == child"
+				},
+				{
+					"command": "hsm.changeProperty",
+					"when": "view == propertyList"
+				},
+				{
+					"command": "hsm.resetProperty",
+					"when": "view == propertyList"
 				}
 			]
 		},

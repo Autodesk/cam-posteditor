@@ -1,5 +1,9 @@
 # Change Log
 
+## 2.1.0
+Added:
+  - A new explorer sidebar containing post properties
+
 ## 2.0.6
 Fixed:
   - line selection only working on the first instance of the stack trace
