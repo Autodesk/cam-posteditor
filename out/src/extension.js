@@ -861,10 +861,12 @@ function postProcess(cnc, postLocation) {
     var lines = fs.readFileSync(jsonPath);
     if (lines.length > 1) {
       var obj = JSON.parse(lines);
-      var allProperties = Object.entries(obj.changed.properties);
-      for (var i = 0; i < allProperties.length; i++) {
-        if (allProperties[i][1] != "") { // skips empty property values eg machineDefinition for heidenhain
-          parameters.push("--property", allProperties[i][0], allProperties[i][1]);
+      if (obj.changed.properties) {
+        var allProperties = Object.entries(obj.changed.properties);
+        for (var i = 0; i < allProperties.length; i++) {
+          if (allProperties[i][1] != "") { // skips empty property values eg machineDefinition for heidenhain
+            parameters.push("--property", allProperties[i][0], allProperties[i][1]);
+          }
         }
       }
     }
