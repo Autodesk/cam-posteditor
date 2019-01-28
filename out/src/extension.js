@@ -185,6 +185,37 @@ function activate(context) {
     require('child_process').exec('start "" "' + folderLocation + '"');
   }));
 
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.importCNC', (element) => {
+    if (!element) {
+      vscode.window.showErrorMessage("This command can only be executed from the CNC selector tree");
+      return;
+    }
+    if (!fs.existsSync(resLocation + "\\CNC files\\Custom")) {
+      fs.mkdirSync(resLocation + "\\CNC files\\Custom");
+      vscode.window.setStatusBarMessage("Custom CNC folder created", 2000);
+    }
+    var log = "";
+    vscode.window.showOpenDialog({openFiles: true, canSelectMany: true, filters: {'HSM intermediate file': ['cnc']}}).then((val) => {
+      for (var i = 0; i < val.length; ++i) {
+      var selectedPath = val[i].path.substr(1, val[i].path.length);
+      if (fs.existsSync(selectedPath)) {
+        let copyLocation = resLocation + "\\CNC files\\Custom\\" + path.basename(selectedPath);
+        copyFile(selectedPath, copyLocation);
+        let separator = "";
+        if (i < val.length -1) {
+          separator = ", ";
+        }
+        log+= "\"" + path.basename(selectedPath) + "\"" + separator;
+      } else {
+        vscode.window.showErrorMessage("Import of CNC file(s) failed.");
+        return;
+      }
+    }
+    cncTree.refreshTree();
+    vscode.window.showInformationMessage("CNC file(s) " + log + " successfully imported.");
+    });
+  }));
+
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => {
       locatePostEXE(false);
   }));

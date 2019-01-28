@@ -1,5 +1,13 @@
 # Change Log
 
+## 2.2.1
+Added:
+  - Import option for CNC files
+
+## 2.2.0
+Updated:
+  - Extension naming
+
 ## 2.1.0
 Added:
   - A new explorer sidebar containing post properties

@@ -1,8 +1,8 @@
 {
 	"name": "hsm-post-processor",
-	"displayName": "Autodesk HSM Post Processor",
-	"description": "Autodesk HSM post processor utility.",
-	"version": "2.1.1",
+	"displayName": "Autodesk Fusion 360 Post Processor Utility",
+	"description": "Post processor utility.",
+	"version": "2.2.1",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -88,6 +88,11 @@
 				"category": "HSM"
 			},
 			{
+				"command": "hsm.importCNC",
+				"title": "Import CNC file...",
+				"category": "HSM"
+			},
+			{
 				"command": "hsm.showVarHelpFile",
 				"title": "Post help",
 				"category": "HSM"
@@ -169,6 +174,10 @@
 				{
 					"command": "hsm.openFolder",
 					"when": "view == cncList&&viewItem == openFolder"
+				},
+				{
+					"command": "hsm.importCNC",
+					"when": "view == cncList"
 				},
 				{
 					"command": "hsm.showVarHelpFile",
@@ -270,7 +279,7 @@
 		"@types/mocha": "^2.2.42"
 	},
 	"__metadata": {
-		"id": "da746f7c-d627-49de-a2c4-7adecc8e7073",
+		"id": "d7881a36-c8dd-487b-8ab1-0f00cc4980bd",
 		"publisherDisplayName": "Autodesk",
 		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d"
 	}
