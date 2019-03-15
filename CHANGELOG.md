@@ -1,5 +1,17 @@
 # Change Log
 
+##2.3.3
+Fixed:
+  - Line jumping no longer works in the latest version of VSCode
+
+##2.3.1
+Fixed:
+  - Unable to post process with the latest version of VSCode
+
+##2.3.0
+Added:
+  - Option to enable auto complete for the active document (F1 > Enable auto complete for current document)
+  
 ## 2.2.1
 Added:
   - Import option for CNC files

@@ -65,24 +65,28 @@ let ListItems = undefined;
 const cncFilesLocation = resLocation + "\\CNC files";
 let units = 1;
 let config = vscode.workspace.getConfiguration("HSMPostUtility");
-let rapidDecoration = vscode.window.createTextEditorDecorationType({color: config.get("rapidColor"), isWholeLine: true});
-let linearDecoration = vscode.window.createTextEditorDecorationType({color: config.get("linearColor"), isWholeLine: true});
-let circDecoration = vscode.window.createTextEditorDecorationType({color: config.get("circularColor"), isWholeLine: true});
 
 function activate(context) {
+  if (process.platform != "win32") {
+    vscode.window.showErrorMessage("The Autodesk Post Processor Utility is only supported on Windows.");
+    return;
+  }
+
   vscode.workspace.onDidCloseTextDocument((doc) => {
     var cpsPath = doc.fileName.toString();
     var hash = crypto.createHash('md5').update(cpsPath).digest('hex');
     var jsonPath = propertyJSONpath + hash + ".json";
     if (fs.existsSync(jsonPath)) {
-      fs.unlink(jsonPath);
+      fs.unlinkSync(jsonPath);
       propertyTree.refresh();
     }
   });
 
   // set an event handler for the saving of a document. This is used to post on-save
   vscode.workspace.onDidSaveTextDocument(savedoc);
+  vscode.window.onDidChangeActiveTextEditor(checkForAutoComplete);
   vscode.window.onDidChangeTextEditorSelection(handleChange);
+  checkForAutoComplete();
   copyCNCFiles();
   // if the custom CNC directory exists, check each file
   if (fs.existsSync(customCNC) && !fs.existsSync(resLocation + "\\CNC files\\Custom")) {
@@ -128,6 +132,10 @@ function activate(context) {
     propertyTree.refresh();
   }));
 
+  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferences', () => {
+    propertyTree.checkForDifferences(false);
+  }));
+
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.initializePropertyList', () => {
     if (getCpsPath() != undefined) {
       if (fs.existsSync(settingsLocation)) {
@@ -170,7 +178,7 @@ function activate(context) {
     let src = element.src;
     fs.unlinkSync(src);
     if (fs.existsSync(customCNC + "\\" + path.basename(src))) {
-      fs.unlink(customCNC + "\\" + path.basename(src));
+      fs.unlinkSync(customCNC + "\\" + path.basename(src));
     }
     vscode.window.showInformationMessage(element.label + " deleted");
     cncTree.refreshTree();
@@ -219,7 +227,9 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => {
       locatePostEXE(false);
   }));
-
+  context.subscriptions.push(vscode.commands.registerCommand("hsm.findPostExe", () => {
+    locatePostEXE(true);
+  }));
   context.subscriptions.push(vscode.commands.registerCommand("hsm.changeProperty", (element) => {
     if (!element) {
       vscode.window.showErrorMessage("This command can only be executed from the Post Properties tree.");
@@ -255,6 +265,14 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('cncList.refreshCNCList', () => {
     cncTree.refreshTree();
     copyCNCFiles();
+  }));
+
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.enableAutoComplete', () => {
+    setAutoComplete(true);
+  }));
+
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.disableAutoComplete', () => {
+    setAutoComplete(false);
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setCNC', selectedFile => {
@@ -336,6 +354,7 @@ function activate(context) {
         }
         var postExists = true;
         if (postLoc) {
+
           if (!fs.existsSync(postLoc)) {
             locatePostEXE(true);
           }
@@ -345,10 +364,12 @@ function activate(context) {
         if (postExists) {
           if (cncFile) {
             if (fs.existsSync(cncFile)) {
-              var tmpCNC = tmp + "/" + path.basename(cncFile);
-              if (!fs.exists(tmpCNC)) {
+              var tmpCNC = tmp + "\\" + path.basename(cncFile);
+              if (!fs.existsSync(tmpCNC)) {
                 copyF(cncFile);
               }
+
+
             }
           }
           var tmpPostFile = tmp + "\\" + path.basename(cncFile);
@@ -406,7 +427,7 @@ function activate(context) {
       if (cncFile) {
         if (fs.existsSync(cncFile)) {
           var tmpCNC = tmp + "/" + path.basename(cncFile);
-          if (!fs.exists(tmpCNC)) {
+          if (!fs.existsSync(tmpCNC)) {
             copyF(cncFile);
           }
         }
@@ -422,6 +443,34 @@ function activate(context) {
 }
 
 exports.activate = activate;
+function setAutoComplete(active) {
+  if ((vscode.window.visibleTextEditors.length <= 0) || (vscode.window.activeTextEditor == undefined)) {
+    return;
+  }
+  if (vscode.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") < 0) {
+    return;
+  }
+  let firstLine = vscode.window.activeTextEditor.document.lineAt(0).text;
+  if (active == "onLoad") {
+    active = firstLine.toLowerCase().includes("\\\\language files\\\\globals.d.ts");
+  }
+
+  if (active) {
+    var languageFileLocation = resLocation + "\\language files\\globals.d.ts";
+    var partsOfPath = languageFileLocation.split('\\');
+    languageFileLocation = partsOfPath.join('\\\\');
+    let fullIncludeString = "/// <reference path=\"" + languageFileLocation + "\" />" + "\n";
+    // first line already contains auto complete
+    if (firstLine.toLowerCase().includes("\\\\language files\\\\globals.d.ts")) {
+      vscode.window.activeTextEditor.edit(editBuilder => {editBuilder.replace(new vscode.Range(0, 0, 1, 0), fullIncludeString);});
+    } else {
+      vscode.window.activeTextEditor.edit(editBuilder => {editBuilder.insert(new vscode.Position(0, 0), fullIncludeString);});
+    }
+  } else if (firstLine.toLowerCase().includes("\\\\language files\\\\globals.d.ts")) {
+      vscode.window.activeTextEditor.edit(editBuilder => {editBuilder.delete(new vscode.Range(0, 0, 1, 0));});
+  }
+}
+
 // Show selected item in a message box
 function SelectItem(element, reset) {
   if (element.label != undefined) {
@@ -455,12 +504,11 @@ function SelectItem(element, reset) {
     if (obj.changed.hasOwnProperty('propertyDefinitions')) {
       if (key == string[0] && obj.changed.propertyDefinitions[key] != undefined) {
         if (obj.changed.propertyDefinitions[key].type == "enum") {
-          // vscode.window.showInformationMessage("ENUM FOUND");
           for (var v in obj.changed.propertyDefinitions[key].values) {
             if (obj.changed.propertyDefinitions[key].values[v].id != undefined) {
-              propertyIds.push("'" + obj.changed.propertyDefinitions[key].values[v].id + "'");
+              propertyIds.push(obj.changed.propertyDefinitions[key].values[v].id);
             } else {
-              propertyIds.push("'" + obj.changed.propertyDefinitions[key].values[v] + "'");
+              propertyIds.push(obj.changed.propertyDefinitions[key].values[v]);
             }
           }
         }
@@ -480,7 +528,11 @@ function SelectItem(element, reset) {
       if (selected != undefined) {
         // vscode.window.showInformationMessage("Property '" + string[0] + "' successfully changed to '" + selected + "'");
         vscode.window.setStatusBarMessage("Property '" + string[0] + "' successfully changed to '" + selected + "'", 5000);
-        obj.changed.properties[string[0]] = selected;
+        if (propertyIds.length > 1) {
+          obj.changed.properties[string[0]] = selected;
+        } else {
+          obj.changed.properties[string[0]] = JSON.parse(selected);
+        }
         writeJSON(obj, jsonPath);
       }
     });
@@ -490,7 +542,7 @@ function SelectItem(element, reset) {
       if (input != undefined) {
         // vscode.window.showInformationMessage("Property '" + string[0] + "' successfully changed to '" + input + "'");
         vscode.window.setStatusBarMessage("Property '" + string[0] + "' successfully changed to '" + input + "'", 5000);
-        obj.changed.properties[string[0]] = input;
+        obj.changed.properties[string[0]] = parseFloat(input);
         writeJSON(obj, jsonPath);
       }
     });
@@ -502,8 +554,15 @@ function writeJSON(obj, jsonPath) {
   var file = fs.createWriteStream(jsonPath);
   file.on('error', function(errors) {});
   file.write(JSON.stringify(JSONData));
-  file.end();
-  vscode.commands.executeCommand('propertyList.refreshPropertyList');
+  file.end(function() {
+    wait(100);
+    vscode.commands.executeCommand('propertyList.refreshPropertyList');
+    config = vscode.workspace.getConfiguration("HSMPostUtility");
+    var postOnPropertyChange = config.get("postOnPropertyChange");
+    if (postOnPropertyChange) {
+      vscode.commands.executeCommand('HSM.postProcess');
+    }
+  });
 }
 
 function checkForCPS() {
@@ -688,7 +747,7 @@ function handleChange(event) {
       return;
     }
 
-    fs.readFile(debugOutputpath, function(err, data) {
+     fs.readFile(debugOutputpath, function(err, data) {
       if (err) throw err;
       var array = data.toString().split('\n');
       var lineData = [];
@@ -702,7 +761,7 @@ function handleChange(event) {
           notNotes = true;
           if (array[i].includes("notes") || array[i].toUpperCase().includes("MATERIAL")) {
             notNotes = false;
-          }          
+          }
         }
 
         if (!array[i].includes("!DEBUG") && notNotes && !moved) {
@@ -720,7 +779,7 @@ function handleChange(event) {
               }
             }
             moveLine(lineToMoveTo);
-            amountToMove = amountToMove + 1; 
+            amountToMove = amountToMove + 1;
             moved = true;
           }
           currentIndex += 1;
@@ -731,6 +790,10 @@ function handleChange(event) {
     lastSelectedLine = selectedLine;
   }
   times += 1;
+}
+
+function checkForAutoComplete(event) {
+  setAutoComplete("onLoad");
 }
 
 function onPickedItem(picked) {
@@ -862,9 +925,6 @@ function findErrorLine(log) {
 
 function postProcess(cnc, postLocation) {
   vscode.commands.executeCommand('notifications.clearAll'); 
-  rapidDecoration.dispose();
-  linearDecoration.dispose();
-  circDecoration.dispose();
   var child = require('child_process').execFile;
   var executablePath = postLoc;
   var parameters = [];
@@ -885,6 +945,9 @@ function postProcess(cnc, postLocation) {
   } else {
     parameters = ["--noeditor", "--debugall", "--property", "unit", units.toString(), "--property", "programName", "1005", postLocation, cncFile, outputpath];
   }
+  
+  vscode.commands.executeCommand('propertyList.checkForDifferences');
+  wait(100);
 
   var hash = crypto.createHash('md5').update(postFile).digest('hex');
   var jsonPath = propertyJSONpath + hash + ".json";
@@ -893,20 +956,26 @@ function postProcess(cnc, postLocation) {
     if (lines.length > 1) {
       var obj = JSON.parse(lines);
       if (obj.changed.properties) {
-        var allProperties = Object.entries(obj.changed.properties);
-        for (var i = 0; i < allProperties.length; i++) {
-          if (allProperties[i][1] != "") { // skips empty property values eg machineDefinition for heidenhain
-            parameters.push("--property", allProperties[i][0], allProperties[i][1]);
+        for (x in obj.changed.properties) {
+          if (typeof obj.changed.properties[x] == "string") {
+            obj.changed.properties[x] = "'" + obj.changed.properties[x] + "'";
           }
+          parameters.push("--property", x, obj.changed.properties[x]);
         }
       }
     }
   }
   var passed = false;
-  child(executablePath, parameters, function(err, data) {
+  var _timeout = config.get("timeoutForPostProcessing");
+  _timeout *= 1000; // in seconds
+  child(executablePath, parameters, {timeout:_timeout}, function(err, data) {
     if (err) {
       if (fs.existsSync(logPath)) {
-        vscode.window.showInformationMessage("Post processing failed, see the log for details");
+        if (err.signal == "SIGTERM") {
+          vscode.window.showErrorMessage("Post processing failed due to timeout.");
+        } else {
+          vscode.window.showInformationMessage("Post processing failed, see the log for details.");
+        }
         vscode.window.showTextDocument(vscode.workspace.openTextDocument(logPath), vscode.ViewColumn.Two, true);
         findErrorLine(logPath);
       } else {
@@ -993,7 +1062,17 @@ function postProcess(cnc, postLocation) {
         });
       } else {
         wait(500);
-        let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two, true);
+        fs.readFile(outputpath, function(err, data) {
+          let output = data;
+          var file = fs.createWriteStream(outputpath);
+          file.on('error', function(errors) {
+          });
+          file.write(output);
+          file.end(function(finished) {
+            wait(300);
+            let doc = vscode.window.showTextDocument(vscode.workspace.openTextDocument(outputpath), vscode.ViewColumn.Two, true);
+          });
+        });
       }
     }
   });
@@ -1032,7 +1111,7 @@ function copyF(fileToCopy) {
   //set the path for the temporary post EXE
   var tmpPostFile = tmp + "/" + path.basename(fileToCopy);
   // if the post exe isn't in the temp directory, copy it
-  if (!fs.exists(tmpPostFile)) {
+  if (!fs.existsSync(tmpPostFile)) {
     fs.createReadStream(fileToCopy).pipe(fs.createWriteStream(tmpPostFile));
   }
 }
@@ -1060,9 +1139,10 @@ function copyCNCFiles() {
       let activeCNC = loc + "\\" + cncFiles[i];
       if (fs.existsSync(activeCNC)) {
         let copyLocation = customCNC + "\\" + cncFiles[i];
-        if (!fs.existsSync(copyLocation)) {
-          copyFile(activeCNC, copyLocation);
+        if (fs.existsSync(copyLocation)) {
+          fs.unlinkSync(copyLocation);
         }
+          copyFile(activeCNC, copyLocation);
       }
     }
   }

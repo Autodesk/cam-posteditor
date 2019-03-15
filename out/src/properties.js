@@ -33,11 +33,14 @@ const crypto = require('crypto');;
 const tmp = os.tmpdir();
 // set a location for post properties
 const propertyJSONpath = tmp + "\\Autodesk\\VSCode\\Properties\\";
+let equal = false;
+let postLoc = undefined;
 
 class propertyDataProvider {
     constructor(_context) {
 
         vsc.window.onDidChangeActiveTextEditor(editor => {if (editor) this.refresh();});
+        vsc.workspace.onDidSaveTextDocument(editor => {if (editor) this.refresh();});
         this._context = _context;
         this._onDidChangeTreeData = new vsc.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -63,31 +66,22 @@ class propertyDataProvider {
             var tempJSON = propertyJSONpath + hash + "_temp.json";
             var jsonPath = propertyJSONpath + hash + ".json";
 
-            if (!fs.existsSync(jsonPath)) { // existing json not found, start from scratch
-                var postLoc;
-                if (fs.existsSync(settingsLocation)) {
-                    var lines = fs.readFileSync(settingsLocation);
-                    if (lines.length > 1) {
-                        var sett = JSON.parse(lines);
-                        if (sett.postLocation) postLoc = sett.postLocation;
-                    }
-                }
-                if (!fs.existsSync(postLoc)) {
-                    return;
-                }
-                var child = require('child_process').execFile;
-                var executablePath = postLoc;
-                var parameters = ["--interrogate", "--quiet", cpsPath, tempJSON];
-                child(executablePath, parameters, function(err, data) {
-                    if (err) {
-                        vsc.window.showInformationMessage("Post processing failed");
-                        return;
-                    }
-                });
-                wait(500);
+            if (fs.existsSync(settingsLocation)) {
+              var lines = fs.readFileSync(settingsLocation);
+              if (lines.length > 1) {
+                var sett = JSON.parse(lines);
+                if (sett.postLocation) postLoc = sett.postLocation;
+              }
+              if (!fs.existsSync(postLoc)) {
+                vsc.commands.executeCommand("hsm.findPostExe");
+                return;
+              }
             }
 
-            if (!fs.existsSync(jsonPath)) { // existing json not found, start from scratch
+            interrogatePost(cpsPath, tempJSON);
+            this.checkForDifferences(true);
+
+            if (!fs.existsSync(jsonPath) || !equal) { // existing user json not found or default properties were modified, start from scratch
                 var lines = fs.readFileSync(tempJSON);
                 if (lines.length > 1) {
                     var obj = JSON.parse(lines)
@@ -96,9 +90,6 @@ class propertyDataProvider {
                     return;
                 }
                 for (var key in obj.properties) { // extract properties
-                    if (typeof obj.properties[key] == "string") { // we could also test for enums in propertyDefinitions, but this allows to support posts without propertyDefinitions
-                        obj.properties[key] = "'" + obj.properties[key] + "'";
-                    }
                     let treeItem = new vsc.TreeItem(key + " : " + obj.properties[key]);
                     if (obj.hasOwnProperty('propertyDefinitions')) {
                         if (obj.propertyDefinitions[key] != undefined && obj.propertyDefinitions[key].description != undefined) {
@@ -114,9 +105,9 @@ class propertyDataProvider {
                 file.on('error', function(errors) {})
                 file.write(JSON.stringify(JSONData));
                 file.end();
-                wait(500);
+                wait(100);
                 if (fs.existsSync(tempJSON)) {
-                  fs.unlink(tempJSON);
+                  fs.unlinkSync(tempJSON);
                 }
             } else {
                 var lines = fs.readFileSync(jsonPath);
@@ -141,6 +132,9 @@ class propertyDataProvider {
                 file.on('error', function(errors) {});
                 file.write(JSON.stringify(JSONData));
                 file.end();
+                if (fs.existsSync(tempJSON)) {
+                    fs.unlinkSync(tempJSON);
+                }
             }
         }
         return items;
@@ -148,13 +142,48 @@ class propertyDataProvider {
     getTreeItem(element) {
         return element;
     }
+   
+   checkForDifferences(skipInterrogate) {
+       let cpsPath = vsc.window.activeTextEditor.document.fileName.toString();
+       var hash = crypto.createHash('md5').update(cpsPath).digest('hex');
+       var tempJSON = propertyJSONpath + hash + "_temp.json";
+       var jsonPath = propertyJSONpath + hash + ".json";
+       
+       if (!skipInterrogate) {
+         interrogatePost(cpsPath, tempJSON);
+       }
+       if (fs.existsSync(jsonPath)) { // check for differences in JSON files
+           var lines = fs.readFileSync(tempJSON);
+           if (lines.length > 1) {
+               var obj = JSON.parse(lines);
+           }
+           var lines1 = Object.entries(obj);
+
+           var lines = fs.readFileSync(jsonPath);
+           if (lines.length > 1) {
+               var obj = JSON.parse(lines);
+           }
+           var lines2 = Object.entries(obj.defaults);
+           equal = jsonEqual(lines1, lines2);
+
+           wait(100);
+           if (!equal) {
+               fs.unlinkSync(jsonPath);
+               this._onDidChangeTreeData.fire();
+           } else {
+               if (fs.existsSync(tempJSON)) {
+                   fs.unlinkSync(tempJSON);
+               }
+           }
+       }
+   }
 
     refreshTree() {
         let cpsPath = vsc.window.activeTextEditor.document.fileName.toString();
         var hash = crypto.createHash('md5').update(cpsPath).digest('hex');
         var jsonPath = propertyJSONpath + hash + ".json";
         if (fs.existsSync(jsonPath)) {
-            fs.unlink(jsonPath);
+            fs.unlinkSync(jsonPath);
         }
         this._onDidChangeTreeData.fire();
     }
@@ -174,4 +203,21 @@ function wait(ms) {
     while (end < start + ms) {
         end = new Date().getTime();
     }
+}
+
+function jsonEqual(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function interrogatePost(cpsPath, tempJSON) {
+    var child = require('child_process').execFile;
+    var executablePath = postLoc;
+    var parameters = ["--interrogate", "--quiet", cpsPath, tempJSON];
+    child(executablePath, parameters, function(err, data) {
+        if (err) {
+            vsc.window.showInformationMessage("Failed to read post properties.");
+            return;
+        }
+    });
+    wait(400);
 }
