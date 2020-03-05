@@ -1,6 +1,6 @@
-# Autodesk HSM Post Editor for Visual Studio Code
+# Autodesk Fusion 360 Post Editor for Visual Studio Code
 
-Welcome to the Autodesk HSM post editing extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Inventor HSM, Inventor HSM Express, HSMWorks, HSMXpress, and Fusion 360. Please note that this utility is not compatible with FeatureCAM, PartMarker, and PowerMILL.
+Welcome to the Autodesk Fusion 360 post editing extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion 360, Inventor HSM, Inventor HSM Express, HSMWorks, and HSMXpress. Please note that this utility is not compatible with FeatureCAM, PartMarker, and PowerMILL.
 
 To learn more about the CAM solutions see:
 https://www.autodesk.com/solutions/manufacturing/cam

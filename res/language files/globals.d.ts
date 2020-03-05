@@ -1806,5 +1806,630 @@ interface ZipFile {
   readonly zipTo(src: String, dest: String): static ;  
 }
 
+/** returns the spindle axis */
+declare const spindleAxis: Integer;
+declare const feedrate: Number;
+declare const spindleSpeed: Number;
+declare const machineConfiguration: MachineConfiguration;
+declare const cycleType: String;
+declare const cycleExpanded: Boolean;
+declare const tool: Tool;
 declare const currentSection: Section;
 declare const SMTP:SMTP;
+
+declare const outputUnit
+declare const currentSection
+declare const highFeedMapping
+declare const highFeedrate
+declare const lineNumber
+declare const initialCyclePosition
+declare const abortOnDeprecation
+declare const end
+declare const length
+declare const center
+declare const normal
+declare const plane
+declare const radius
+declare const sweep
+declare const clockwise
+declare const chordLength
+declare const fullCircle
+declare const helical
+/*The helical offset for the current circular motion.*/
+declare const helicalOffset
+declare const helicalDistance
+declare const movement
+declare const radiusCompensation
+declare const description
+declare const vendor
+declare const vendorUrl
+declare const legal
+declare const unit
+declare const programName
+declare const programNameIsInteger
+declare const debugMode
+declare const preventPost
+declare const filename
+declare const extension
+declare const version
+declare const certificationLevel
+declare const revision
+declare const minimumRevision
+declare const deprecated
+declare const capabilities
+declare const tolerance
+declare const mapWorkOrigin
+declare const mapToWCS
+declare const allowMachineChangeOnSection
+declare const minimumChordLength
+declare const minimumCircularRadius
+declare const maximumCircularRadius
+declare const minimumCircularSweep
+declare const maximumCircularSweep
+declare const allowHelicalMoves
+declare const allowSpiralMoves
+declare const allowedCircularPlanes
+declare const machineParameters
+declare const properties
+declare const NUL
+/*SOH ASCII control code.*/
+declare const SOH
+/*STX ASCII control code.*/
+declare const STX
+/*ETX ASCII control code.*/
+declare const ETX
+/*EOT ASCII control code.*/
+declare const EOT
+
+/*ENQ ASCII control code.*/
+declare const ENQ
+
+/*ACK ASCII control code.*/
+declare const ACK
+
+/*BEL ASCII control code.*/
+declare const BEL
+
+/*BS ASCII control code.*/
+declare const BS
+
+/*TAB ASCII control code.*/
+declare const TAB
+
+/*LF ASCII control code.*/
+declare const LF
+
+/*VT ASCII control code.*/
+declare const VT
+
+/*FF ASCII control code.*/
+declare const FF
+
+/*CR ASCII control code.*/
+declare const CR
+
+/*SO ASCII control code.*/
+declare const SO
+
+/*SI ASCII control code.*/
+declare const SI
+
+/*DLE ASCII control code.*/
+declare const DLE
+
+/*DC1 ASCII control code.*/
+declare const DC1
+
+/*DC2 ASCII control code.*/
+declare const DC2
+
+/*DC3 ASCII control code.*/
+declare const DC3
+
+/*DC4 ASCII control code.*/
+declare const DC4
+
+/*NAK ASCII control code.*/
+declare const NAK
+
+/*SYN ASCII control code.*/
+declare const SYN
+
+/*ETB ASCII control code.*/
+declare const ETB
+
+/*CAN ASCII control code.*/
+declare const CAN
+
+/*EM ASCII control code.*/
+declare const EM
+
+/*SUB ASCII control code.*/
+declare const SUB
+
+/*ESC ASCII control code.*/
+declare const ESC
+
+/*FS ASCII control code.*/
+declare const FS
+
+/*GS ASCII control code.*/
+declare const GS
+
+/*RS ASCII control code.*/
+declare const RS
+
+/*US ASCII control code.*/
+declare const US
+
+/*The default end-of-line marker.*/
+declare const EOL
+
+/*Space string.*/
+declare const SP
+
+/*File path separator.*/
+declare const PATH_SEPARATOR
+
+/*Inch unit.*/
+declare const IN
+
+/*Millimeters unit.*/
+declare const MM
+
+/*Circular XY plane.*/
+declare const PLANE_XY
+
+/*Circular XZ plane. Deprecated use PLANE_ZX instead.*/
+declare const PLANE_XZ
+
+/*Circular ZX plane.*/
+declare const PLANE_ZX
+
+/*Circular YZ plane.*/
+declare const PLANE_YZ
+
+/*X coordinate index.*/
+declare const X
+
+/*Y coordinate index.*/
+declare const Y
+
+/*Z coordinate index.*/
+declare const Z
+
+/*YZ-plane.*/
+declare const TOOL_AXIS_X
+
+/*ZX-plane.*/
+declare const TOOL_AXIS_Y
+
+/*XY-plane.*/
+declare const TOOL_AXIS_Z
+
+/*Center radius compensation.*/
+declare const RADIUS_COMPENSATION_OFF
+
+/*Left radius compensation.*/
+declare const RADIUS_COMPENSATION_LEFT
+
+/*Right radius compensation.*/
+declare const RADIUS_COMPENSATION_RIGHT
+
+/*Don't linearize moves around multi-axis singularities. More...*/
+declare const SINGULARITY_LINEARIZE_OFF
+
+/*Keep top of tool in line with tool axis during multi-axis singularity linearization. More...*/
+declare const SINGULARITY_LINEARIZE_LINEAR
+
+/*Keep rotary axes in line during multi-axis singularity linearization. More...*/
+declare const SINGULARITY_LINEARIZE_ROTARY
+
+/*Coolant disabled.*/
+declare const COOLANT_DISABLED
+
+/*Flood coolant mode.*/
+declare const COOLANT_FLOOD
+
+/*Mist coolant mode.*/
+declare const COOLANT_MIST
+
+/*Coolant through tool mode. Deprecated use COOLANT_THROUGH_TOOL instead.*/
+declare const COOLANT_TOOL
+
+/*Coolant through tool mode.*/
+declare const COOLANT_THROUGH_TOOL
+
+/*Air mode.*/
+declare const COOLANT_AIR
+
+/*Air through tool mode.*/
+declare const COOLANT_AIR_THROUGH_TOOL
+
+/*Suction mode.*/
+declare const COOLANT_SUCTION
+
+/*Flood and mist coolant mode.*/
+declare const COOLANT_FLOOD_MIST
+
+/*Flood and through tool coolant mode.*/
+declare const COOLANT_FLOOD_THROUGH_TOOL
+
+/*Unspecified material.*/
+declare const MATERIAL_UNSPECIFIED
+
+/*High-speed steel material.*/
+declare const MATERIAL_HSS
+
+/*TI coated material.*/
+declare const MATERIAL_TI_COATED
+
+/*Carbide material.*/
+declare const MATERIAL_CARBIDE
+
+/*Ceramics material.*/
+declare const MATERIAL_CERAMICS
+
+/*Unspecified tool.*/
+declare const TOOL_UNSPECIFIED
+
+/*Drill.*/
+declare const TOOL_DRILL
+
+/*Center drill.*/
+declare const TOOL_DRILL_CENTER
+
+/*Spot drill.*/
+declare const TOOL_DRILL_SPOT
+
+/*Block drill.*/
+declare const TOOL_DRILL_BLOCK
+
+/*Flat end-mill.*/
+declare const TOOL_MILLING_END_FLAT
+
+/*Ball end-mill.*/
+declare const TOOL_MILLING_END_BALL
+
+/*Bullnose mill.*/
+declare const TOOL_MILLING_END_BULLNOSE
+
+/*Chamfer mill.*/
+declare const TOOL_MILLING_CHAMFER
+
+/*Face mill.*/
+declare const TOOL_MILLING_FACE
+
+/*Slot mill.*/
+declare const TOOL_MILLING_SLOT
+
+/*Radius mill.*/
+declare const TOOL_MILLING_RADIUS
+
+/*Dovetail mill.*/
+declare const TOOL_MILLING_DOVETAIL
+
+/*Tapered mill.*/
+declare const TOOL_MILLING_TAPERED
+
+/*Lollipop mill.*/
+declare const TOOL_MILLING_LOLLIPOP
+
+/*Right tap tool.*/
+declare const TOOL_TAP_RIGHT_HAND
+
+/*Left tap tool.*/
+declare const TOOL_TAP_LEFT_HAND
+
+/*Reamer tool.*/
+declare const TOOL_REAMER
+
+/*Boring bar tool.*/
+declare const TOOL_BORING_BAR
+
+/*Counterbore tool.*/
+declare const TOOL_COUNTER_BORE
+
+/*Countersink tool.*/
+declare const TOOL_COUNTER_SINK
+
+/*Holder.*/
+declare const TOOL_HOLDER_ONLY
+
+/*General turning tool.*/
+declare const TOOL_TURNING_GENERAL
+
+/*Thread turning tool.*/
+declare const TOOL_TURNING_THREADING
+
+/*Groove turning tool.*/
+declare const TOOL_TURNING_GROOVING
+
+/*Boring turning tool.*/
+declare const TOOL_TURNING_BORING
+
+/*Custom turning tool.*/
+declare const TOOL_TURNING_CUSTOM
+
+/*Probe.*/
+declare const TOOL_PROBE
+
+/*Wire.*/
+declare const TOOL_WIRE
+
+/*Water jet.*/
+declare const TOOL_WATER_JET
+
+/*Laser cutter.*/
+declare const TOOL_LASER_CUTTER
+
+/*Welder.*/
+declare const TOOL_WELDER
+
+/*Grinder.*/
+declare const TOOL_GRINDER
+
+/*Form mill.*/
+declare const TOOL_MILLING_FORM
+
+/*Plasma cutter.*/
+declare const TOOL_PLASMA_CUTTER
+
+/*Marker tool.*/
+declare const TOOL_MARKER
+
+/*Thread mill.*/
+declare const TOOL_MILLING_THREAD
+
+/*Turning tool compensation.*/
+declare const TOOL_COMPENSATION_INSERT_CENTER
+
+/*Turning tool compensation.*/
+declare const TOOL_COMPENSATION_TIP
+
+/*Turning tool compensation.*/
+declare const TOOL_COMPENSATION_TIP_CENTER
+
+/*Turning tool compensation.*/
+declare const TOOL_COMPENSATION_TIP_TANGENT
+
+/*Has parameter flag.*/
+declare const HAS_PARAMETER
+
+/*Has rapid flag.*/
+declare const HAS_RAPID
+
+/*Has linear flag.*/
+declare const HAS_LINEAR
+
+/*Has dwell flag.*/
+declare const HAS_DWELL
+
+/*Has circular flag.*/
+declare const HAS_CIRCULAR
+
+/*Has cycle flag.*/
+declare const HAS_CYCLE
+
+/*Has well-known command flag.*/
+declare const HAS_WELL_KNOWN_COMMAND
+
+/*Has comment flag.*/
+declare const HAS_COMMENT
+
+/*Invalid record type.*/
+declare const RECORD_INVALID
+
+/*Well-known command.*/
+declare const RECORD_WELL_KNOWN_COMMAND
+
+/*Parameter.*/
+declare const RECORD_PARAMETER
+
+/*Linear motion.*/
+declare const RECORD_LINEAR
+
+/*Linear 5-axis motion.*/
+declare const RECORD_LINEAR_5D
+
+/*Linear 5-axis motion.*/
+declare const RECORD_LINEAR_ZXN
+
+/*Circular motion.*/
+declare const RECORD_CIRCULAR
+
+/*Dwell.*/
+declare const RECORD_DWELL
+
+/*Cycle.*/
+declare const RECORD_CYCLE
+
+/*End of cycle.*/
+declare const RECORD_CYCLE_OFF
+
+/*Comment.*/
+declare const RECORD_COMMENT
+
+/*Comment.*/
+declare const RECORD_WIDE_COMMENT
+
+/*Invalid (well-known command).*/
+declare const COMMAND_INVALID
+
+/*Program stop (well-known command M00).*/
+declare const COMMAND_STOP
+
+/*Optional program stop (well-known command M01).*/
+declare const COMMAND_OPTIONAL_STOP
+
+/*Program end (well-known command M02).*/
+declare const COMMAND_END
+
+/*Clockwise spindle direction (well-known command M03).*/
+declare const COMMAND_SPINDLE_CLOCKWISE
+
+/*Counterclockwise spidle direction (well-known command M04).*/
+declare const COMMAND_SPINDLE_COUNTERCLOCKWISE
+
+/*Spindle start (well-known command M03 or M04). This is a virtual command which maps to either COMMAND_SPINDLE_CLOCKWISE or COMMAND_SPINDLE_COUNTERCLOCKWISE dependent on the current spindle direction.*/
+declare const COMMAND_START_SPINDLE
+
+/*Spindle stop (well-known command M05).*/
+declare const COMMAND_STOP_SPINDLE
+
+/*Orientate spindle direction (well-known command M19). The property 'machineParameters.spindleOrientation' must be set to the machine spindle orientation.*/
+declare const COMMAND_ORIENTATE_SPINDLE
+
+/*Tool change (M06).*/
+declare const COMMAND_LOAD_TOOL
+
+/*Coolant on (M08).*/
+declare const COMMAND_COOLANT_ON
+
+/*Coolant off (M09).*/
+declare const COMMAND_COOLANT_OFF
+
+/*Activate speed-feed synchronization (well-known command).*/
+declare const COMMAND_ACTIVATE_SPEED_FEED_SYNCHRONIZATION
+
+/*Deactivate speed-feed synchronization (well-known command).*/
+declare const COMMAND_DEACTIVATE_SPEED_FEED_SYNCHRONIZATION
+
+/*Locks the 4th and 5th axes. This command is optional.*/
+declare const COMMAND_LOCK_MULTI_AXIS
+
+/*Unlocks the 4th and 5th axes. This command is optional.*/
+declare const COMMAND_UNLOCK_MULTI_AXIS
+
+/*Exact stop. This command is optional.*/
+declare const COMMAND_EXACT_STOP
+
+/*Close chip transport.*/
+declare const COMMAND_START_CHIP_TRANSPORT
+
+/*Stop chip transport.*/
+declare const COMMAND_STOP_CHIP_TRANSPORT
+
+/*Open primary door.*/
+declare const COMMAND_OPEN_DOOR
+
+/*Close primary door.*/
+declare const COMMAND_CLOSE_DOOR
+
+/*Break control.*/
+declare const COMMAND_BREAK_CONTROL
+
+/*Measure tool.*/
+declare const COMMAND_TOOL_MEASURE
+
+/*Run calibration cycle.*/
+declare const COMMAND_CALIBRATE
+
+/*Verify part/tool/machine integrity.*/
+declare const COMMAND_VERIFY
+
+/*Run cleaning cycle.*/
+declare const COMMAND_CLEAN
+
+/*Alarm.*/
+declare const COMMAND_ALARM
+
+/*Alert.*/
+declare const COMMAND_ALERT
+
+/*Change pallet.*/
+declare const COMMAND_CHANGE_PALLET
+
+/*Power on.*/
+declare const COMMAND_POWER_ON
+
+/*Power off.*/
+declare const COMMAND_POWER_OFF
+
+/*Open main chuck. More...*/
+declare const COMMAND_MAIN_CHUCK_OPEN
+
+/*Close main chuck. More...*/
+declare const COMMAND_MAIN_CHUCK_CLOSE
+
+/*Open secondary chuck. More...*/
+declare const COMMAND_SECONDARY_CHUCK_OPEN
+
+/*Close secondary chuck. More...*/
+declare const COMMAND_SECONDARY_CHUCK_CLOSE
+
+/*Activate spindle synchronization. More...*/
+declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_ACTIVATE
+
+/*Deactivate spindle synchronization. More...*/
+declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_DEACTIVATE
+
+/*Sync channels.*/
+declare const COMMAND_SYNC_CHANNELS
+
+/*Probe on.*/
+declare const COMMAND_PROBE_ON
+
+/*Probe off.*/
+declare const COMMAND_PROBE_OFF
+
+/*Rapid movement type.*/
+declare const MOVEMENT_RAPID
+
+/*Lead-in movement type.*/
+declare const MOVEMENT_LEAD_IN
+
+/*Cutting movement type.*/
+declare const MOVEMENT_CUTTING
+
+/*Lead-out movement type.*/
+declare const MOVEMENT_LEAD_OUT
+
+/*Transition linking movement type.*/
+declare const MOVEMENT_LINK_TRANSITION
+
+/*Direction linking movement type.*/
+declare const MOVEMENT_LINK_DIRECT
+
+/*Helical ramp movement type.*/
+declare const MOVEMENT_RAMP_HELIX
+
+/*Profile ramp movement type.*/
+declare const MOVEMENT_RAMP_PROFILE
+
+/*Zig-zag ramp movement type.*/
+declare const MOVEMENT_RAMP_ZIG_ZAG
+
+/*Ramp movement type.*/
+declare const MOVEMENT_RAMP
+
+/*Plunge movement type.*/
+declare const MOVEMENT_PLUNGE
+
+/*Predrill movement type.*/
+declare const MOVEMENT_PREDRILL
+
+/*Extended movement type.*/
+declare const MOVEMENT_EXTENDED
+
+/*Reduced cutting feed movement type.*/
+declare const MOVEMENT_REDUCED
+
+/*Finish cutting movement type.*/
+declare const MOVEMENT_FINISH_CUTTING
+
+/*High feed movement type.*/
+declare const MOVEMENT_HIGH_FEED
+
+/*Do not map rapid travesal to high feed.*/
+declare const HIGH_FEED_NO_MAPPING
+
+/*Map rapid travesal along more than one axis to high feed.*/
+declare const HIGH_FEED_MAP_MULTI
+
+/*Map rapid travesal not in the X-Y plane or along the Z-axis to high feed.*/
+declare const HIGH_FEED_MAP_XY_Z
+
+/*Map all rapid travesals to high feed.*/
+declare const HIGH_FEED_MAP_ANY
+
