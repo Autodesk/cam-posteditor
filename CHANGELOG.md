@@ -1,5 +1,24 @@
 # Change Log
 
+<<<<<<< HEAD
+##3.2.0
+Added:
+  - Machine selection
+
+##3.1.0
+Added:
+  - GCode highlighting
+Fixed:
+  - Multiple issues with auto line selection
+
+##3.0.0
+Added:
+  - Support for MAC
+Fixed:
+  - Output window not reloading
+  
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 ##2.3.3
 Fixed:
   - Line jumping no longer works in the latest version of VSCode

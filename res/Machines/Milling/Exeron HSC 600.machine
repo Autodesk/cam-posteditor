@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" version="1.0" uuid="7C833718-AF3F-4532-A8A9-10A6F0BF1C22">
+  <model>HSC 600</model>
+  <vendor>exeron</vendor>
+  <capacities weight='3100kg'/>
+  <spindle maximumSpeed='42000rpm'/>
+  <dimensions height="2900mm" width="2200mm" depth="2400mm"  weight="7000kg"/>
+  <coolant options="FLOOD"/>
+  <axis id="X" actuator="linear" axis="1 0 0" coordinate="0" link="head" range="-325mm 325mm" resolution="0.0001mm"/>
+  <axis id="Y" actuator="linear" axis="0 1 0" coordinate="1" link="table" range="-225mm 225mm" resolution="0.0001mm"/>
+  <axis id="Z" actuator="linear" axis="0 0 1" coordinate="2" link="head" range="0mm 400mm" resolution="0.0001mm"/>
+  <axis id="U" actuator="rotational" axis="0 1 0" offset="0 0 25mm" coordinate="1" link="table" range="-100deg 100deg" preference="positive" resolution="0.0001deg"/>
+  <axis id="V" actuator="rotational" axis="0 0 1" coordinate="2" link="table" resolution="0.0001deg"/>
+</machine>

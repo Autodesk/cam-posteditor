@@ -2,7 +2,11 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion 360 Post Processor Utility",
 	"description": "Post processor utility.",
+<<<<<<< HEAD
+	"version": "3.1.5",
+=======
 	"version": "2.3.4",
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -14,6 +18,7 @@
 		"vscode": "^1.18.0"
 	},
 	"categories": [
+		"Languages",
 		"Other"
 	],
 	"activationEvents": [
@@ -25,10 +30,40 @@
 		"onView:variableList",
 		"onView:functionList",
 		"onView:cncList",
+<<<<<<< HEAD
+		"onView:machineList",
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 		"onView:propertyList"
 	],
 	"main": "./out/src/extension",
 	"contributes": {
+		"languages": [
+			{
+				"id": "nccode",
+				"aliases": [
+					"nccode",
+					"gcode"
+				],
+				"extensions": [
+					".nc",
+					".tap",
+					".cnc",
+					".gc",
+					".mpf",
+					".spf",
+					".h"
+				],
+				"configuration": "./res/language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "nccode",
+				"scopeName": "source.nccode",
+				"path": "./syntaxes/nccode.tmLanguage.json"
+			}
+		],
 		"commands": [
 			{
 				"command": "extension.startHSMPlugin",
@@ -73,6 +108,14 @@
 				"icon": "res/icons/ref.svg"
 			},
 			{
+<<<<<<< HEAD
+				"command": "machineList.refreshMachineList",
+				"title": "Refresh Machine List",
+				"icon": "res/icons/ref.svg"
+			},
+			{
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 				"command": "propertyList.initializePropertyList",
 				"title": "Initialize Property List",
 				"icon": "res/icons/ref.svg"
@@ -132,7 +175,7 @@
 			"explorer": [
 				{
 					"id": "variableList",
-					"name": "Variable List"
+					"name": "Post API"
 				},
 				{
 					"id": "functionList",
@@ -143,6 +186,13 @@
 					"name": "CNC Selector"
 				},
 				{
+<<<<<<< HEAD
+					"id": "machineList",
+					"name": "Machine Selector"
+				},
+				{
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 					"id": "propertyList",
 					"name": "Post Properties"
 				}
@@ -171,6 +221,14 @@
 					"group": "navigation"
 				},
 				{
+<<<<<<< HEAD
+					"command": "machineList.refreshMachineList",
+					"when": "view == machineList",
+					"group": "navigation"
+				},
+				{
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 					"command": "propertyList.initializePropertyList",
 					"when": "view == propertyList",
 					"group": "navigation"
@@ -211,6 +269,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Alphabetically sort the function list"
+				},
+				"HSMPostUtility.sortPropertiesAlphabetically": {
+					"type": "boolean",
+					"default": true,
+					"description": "Alphabetically sort the post property list"
 				},
 				"HSMPostUtility.postOnSave": {
 					"type": "boolean",

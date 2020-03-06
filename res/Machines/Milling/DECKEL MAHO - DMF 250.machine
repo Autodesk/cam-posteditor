@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<machine xmlns='http://www.hsmworks.com/xml/2009/machine' version='1.0' uuid="037B4BD6-DD6C-41D3-962E-DC45C1032E73">
+  <description></description>
+  <model>DMF 250</model>
+  <vendor>DECKEL MAHO</vendor>
+  <capacities weight='3100kg'/>
+  <coolant options="FLOOD"/>
+  <spindle maximumSpeed='12000rpm'/>
+  <axis id="X" range="0mm 2500mm" maximumFeed="100m/min" resolution="0.001mm"/>
+  <axis id="Y" range="0mm 920mm" maximumFeed="60m/min" resolution="0.001mm"/>
+  <axis id="Z" range="0mm 820mm" maximumFeed="60m/min" resolution="0.001mm"/>
+  <axis id="U" actuator="rotational" axis="0 1 0" coordinate="Y" link="table" resolution="0" range="-100deg 100deg"/>
+  <axis id="V" actuator="rotational" axis="0 0 1" coordinate="Z" link="table" resolution="0" range="-3600deg 36000deg"/>
+</machine>

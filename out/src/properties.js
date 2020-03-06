@@ -26,6 +26,15 @@ Object.defineProperty(exports, "__esModule", {value: true});
 const vsc = require("vscode");
 const fs = require("fs");
 const path = require("path");
+<<<<<<< HEAD
+const resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
+const settingsLocation = path.join(resLocation, "settings.json");
+const os = require('os')
+const crypto = require('crypto');
+const tmp = os.tmpdir();
+// set a location for post properties
+const propertyJSONpath = path.join(tmp, "Autodesk", "VSCode", "Properties");
+=======
 const resLocation = vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath + "\\res";
 const settingsLocation = resLocation + "\\settings.json";
 const os = require('os')
@@ -33,6 +42,7 @@ const crypto = require('crypto');;
 const tmp = os.tmpdir();
 // set a location for post properties
 const propertyJSONpath = tmp + "\\Autodesk\\VSCode\\Properties\\";
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
 let equal = false;
 let postLoc = undefined;
 
@@ -52,11 +62,19 @@ class propertyDataProvider {
 
         if (vsc.window.activeTextEditor != undefined && vsc.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
             if (!fs.existsSync(propertyJSONpath)) {
+<<<<<<< HEAD
+                if (!fs.existsSync(path.join(tmp, "Autodesk"))) {
+                    fs.mkdirSync(path.join(tmp, "Autodesk"))
+                }
+                if (!fs.existsSync(path.join(tmp, "Autodesk", "VSCode"))) {
+                    fs.mkdirSync(path.join(tmp, "Autodesk", "VSCode"));
+=======
                 if (!fs.existsSync(tmp + "\\Autodesk")) {
                     fs.mkdirSync(tmp + "\\Autodesk")
                 }
                 if (!fs.existsSync(tmp + "\\Autodesk\\VSCode")) {
                     fs.mkdirSync(tmp + "\\Autodesk\\VSCode");
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
                 }
                 fs.mkdirSync(propertyJSONpath);
             }
@@ -137,6 +155,13 @@ class propertyDataProvider {
                 }
             }
         }
+<<<<<<< HEAD
+        const sortProperties = vsc.workspace.getConfiguration("HSMPostUtility").get("sortPropertiesAlphabetically");
+        if (sortProperties) {
+          items.sort(compare);
+        }
+=======
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
         return items;
     }
     getTreeItem(element) {
@@ -156,6 +181,15 @@ class propertyDataProvider {
            var lines = fs.readFileSync(tempJSON);
            if (lines.length > 1) {
                var obj = JSON.parse(lines);
+<<<<<<< HEAD
+               var lines1 = Object.entries(obj);
+           }
+           var lines = fs.readFileSync(jsonPath);
+           if (lines.length > 1) {
+               var obj = JSON.parse(lines);
+               var lines2 = Object.entries(obj.defaults);
+           }
+=======
            }
            var lines1 = Object.entries(obj);
 
@@ -164,6 +198,7 @@ class propertyDataProvider {
                var obj = JSON.parse(lines);
            }
            var lines2 = Object.entries(obj.defaults);
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
            equal = jsonEqual(lines1, lines2);
 
            wait(100);
@@ -220,4 +255,18 @@ function interrogatePost(cpsPath, tempJSON) {
         }
     });
     wait(400);
+<<<<<<< HEAD
 }
+
+function compare(a, b) {
+    if (a.label < b.label) {
+        return -1;
+    }
+    if (a.label > b.label) {
+        return 1;
+    }
+    return 0;
+}
+=======
+}
+>>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd

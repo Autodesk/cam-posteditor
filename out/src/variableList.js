@@ -25,8 +25,11 @@
 Object.defineProperty(exports, "__esModule", {value: true});
 const vsc = require("vscode");
 const fs = require("fs");
-var resLocation = vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath + "\\res";
-var chmLocation = resLocation + "\\varList\\list.txt";
+const path = require("path");
+
+var resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
+
+var chmLocation = path.join(resLocation, "varList", "list.txt");
 var parents = [];
 var setVals = false;
 var filter = "";
