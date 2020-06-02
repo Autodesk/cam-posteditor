@@ -1,19 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="hsm-post-processor" Version="2.2.1" Publisher="Autodesk"/>
+    <Identity Language="en-US" Id="hsm-post-processor" Version="3.2.1" Publisher="Autodesk"/>
     <DisplayName>Autodesk Fusion 360 Post Processor Utility</DisplayName>
     <Description xml:space="preserve">Post processor utility.</Description>
-    <Tags>keybindings</Tags>
-    <Categories>Other</Categories>
+    <Tags>keybindings,nccode,gcode,__ext_nc,__ext_tap,__ext_cnc,__ext_gc,__ext_mpf,__ext_spf,__ext_h</Tags>
+    <Categories>Languages,Other</Categories>
     <GalleryFlags>Public</GalleryFlags>
     <Badges></Badges>
     <Properties>
       <Property Id="Microsoft.VisualStudio.Code.Engine" Value="^1.18.0" />
       <Property Id="Microsoft.VisualStudio.Code.ExtensionDependencies" Value="" />
       
+        <Property Id="Microsoft.VisualStudio.Services.Links.Source" Value="https://github.com/Autodesk/cam-posteditor" />
+        <Property Id="Microsoft.VisualStudio.Services.Links.Getstarted" Value="https://github.com/Autodesk/cam-posteditor" />
+        
+          <Property Id="Microsoft.VisualStudio.Services.Links.GitHub" Value="https://github.com/Autodesk/cam-posteditor" />
+        
       
       
+      <Property Id="Microsoft.VisualStudio.Services.Links.Learn" Value="https://github.com/Autodesk/cam-posteditor/blob/master/README.md" />
       
       
       <Property Id="Microsoft.VisualStudio.Services.GitHubFlavoredMarkdown" Value="true" />

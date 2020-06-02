@@ -37,11 +37,7 @@ class cncDataProvider {
         this._onDidChangeTreeData = new vsc.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         files = [];
-<<<<<<< HEAD
         files = findFiles(path.join(resLocation, "CNC files"));
-=======
-        files = findFiles(resLocation + "\\CNC files");
->>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
         files.unshift(allFilesName);
     }
 
@@ -82,15 +78,9 @@ class cncDataProvider {
                     if (files[i][0].toLowerCase().includes(".cnc")) {
                         exten.setCNC(files[i][1]);
                     } else {
-<<<<<<< HEAD
                         let allFiles = getFilesFromDir(path.join(resLocation, "CNC files"), [".cnc"]);;
                         for (let j = 0; j < allFiles.length; ++j) {
                             let fullPath = path.join(resLocation, "CNC files", allFiles[j]);
-=======
-                        let allFiles = getFilesFromDir(resLocation + "\\CNC files", [".cnc"]);;
-                        for (let j = 0; j < allFiles.length; ++j) {
-                            let fullPath = resLocation + "\\CNC files" + allFiles[j];
->>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
                             let name = allFiles[j].replace(/^.*[\\\/]/, '');
                             let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
                             treeItem.command = {command: "hsm.setCNC", title: "", arguments: [fullPath]};
@@ -113,11 +103,7 @@ class cncDataProvider {
 
     refreshTree() {
         files = [];
-<<<<<<< HEAD
         files = findFiles(path.join(resLocation, "CNC files"));
-=======
-        files = findFiles(resLocation + "\\CNC files");
->>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
         files.unshift(allFilesName);
         this._onDidChangeTreeData.fire();
     }
@@ -145,13 +131,8 @@ function findFiles(dir) {
     var cncFiles = getFiles(dir);
     var tempList = [];
     for (var i = 0; i < cncFiles.length; ++i) {
-<<<<<<< HEAD
         if (fs.statSync(path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
             tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))]);
-=======
-        if (fs.statSync(dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
-            tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')]);
->>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
     }
     return tempList;
 }
@@ -160,13 +141,8 @@ function findAllFiles(dir) {
     var cncFiles = getFiles(dir);
     var tempList = [];
     for (var i = 0; i < cncFiles.length; ++i) {
-<<<<<<< HEAD
         if (fs.statSync(path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
             tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))]);
-=======
-        if (fs.statSync(dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
-            tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), dir + "\\" + cncFiles[i].replace(/^.*[\\\/]/, '')]);
->>>>>>> 7083ad38589709cc20b3efc1b88aadc1479a08bd
     }
     return cncFiles;
 }
