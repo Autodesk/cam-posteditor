@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" version="1.0" uuid="9117C807-5517-4DCE-AAF7-6B4F7B30C4C0">
+  <model>HSC 800 3-axis</model>
+  <vendor>exeron</vendor>
+  <control>Heidenhain iTNC 530</control>
+  <capacities weight="1000kg"/>
+  <spindle maximumSpeed='40000rpm'/>
+  <dimensions height="3400mm" width="4520mm" depth="3590mm"  weight="11000kg"/>
+  <coolant options="FLOOD"/>
+  <axis id="X" actuator="linear" axis="1 0 0" coordinate="0" link="head" range="0mm 900mm" resolution="0.0001"/>
+  <axis id="Y" actuator="linear" axis="0 1 0" coordinate="1" link="table" range="0mm 695mm" resolution="0.0001"/>
+  <axis id="Z" actuator="linear" axis="0 0 1" coordinate="2" link="head" range="0mm 510mm" resolution="0.0001"/>
+</machine>
