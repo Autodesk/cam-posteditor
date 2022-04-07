@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" uuid="62FE4A24-7968-4C45-9562-4CB82F11C5CC">
+
+  <vendor>Autodesk</vendor>
+
+  <model></model>
+
+  <description>Generic Mill-Turn Lathe</description>
+
+  <control></control>
+
+  <machining additive="no" jet="no" milling="yes" turning="yes"/>
+
+  <dimensions depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <capacities depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <coolant options="FLOOD MIST THROUGH_TOOL AIR AIR_THROUGH_TOOL SUCTION FLOOD_MIST FLOOD_THROUGH_TOOL"/>
+
+  <multiAxis adjust="yes" angle="10deg" cone="3deg" linearizationTolerance="0.040000000000000001mm" method="off" tolerance="0.040000006224212022mm"/>
+
+  <tooling maximumToolDiameter="0mm" maximumToolLength="0mm" maximumToolWeight="0kg" numberOfTools="0" toolChanger="yes" toolPreload="yes"/>
+
+  <machiningTime ratio="1" toolChangeTime="15s"/>
+
+  <home x="0mm" y="0mm" z="0mm"/>
+
+  <capabilities maximumBlockProcessingSpeed="0" maximumFeedrate="0mm/min" workOffsets="100"/>
+
+  <simulation retractOnIndexing="yes" shortestAngularRotation="yes" wcs="0mm 0mm 0mm">
+    <machineAssembly></machineAssembly>
+  </simulation>
+
+  <post>
+    <postProcessor></postProcessor>
+    <postProperties></postProperties>
+    <setupSheet></setupSheet>
+    <setupSheetProperties></setupSheetProperties>
+  </post>
+
+  <spindle axis="0 0 1" maximumPower="0kW" maximumSpeed="0rpm" minimumSpeed="0rpm">
+    <description></description>
+  </spindle>
+
+  <axis actuator="linear" id="X" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <axis actuator="linear" id="Y" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <axis actuator="linear" id="Z" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <axis actuator="rotational" axis="0 0 1" coordinate="Z" id="U" link="head" maximumFeed="0deg/min" name="" offset="0mm 0mm 0mm" preference="dont care" range="0deg 360deg" resolution="0deg"/>
+
+</machine>

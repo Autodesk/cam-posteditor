@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" version="1.0" uuid="8761B045-F2D6-48A8-A39D-CB720BE2267C">
+  <vendor>Hermle</vendor>
+  <model>C30U</model>
+  <coolant options="FLOOD"/>
+  <axis id="X" actuator="linear" axis="1 0 0" coordinate="0" link="table"/>
+  <axis id="Y" actuator="linear" axis="0 1 0" coordinate="1" link="table"/>
+  <axis id="Z" actuator="linear" axis="0 0 1" coordinate="2" link="table"/>
+  <axis id="U" actuator="rotational" axis="1 0 0" coordinate="0" link="table" range="-180 180" preference="positive"/>
+  <axis id="V" actuator="rotational" axis="0 0 1" coordinate="2" link="table" range="-360 360"/>
+</machine>

@@ -1,0 +1,326 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<nc xmlns='http://www.hsmworks.com/xml/2008/nc' version='1.0'>
+<meta>
+  <date timestamp='1550140348746612'/>
+</meta>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/product-id' value='fusion360' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/generated-by' value='Fusion 360 CAM 2.0.3706' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/generated-at' value='Tuesday, November 7, 2017 11:36:40 AM' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/hostname' value='BIRPC0NZGPW.ads.autodesk.com' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/username' value='robertg' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/document-path' value='Post Processor Benchmark - Milling_MM' type='string'/>
+<parameter name='leads-supported' value='1' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/job-description' value='Setup for Metric tools' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock' value='((-50, -25, -51), (50, 25, 0))' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-lower-x' value='-50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-lower-y' value='-25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-lower-z' value='-51' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-upper-x' value='50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-upper-y' value='25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/stock-upper-z' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-lower-x' value='-50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-lower-y' value='-25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-lower-z' value='-51' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-upper-x' value='50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-upper-y' value='25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/part-upper-z' value='-1' type='float'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/marker' value='0' type='integer'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/notes' value='' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/operation-strategy' value='bore' type='string'/>
+<parameter name='http://www.cimco-software.com/namespace/nc/parameter/operation-comment' value='2D-Bore' type='string'/>
+<parameter name='autodeskcam:operation-id' value='8' type='integer'/>
+<parameter name='leads-supported' value='1' type='integer'/>
+<parameter name='autodeskcam:path' value='Setup for Metric tools\2D\2D-Bore' type='string'/>
+<parameter name='operation:advancedMode' value='0' type='integer'/>
+<parameter name='operation:betaMode' value='0' type='integer'/>
+<parameter name='operation:alphaMode' value='0' type='integer'/>
+<parameter name='operation:isXpress' value='0' type='integer'/>
+<parameter name='operation:licenseMultiaxis' value='1' type='integer'/>
+<parameter name='operation:license3D' value='1' type='integer'/>
+<parameter name='operation:metric' value='1' type='integer'/>
+<parameter name='operation:isAssemblyDocument' value='0' type='integer'/>
+<parameter name='operation:context' value='operation' type='string'/>
+<parameter name='operation:strategy' value='bore' type='string'/>
+<parameter name='operation:operation_description' value='Bore' type='string'/>
+<parameter name='operation:tool_type' value='flat end mill' type='string'/>
+<parameter name='operation:undercut' value='0' type='integer'/>
+<parameter name='operation:tool_isTurning' value='0' type='integer'/>
+<parameter name='operation:tool_isMill' value='1' type='integer'/>
+<parameter name='operation:tool_isDrill' value='0' type='integer'/>
+<parameter name='operation:tool_taperedType' value='tapered_bull_nose' type='string'/>
+<parameter name='operation:tool_unit' value='millimeters' type='string'/>
+<parameter name='operation:tool_number' value='2' type='integer'/>
+<parameter name='operation:tool_diameterOffset' value='2' type='integer'/>
+<parameter name='operation:tool_lengthOffset' value='2' type='integer'/>
+<parameter name='operation:tool_compensationOffset' value='2' type='integer'/>
+<parameter name='operation:tool_turret' value='0' type='integer'/>
+<parameter name='operation:tool_manualToolChange' value='0' type='integer'/>
+<parameter name='operation:tool_breakControl' value='0' type='integer'/>
+<parameter name='operation:tool_live' value='1' type='integer'/>
+<parameter name='operation:tool_coolant' value='flood' type='string'/>
+<parameter name='operation:tool_material' value='hss' type='string'/>
+<parameter name='operation:tool_description' value='' type='string'/>
+<parameter name='operation:tool_comment' value='' type='string'/>
+<parameter name='operation:tool_vendor' value='' type='string'/>
+<parameter name='operation:tool_productId' value='' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_diameter' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_diameterDovetail' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_tipDiameter' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_tipOffset' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_cornerRadius' value='0' type='float'/>
+<parameter name='kind' value='3' type='integer'/>
+<parameter name='operation:tool_taperAngle' value='0' type='float'/>
+<parameter name='kind' value='3' type='integer'/>
+<parameter name='operation:tool_tipAngle' value='0' type='float'/>
+<parameter name='kind' value='3' type='integer'/>
+<parameter name='operation:tool_threadProfileAngle' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_tipLength' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_fluteLength' value='16' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_shoulderLength' value='24' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_bodyLength' value='40' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_overallLength' value='56' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_shaftDiameter' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_segmentHeight' value='4' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_segmentDiameterLower' value='16' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_segmentDiameterUpper' value='16' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_shaftSegmentHeight' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_shaftSegmentDiameterLower' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_shaftSegmentDiameterUpper' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_threadPitch' value='0' type='float'/>
+<parameter name='operation:tool_numberOfTeeth' value='0' type='integer'/>
+<parameter name='operation:tool_numberOfFlutes' value='3' type='integer'/>
+<parameter name='operation:holder_attached' value='1' type='integer'/>
+<parameter name='operation:holder_description' value='Default Holder' type='string'/>
+<parameter name='operation:holder_comment' value='' type='string'/>
+<parameter name='operation:holder_vendor' value='' type='string'/>
+<parameter name='operation:holder_productId' value='' type='string'/>
+<parameter name='operation:holder_productLink' value='' type='string'/>
+<parameter name='operation:holder_libraryName' value='Sample Holders' type='string'/>
+<parameter name='operation:tool_productLink' value='' type='string'/>
+<parameter name='kind' value='1' type='integer'/>
+<parameter name='operation:tool_spindleSpeed' value='5000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_stockDiameter' value='8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_surfaceSpeed' value='125664' type='float'/>
+<parameter name='kind' value='1' type='integer'/>
+<parameter name='operation:tool_rampSpindleSpeed' value='5000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedCutting' value='1000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedPerTooth' value='0.0666667' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedEntry' value='1000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedExit' value='1000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedRamp' value='800' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedPlunge' value='500' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedPerRevolution' value='0.1' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tool_feedRetract' value='500' type='float'/>
+<parameter name='operation:tool_clockwise' value='1' type='integer'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceZHigh' value='-1' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceZLow' value='-51' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceXLow' value='-50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceXHigh' value='50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceYLow' value='-25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:surfaceYHigh' value='25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockZHigh' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockZLow' value='-51' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockXLow' value='-50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockXHigh' value='50' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockYLow' value='-25' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockYHigh' value='25' type='float'/>
+<parameter name='operation:optimizeOrder' value='1' type='integer'/>
+<parameter name='operation:view_orientation_mode' value='useWCS' type='string'/>
+<parameter name='operation:view_orientation_flipZ' value='0' type='integer'/>
+<parameter name='operation:view_orientation_flipX' value='0' type='integer'/>
+<parameter name='operation:view_orientation_flipY' value='0' type='integer'/>
+<parameter name='operation:view_origin_mode' value='jobOrigin' type='string'/>
+<parameter name='operation:view_origin_boxPoint' value='top center' type='string'/>
+<parameter name='operation:clearanceHeight_mode' value='from retract height' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:clearanceHeight_offset' value='10' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:clearanceHeight_value' value='15' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:zClearance' value='15' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:relativeZClearance' value='15' type='float'/>
+<parameter name='operation:clearanceHeight_absolute' value='1' type='integer'/>
+<parameter name='operation:retractHeight_mode' value='from stock top' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:retractHeight_offset' value='5' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:retractHeight_value' value='5' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:zRetract' value='5' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:relativeZRetract' value='5' type='float'/>
+<parameter name='operation:retractHeight_absolute' value='1' type='integer'/>
+<parameter name='operation:topHeight_mode' value='from hole top' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:topHeight_offset' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:topHeight_value' value='0' type='float'/>
+<parameter name='operation:topHeight_absolute' value='0' type='integer'/>
+<parameter name='operation:bottomHeight_mode' value='from hole bottom' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:bottomHeight_offset' value='0' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:bottomHeight_value' value='0' type='float'/>
+<parameter name='operation:bottomHeight_absolute' value='0' type='integer'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:tolerance' value='0.01' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:contourTolerance' value='0.005' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:calculationTolerance' value='0.01' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:thinningTolerance' value='0.0001' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:chainingTolerance' value='0.01' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:threadPitch' value='1' type='float'/>
+<parameter name='operation:compensationType' value='computer' type='string'/>
+<parameter name='operation:doMultiplePasses' value='0' type='integer'/>
+<parameter name='operation:numberOfStepovers' value='0' type='integer'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stepover' value='0' type='float'/>
+<parameter name='operation:doFinishingPasses' value='0' type='integer'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:finishingStepover' value='0.8' type='float'/>
+<parameter name='operation:nullPass' value='0' type='integer'/>
+<parameter name='operation:direction' value='climb' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:stockToLeave' value='0' type='float'/>
+<parameter name='operation:simpleStockToLeave' value='0' type='integer'/>
+<parameter name='operation:highFeedrateMode' value='disabled' type='string'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:highFeedrate' value='1000' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:safeDistance' value='2' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:leadRadius' value='0.8' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:leadDistance' value='0.4' type='float'/>
+<parameter name='kind' value='2' type='integer'/>
+<parameter name='operation:verticalLeadRadius' value='0.8' type='float'/>
+<parameter name='operation:leadToCenter' value='0' type='integer'/>
+<context unit='millimeters' compensation='tip' origin='0 0 51' plane='1 0 0 0 1 0 0 0 1' wcs-origin='0 0 51' wcs-plane='1 0 0 0 1 0 0 0 1' work-offset='0'/>
+<tool type='flat end mill' number='2' diameter='8' corner-radius='0' taper-angle='0' taper-angle2='0' flute-length='16' shoulder-length='24' body-length='40' shaft-diameter='8' thread-pitch='0' diameter-offset='2' length-offset='2' spindle-rpm='5000' spindle-direction='cw' coolant='flood' unit='millimeters'>
+  <holder>
+    <section diameter='25' length='0'/>
+    <section diameter='30' length='5'/>
+    <section diameter='30' length='8'/>
+    <section diameter='50' length='0'/>
+    <section diameter='50' length='2'/>
+    <section diameter='46' length='2'/>
+    <section diameter='46' length='3'/>
+    <section diameter='50' length='2'/>
+    <section diameter='50' length='2'/>
+    <section diameter='42' length='0'/>
+    <section diameter='40' length='5'/>
+  </holder>
+</tool>
+<parameter name='movement:lead_in' value='1000' type='float'/>
+<parameter name='movement:cutting' value='1000' type='float'/>
+<parameter name='movement:lead_out' value='1000' type='float'/>
+<parameter name='movement:transition' value='1000' type='float'/>
+<parameter name='movement:direct' value='1000' type='float'/>
+<parameter name='movement:helix_ramp' value='800' type='float'/>
+<parameter name='movement:profile_ramp' value='800' type='float'/>
+<parameter name='movement:zigzag_ramp' value='800' type='float'/>
+<parameter name='movement:ramp' value='800' type='float'/>
+<parameter name='movement:plunge' value='500' type='float'/>
+<parameter name='movement:predrill' value='1000' type='float'/>
+<parameter name='movement:extended' value='1000' type='float'/>
+<parameter name='movement:reduced' value='0' type='float'/>
+<parameter name='movement:finish_cutting' value='1000' type='float'/>
+<section>
+<rapid to='31.5 -8.8 15'/>
+<rapid to='31.5 -8.8 1'/>
+<linear to='31.5 -8.8 -0.2' feed='1000'/>
+<arc-cw to='32.3 -8.8 -1' center='32.3 -8.8 -0.2' normal='0 1 0'/>
+<linear to='32.7 -8.8 -1'/>
+<arc-ccw to='33.5 -8 -1' center='32.7 -8 -1'/>
+<arc-ccw to='29.2212 -11.4122 -1.71429' center='30 -8 -1.71429' feed='1000' start='yes'/>
+<arc-ccw to='26.8466 -6.48141 -2.42857' center='30 -8 -2.42857'/>
+<arc-ccw to='32.1822 -5.26359 -3.14286' center='30 -8 -3.14286'/>
+<arc-ccw to='32.1822 -10.7364 -3.85714' center='30 -8 -3.85714'/>
+<arc-ccw to='26.8466 -9.51859 -4.57143' center='30 -8 -4.57143'/>
+<arc-ccw to='29.2212 -4.58775 -5.28571' center='30 -8 -5.28571'/>
+<arc-ccw to='33.5 -8 -6' center='30 -8 -6'/>
+<arc-ccw to='26.5 -8 -6' center='30 -8 -6'/>
+<arc-ccw to='33.5 -8 -6' center='30 -8 -6' end='yes'/>
+<arc-ccw to='32.7 -7.2 -6' center='32.7 -8 -6' feed='1000'/>
+<linear to='32.3 -7.2 -6'/>
+<arc-ccw to='31.5 -7.2 -5.2' center='32.3 -7.2 -5.2' normal='0 1 0'/>
+<rapid to='31.5 -7.2 5'/>
+<rapid to='-28.5 -8.8 5'/>
+<rapid to='-28.5 -8.8 1'/>
+<linear to='-28.5 -8.8 -0.2' feed='1000'/>
+<arc-cw to='-27.7 -8.8 -1' center='-27.7 -8.8 -0.2' normal='0 1 0'/>
+<linear to='-27.3 -8.8 -1'/>
+<arc-ccw to='-26.5 -8 -1' center='-27.3 -8 -1'/>
+<arc-ccw to='-30.7788 -11.4122 -1.71429' center='-30 -8 -1.71429' feed='1000' start='yes'/>
+<arc-ccw to='-33.1534 -6.48141 -2.42857' center='-30 -8 -2.42857'/>
+<arc-ccw to='-27.8178 -5.26359 -3.14286' center='-30 -8 -3.14286'/>
+<arc-ccw to='-27.8178 -10.7364 -3.85714' center='-30 -8 -3.85714'/>
+<arc-ccw to='-33.1534 -9.51859 -4.57143' center='-30 -8 -4.57143'/>
+<arc-ccw to='-30.7788 -4.58775 -5.28571' center='-30 -8 -5.28571'/>
+<arc-ccw to='-26.5 -8 -6' center='-30 -8 -6'/>
+<arc-ccw to='-33.5 -8 -6' center='-30 -8 -6'/>
+<arc-ccw to='-26.5 -8 -6' center='-30 -8 -6' end='yes'/>
+<arc-ccw to='-27.3 -7.2 -6' center='-27.3 -8 -6' feed='1000'/>
+<linear to='-27.7 -7.2 -6'/>
+<arc-ccw to='-28.5 -7.2 -5.2' center='-27.7 -7.2 -5.2' normal='0 1 0'/>
+<rapid to='-28.5 -7.2 15'/>
+</section>
+</nc>

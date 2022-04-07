@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" uuid="E6384AB5-977A-4EE2-A75E-246BE5035125">
+
+  <vendor>Autodesk</vendor>
+
+  <model></model>
+
+  <description>Generic Cutting Machine</description>
+
+  <control></control>
+
+  <machining additive="no" jet="yes" milling="no" turning="no"/>
+
+  <dimensions depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <capacities depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <tooling maximumToolDiameter="0mm" maximumToolLength="0mm" maximumToolWeight="0kg" numberOfTools="100" toolChanger="yes" toolPreload="yes"/>
+
+  <machiningTime ratio="1" toolChangeTime="15s"/>
+
+  <home x="0mm" y="0mm" z="0mm"/>
+
+  <capabilities maximumBlockProcessingSpeed="0" maximumFeedrate="0mm/min" workOffsets="100"/>
+
+  <simulation retractOnIndexing="yes" shortestAngularRotation="yes" wcs="0mm 0mm 0mm">
+    <machineAssembly></machineAssembly>
+  </simulation>
+
+  <post>
+    <postProcessor></postProcessor>
+    <postProperties></postProperties>
+    <setupSheet></setupSheet>
+    <setupSheetProperties></setupSheetProperties>
+  </post>
+
+  <axis actuator="linear" id="X" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <axis actuator="linear" id="Y" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <axis actuator="linear" id="Z" link="table" maximumFeed="0mm/min" range="0mm 0mm" resolution="0mm"/>
+
+  <spindle axis="0 0 1" maximumPower="0kW" maximumSpeed="0rpm" minimumSpeed="0rpm">
+    <description></description>
+  </spindle>
+
+</machine>

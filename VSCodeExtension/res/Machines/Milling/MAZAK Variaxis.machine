@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine" version="1.0" uuid="5723AE42-43BF-42AB-B367-04873DA3D372">
+  <vendor>MAZAK</vendor>
+  <model>Variaxis</model>
+  <coolant options="FLOOD"/>
+  <axis id="X" actuator="linear" axis="1 0 0" coordinate="0" link="table"/>
+  <axis id="Y" actuator="linear" axis="0 1 0" coordinate="1" link="table"/>
+  <axis id="Z" actuator="linear" axis="0 0 1" coordinate="2" link="table"/>
+  <axis id="U" actuator="rotational" axis="1 0 0" coordinate="0" link="table" range="-150 30" preference="positive" resolution="0.0001"/>
+  <axis id="V" actuator="rotational" axis="0 0 1" coordinate="1" link="table" range="-360 360" resolution="0.0001"/>
+</machine>
