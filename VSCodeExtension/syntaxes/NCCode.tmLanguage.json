@@ -10,6 +10,10 @@
 		"keywords": {
 			"patterns": [
 				{
+                    "name": "comment.gcode",
+                    "match": "(\\(.+\\))"
+                },
+				{
 					"name": "support.type.workOffset",
 					"match": "[gG][ \\t]*[5][3-9\\.]*"
 				},
@@ -22,7 +26,15 @@
 					"match": "[mM][ \\t]*[0-9][0-9\\.]*"
 				},
 				{
-					"name": "string.postions",
+					"name": "support.variable.feed",
+					"match": "(?i)[fF][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
+				},
+				{
+					"name": "invalid.positionz",
+					"match": "(?i)[zZ][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
+				},
+				{
+					"name": "string.positions",
 					"match": "(?i)[xyzabcijkfuvwXYZABCIJKFUVW][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
 				},
 				{
