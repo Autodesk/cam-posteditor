@@ -7,8 +7,8 @@ Please contact us if you would like to contribute to this.
 
 ## CLA documents
 Before contributing code to this project, we ask that you sign a Contributor License Agreement (CLA). The documents include instructions on where to send the completed forms to. Once a signed form has been received you will be able to submit pull requests.
-[Corporate CLA](./contributor/ADSK Form Corp Contrib Agmt for Open Source.docx)
-[Individual CLA](./contributor/ADSK Form Ind Contrib Agmt for Open Source.docx)
+[Corporate CLA](contributor/ADSK Form Corp Contrib Agmt for Open Source.docx)
+[Individual CLA](contributor/ADSK Form Ind Contrib Agmt for Open Source.docx)
 
 ## What you can expect
 We will review your contributions within a month of submission - hopefully sooner.
