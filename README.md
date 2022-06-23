@@ -30,6 +30,7 @@ We want the post-authoring experience to be as simple and transparent as possibl
 
 ## Contributions
 In order to clarify the intellectual property license granted with Contributions from any person or entity, Autodesk must have a Contributor License Agreement ("CLA") on file that has been signed by each Contributor to this Open Source Project (the “Project”), indicating agreement to the license terms. This license is for your protection as a Contributor to the Project as well as the protection of Autodesk and the other Project users; it does not change your rights to use your own Contributions for any other purpose. There is no need to fill out the agreement until you actually have a contribution ready. Once you have a contribution you simply fill out and sign the applicable agreement (see the contributor folder in the repository) and send it to us at cam.posts@autodesk.com.
+
 [see CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Trademarks
