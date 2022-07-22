@@ -1,4 +1,4 @@
-import { NCEvent, NCStackFrame } from './NCEvent';
+import { NCEvent, NCStackFrame } from './nc-event';
 
 type NCValueType = number | string | boolean;
 

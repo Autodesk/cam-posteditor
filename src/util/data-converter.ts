@@ -16,10 +16,10 @@ import {
     VariableEventData,
     ToolPathSection,
 } from '../types';
-import NCProgram from '../NCParser/NCProgram';
-import PostScriptData from '../post-parser/PostScriptData';
-import NCOutputEvent from '../NCParser/NCOutputEvent';
-import NCChangeEvent from '../NCParser/NCChangeEvent';
+import NCProgram from '../nc-parser/nc-program';
+import PostScriptData from '../post-parser/post-script-data';
+import NCOutputEvent from '../nc-parser/nc-output-event';
+import NCChangeEvent from '../nc-parser/nc-change-event';
 
 declare type NCExtractFunction = (data: NCProgram) => NCStreamLineData[];
 const extractNcStreamLineData: NCExtractFunction = (

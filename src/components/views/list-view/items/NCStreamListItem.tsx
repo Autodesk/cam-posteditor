@@ -4,7 +4,7 @@ import {
 } from '../../../../types';
 import DataContext from '../../../../DataContext';
 import ListItem from './ListItem';
-import { NCVector } from '../../../../NCParser/NCCommand';
+import { NCVector } from '../../../../nc-parser/nc-command';
 
 const formatNumber = (num: number): string => (
     Number.isInteger(num) ? num.toString() : num.toFixed(2)

@@ -1,17 +1,17 @@
 import { readFileSync } from 'fs';
-import PostScriptData from '../PostScriptData';
+import PostScriptData from '../post-script-data';
 
 let postScript = '';
 
 beforeAll(() => {
-    postScript  = readFileSync(`${__dirname}/test.cps`, { encoding: 'utf8' });
+    postScript = readFileSync(`${__dirname}/test.cps`, { encoding: 'utf8' });
 });
 
 test('parse a post', () => {
     expect(postScript !== '');
     const postData = new PostScriptData(postScript);
     expect(postData.source === postScript);
-    
+
     // Clean source should have got rid of any comment
     expect(!postData.cleanSource.includes('/*'));
     expect(!postData.cleanSource.includes('*/'));

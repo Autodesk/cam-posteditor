@@ -1,8 +1,8 @@
-import NCCommand from './NCCommand';
-import { NCEvent, NCStackFrame } from './NCEvent';
-import NCOutputEvent from './NCOutputEvent';
-import NCInvocation from './NCInvocation';
-import NCChangeEvent, { DebugVariable } from './NCChangeEvent';
+import NCCommand from './nc-command';
+import { NCEvent, NCStackFrame } from './nc-event';
+import NCOutputEvent from './nc-output-event';
+import NCInvocation from './nc-invocation';
+import NCChangeEvent, { DebugVariable } from './nc-change-event';
 
 interface ParseResult{
     kind: 'command' | 'stackFrame' | 'invocation' | 'event';

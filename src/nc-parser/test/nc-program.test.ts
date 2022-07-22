@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs';
-import NCChangeEvent from '../NCChangeEvent';
-import { NCStackFrame } from '../NCEvent';
-import NCOutputEvent from '../NCOutputEvent';
-import NCProgram from '../NCProgram';
+import NCChangeEvent from '../nc-change-event';
+import { NCStackFrame } from '../nc-event';
+import NCOutputEvent from '../nc-output-event';
+import NCProgram from '../nc-program';
 
 let ncCode = '';
 

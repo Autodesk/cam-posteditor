@@ -1,4 +1,4 @@
-import NCInvocation from './NCInvocation';
+import NCInvocation from './nc-invocation';
 
 export type NCVector = { x: number, y: number, z:number };
 export type NCArgument = string | number | NCVector;

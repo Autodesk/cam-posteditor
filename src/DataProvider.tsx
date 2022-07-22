@@ -18,7 +18,7 @@ import {
     CallStackLineData,
     ToolPathSection,
 } from './types';
-import NCProgram from './NCParser/NCProgram';
+import NCProgram from './nc-parser/nc-program';
 import {
     extractGCodeLineData,
     extractNcStreamLineData,
@@ -27,12 +27,12 @@ import {
     extractStateData,
     extractCallStackLineData,
     extractToolPath,
-} from './util/DataConverter';
+} from './util/data-converter';
 import {
     getSourceCode,
     getOutputFile,
-} from './util/FetchData';
-import PostScriptData from './post-parser/PostScriptData';
+} from './util/fetch-data';
+import PostScriptData from './post-parser/post-script-data';
 
 interface DataProviderProps {
     children: React.ReactElement

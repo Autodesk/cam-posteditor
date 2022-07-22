@@ -1,10 +1,13 @@
-import NCChangeEvent from '../../NCParser/NCChangeEvent';
-import NCCommand from '../../NCParser/NCCommand';
-import NCInvocation from '../../NCParser/NCInvocation';
-import NCOutputEvent from '../../NCParser/NCOutputEvent';
-import NCProgram from '../../NCParser/NCProgram';
+import {
+    AbstractScene,
+} from '@babylonjs/core';
+import NCChangeEvent from '../../nc-parser/nc-change-event';
+import NCCommand from '../../nc-parser/nc-command';
+import NCInvocation from '../../nc-parser/nc-invocation';
+import NCOutputEvent from '../../nc-parser/nc-output-event';
+import NCProgram from '../../nc-parser/nc-program';
 import { GCodeLineData, NCStreamLineData } from '../../types';
-import { extractGCodeLineData, extractNcStreamLineData } from '../DataConverter';
+import { extractGCodeLineData, extractNcStreamLineData } from '../data-converter';
 
 describe('Testing DataConverter', () => {
     const i1 = new NCInvocation('');
@@ -136,11 +139,20 @@ describe('Testing DataConverter', () => {
             {
                 commandName: 'test command',
                 commandLineNumber: 0,
+                commandArgs: {},
             },
             // onParameter should be skipped for now
             {
                 commandName: 'onRapid',
                 commandLineNumber: 2,
+                commandArgs: {
+                    end: {
+                        x: 29.643749237060547,
+                        y: -8.952500343322754,
+                        z: 16,
+                    },
+                    flags: 0,
+                },
             },
         ];
 

@@ -1,4 +1,4 @@
-import { NCEvent } from './NCEvent';
+import { NCEvent } from './nc-event';
 
 export default class NCInvocation {
     JsCall: string;

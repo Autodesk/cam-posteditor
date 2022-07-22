@@ -1,5 +1,5 @@
 import { Color4, Vector3 } from '@babylonjs/core';
-import { NCArgument } from './NCParser/NCCommand';
+import { NCArgument } from './nc-parser/nc-command';
 
 // ====== Line Data interfaces ======
 

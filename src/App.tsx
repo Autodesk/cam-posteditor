@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import generateTheme from './theme';
 import Layout from './components/layout/Layout';
-import { vsCodePresent } from './util/FetchData';
+import { vsCodePresent } from './util/fetch-data';
 
 const App: React.FC = () => {
     const [lightMode, setLightMode] = useState(true);

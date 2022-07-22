@@ -70,7 +70,7 @@ let config = vscode.workspace.getConfiguration("HSMPostUtility");
 const isMac = os.type() != "Windows_NT";
 
 let currentDebugPanel = undefined;
-const gcodeDebuggerLocation = path.join(resLocation, "GCodeDebugger/index.html");
+const gcodeDebuggerLocation = path.join(resLocation, "g-code-debugger/index.html");
 let gcontext;
 
 try {

@@ -1,4 +1,4 @@
-import { NCEvent, NCStackFrame } from './NCEvent';
+import { NCEvent, NCStackFrame } from './nc-event';
 
 export default class NCOutputEvent implements NCEvent {
     readonly type: string = 'output';
