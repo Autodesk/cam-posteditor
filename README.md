@@ -38,7 +38,8 @@ The license does not grant permission to use the trade names, trademarks, servic
 
 ## Building the VSCode extension
 
-- Change the directory to VSCodeExtension
+- Change the directory to vs-code-extension
+- Install dependencies with `npm install`
 - Package the vsix file using `npm run package`
 - You can now install the package in VS-Code
 
