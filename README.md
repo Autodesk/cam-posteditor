@@ -42,10 +42,13 @@ The license does not grant permission to use the trade names, trademarks, servic
 - Package the vsix file using `npm run package`
 - You can now install the package in VS-Code
 
-## Building the G code debugger in VSCode extension
+## Building the G code debugger and VSCode extension
 
 - Get the latest postprocessor.
-- Build GCodeDebugger with `npm run build` command. It should create bundled version `VSCodeExtension/res/GCodeDebugger/index.html`.
+- Install the packages by running `npm install` (Note: you may need to install GTK see https://github.com/Automattic/node-canvas/wiki/Installation%3A-Windows)
+- Build the g-code-debugger from the project root directory with the `npm run build` command. It should create bundled version `vs-code-extension/res/g-code-debugger/index.html`.
+- Change directory to vs-code-extension and run `npm install` followed by `npm run package` to create a vsix file.
+- In vscode, install the extension from the vsix file you just created.
 - In debugger panel choose `Run Extension` and press `F5`. A new VSCode window should be opened with running extension.
 - Press `F1` and type `HSM`, select `Change post executable`, and select location of postprocessor from first step.
 - Open some post from library.
