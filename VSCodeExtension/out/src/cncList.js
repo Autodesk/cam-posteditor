@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-  Copyright (c) 2017 by Autodesk, Inc.
+  Copyright (c) 2022 by Autodesk, Inc.
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,9 @@ const vsc = require("vscode");
 const fs = require("fs");
 const path = require("path");
 const exten = require("./extension");
-const {dir} = require("console");
 let resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
 let additionalFolders = path.join(resLocation, "CNC files", "customLocations.json");
+/** Contains a list of all available CNC files */
 let files = [];
 let allFilesName = "All files";
 
@@ -39,7 +39,9 @@ class cncDataProvider {
         this._onDidChangeTreeData = new vsc.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         files = [];
-        files = findFiles(path.join(resLocation, "CNC files"), false);
+        // find all the files in the default storage location
+        files = findFiles(path.join(resLocation, "CNC files"));
+        // find all the files defined in the additional folders
         if (fs.existsSync(additionalFolders)) {
             let lines = fs.readFileSync(additionalFolders);
             if (lines.length > 1) {
@@ -53,12 +55,13 @@ class cncDataProvider {
         }
         files.unshift(allFilesName);
     }
-
+    /** Gets the children of the selected item */
     getChildren(element) {
         let items = [];
         if (!element) {
             for (let i = 0; i < files.length; ++i) {
                 if (files[i] != allFilesName) {
+                    // Constructs a tree item for the found CNC file
                     let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
                         .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
                     treeItem.contextValue = "openFolder";
@@ -71,16 +74,21 @@ class cncDataProvider {
             }
         } else {
             for (let i = 0; i < files.length; ++i) {
+                /** If the element contains .cnc, it's a CNC file. If not, it's a directory */
                 if (element.label == files[i][0] && element.label != allFilesName) {
                     if (files[i][0].toLowerCase().includes(".cnc")) {
                         exten.setCNC(files[i][1]);
                     } else {
-                        let tempFiles = findFiles(files[i][1], false);
+                        // If a directory, find all appropriate CNC files within that directory
+                        let tempFiles = findFiles(files[i][1]);
                         for (let f = 0; f < tempFiles.length; f++) {
+                            // Turn off the collapsed state if it's a CNC file, show it if it's a directory (to allow expansion)
                             let treeItem = new vsc.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
                                 .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                            // Set the approrate command for when the item is clicked
                             treeItem.command = {command: "hsm.setCNC", title: "", arguments: [tempFiles[f][1]]};
                             if (tempFiles[f][0].toLocaleLowerCase().includes(".cnc") && tempFiles[f][1].toLowerCase().includes("custom")) {
+                                // Sets the full path of the CNC file to the 'src' property
                                 treeItem.contextValue = "customFile"; treeItem.src = tempFiles[f][1];
                             }
                             items.push(treeItem);
@@ -89,6 +97,7 @@ class cncDataProvider {
                     }
                     break;
                 } else if (element.label == allFilesName) {
+                    // If the user selects 'allFiles', display a list of every CNC file in all directories
                     if (files[i][0].toLowerCase().includes(".cnc")) {
                         exten.setCNC(files[i][1]);
                     } else {
@@ -115,9 +124,10 @@ class cncDataProvider {
         return element;
     }
 
+    /** Check all directories again and re-load the tree */
     refreshTree() {
         files = [];
-        files = findFiles(path.join(resLocation, "CNC files"), false);
+        files = findFiles(path.join(resLocation, "CNC files"));
         files.unshift(allFilesName);
         if (fs.existsSync(additionalFolders)) {
             let lines = fs.readFileSync(additionalFolders);
@@ -133,12 +143,14 @@ class cncDataProvider {
         this._onDidChangeTreeData.fire();
     }
 
+    /** Adds a defined folder to the list of CNC files */
     addFolder(path) {
         addCustomFolder(path);
     }
 }
 exports.cncDataProvider = cncDataProvider;
 
+/** Adds the defined path to the list of CNC files */
 function addCustomFolder(path) {
     let json = {"folders": []};
     if (fs.existsSync(additionalFolders)) {
@@ -151,11 +163,7 @@ function addCustomFolder(path) {
     fs.writeFileSync(additionalFolders, JSON.stringify(json));
 }
 
-
-function msg(message) {
-    vsc.window.showInformationMessage(message.toString());
-}
-
+/** Returns all the files from within the defined directory */
 function getFilesFromDir(dir, fileTypes) {
     let filesToReturn = [];
     function walkDir(currentPath) {
@@ -173,7 +181,8 @@ function getFilesFromDir(dir, fileTypes) {
     return filesToReturn;
 }
 
-function findFiles(dir, isCustom) {
+/** Finds the CNC files in the defined directory */
+function findFiles(dir) {
    let cncFiles = getFiles(dir);
     let tempList = [];
     for (let i = 0; i < cncFiles.length; ++i) {        
@@ -184,16 +193,7 @@ function findFiles(dir, isCustom) {
     return tempList;
 }
 
-function findAllFiles(dir) {
-    let cncFiles = getFiles(dir);
-    let tempList = [];
-    for (let i = 0; i < cncFiles.length; ++i) {
-        if (fs.statSync(path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || cncFiles[i].toLocaleLowerCase().includes(".cnc"))
-            tempList.push([cncFiles[i].replace(/^.*[\\\/]/, ''), path.join(dir, cncFiles[i].replace(/^.*[\\\/]/, ''))]);
-    }
-    return cncFiles;
-}
-
+/** Returns a list of files from tge defined directory */
 function getFiles(srcpath) {
     return fs.readdirSync(srcpath);
 }

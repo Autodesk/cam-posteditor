@@ -22,7 +22,7 @@
   SOFTWARE.
 */
 
-Object.defineProperty(exports, "__esModule", {value: true});
+Object.defineProperty(exports, "__esModule", { value: true });
 const vsc = require("vscode");
 const fs = require("fs");
 const path = require("path");
@@ -46,11 +46,13 @@ try {
 
         getChildren(element) {
             var items = [];
+            // If nothing is selected, build to root tree
             if (!element) {
+                // Create the tree items for all files and folders
                 for (let i = 0; i < files.length; ++i) {
                     if (files[i] != allFilesName && files[i] != localFusion) {
                         let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
-                            .includes(".machine") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                            .includes(".m") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
                         treeItem.contextValue = "openFolder";
                         treeItem.src = files[i][1];
                         items.push(treeItem);
@@ -65,58 +67,66 @@ try {
                     }
                 }
             } else {
+                // Find the selected machine file in the files list
                 for (let i = 0; i < files.length; ++i) {
                     if (element.label == files[i][0] && element.label != allFilesName && element.label != localFusion) {
-                        if (files[i][0].toLowerCase().includes(".machine")) {
+                        // set the machine if it's a mahcine file seleced
+                        if (files[i][0].toLowerCase().includes(".machine") || files[i][0].toLowerCase().includes(".mch")) {
                             exten.setMachine(files[i][1]);
                         } else {
+                            // if not, it's a directory so build up the children
                             let tempFiles = findFiles(files[i][1]);
                             for (let f = 0; f < tempFiles.length; f++) {
                                 let treeItem = new vsc.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
                                     .includes(".machine") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
-                                treeItem.command = {command: "hsm.setMachine", title: "", arguments: [tempFiles[f][1]]};
+                                treeItem.command = { command: "hsm.setMachine", title: "", arguments: [tempFiles[f][1]] };
                                 if (tempFiles[f][0].toLocaleLowerCase().includes(".machine") && tempFiles[f][1].toLowerCase().includes("custom")) {
                                     treeItem.contextValue = "customFile"; treeItem.src = tempFiles[f][1];
                                 }
                                 treeItem.src = tempFiles[f][1];
                                 items.push(treeItem);
                             }
-                            for (var tf = 0; tf < tempFiles.length; tf++) {files.push(tempFiles[tf]);}
+                            for (var tf = 0; tf < tempFiles.length; tf++) { files.push(tempFiles[tf]); }
                         }
                         break;
                     } else if (element.label == allFilesName) {
-                        if (files[i][0].toLowerCase().includes(".machine")) {
+                        // display all available machine files
+                        if (files[i][0].toLowerCase().includes(".machine") || files[i][0].toLowerCase().includes(".mch")) {
                             exten.setMachine(files[i][1]);
                         } else {
-                            let allFiles = getFilesFromDir(path.join(resLocation, "Machines"), [".machine"]);;
+                            let allFiles = getFilesFromDir(path.join(resLocation, "Machines"), [".machine", ".mch"]);;
                             for (let j = 0; j < allFiles.length; ++j) {
                                 let fullPath = path.join(resLocation, "Machines", allFiles[j]);
                                 let name = allFiles[j].replace(/^.*[\\\/]/, '');
                                 let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
-                                treeItem.command = {command: "hsm.setMachine", title: "", arguments: [fullPath]};
+                                treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
                                 treeItem.src = fullPath;
                                 items.push(treeItem);
                             }
-                            for (var tf = 0; tf < allFiles.length; tf++) {files.push(allFiles[tf]);}
+                            for (var tf = 0; tf < allFiles.length; tf++) { files.push(allFiles[tf]); }
                         }
                         break;
                     } else if (element.label == localFusion) {
-                        if (files[i][0].toLowerCase().includes(".machine")) {
+                        // Find all of the machines in the local fusion directory
+                        if (files[i][0].toLowerCase().includes(".machine") || files[i][0].toLowerCase().includes(".mch")) {
                             exten.setMachine(files[i][1]);
                         } else {
+                            let fusionLocalFolder = "";
                             if (process.platform == "win32") {
-                                let fusionLocalFolder = path.join(process.env.LOCALAPPDATA, "autodesk", "Autodesk Fusion 360");
-                                let allFiles = getFilesFromDir(fusionLocalFolder, [".machine"]);
-                                for (let j = 0; j < allFiles.length; ++j) {
-                                    let fullPath = path.join(fusionLocalFolder, allFiles[j]);
-                                    let name = allFiles[j].replace(/^.*[\\\/]/, '');
-                                    let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
-                                    treeItem.command = {command: "hsm.setMachine", title: "", arguments: [fullPath]};
-                                    treeItem.src = fullPath;
-                                    items.push(treeItem);
-                                }
-                                for (var tf = 0; tf < allFiles.length; tf++) {files.push(allFiles[tf]);}
+                                fusionLocalFolder = path.join(process.env.LOCALAPPDATA, "autodesk", "Autodesk Fusion 360");
+                            } else {
+                                fusionLocalFolder = path.join(process.env.HOME, "Library", "application support", "autodesk", "CAM360", "machines");
                             }
+                            let allFiles = getFilesFromDir(fusionLocalFolder, [".machine", ".mch"]);
+                            for (let j = 0; j < allFiles.length; ++j) {
+                                let fullPath = path.join(fusionLocalFolder, allFiles[j]);
+                                let name = allFiles[j].replace(/^.*[\\\/]/, '');
+                                let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
+                                treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
+                                treeItem.src = fullPath;
+                                items.push(treeItem);
+                            }
+                            for (var tf = 0; tf < allFiles.length; tf++) { files.push(allFiles[tf]); }
                         }
                         break;
                     }
@@ -140,6 +150,7 @@ try {
     }
     exports.machineDataProvider = machineDataProvider;
 
+    /** Finds all files of the defined file type in the specified directory and it's subdirectories */
     function getFilesFromDir(dir, fileTypes) {
         var filesToReturn = [];
         function walkDir(currentPath) {
@@ -157,6 +168,7 @@ try {
         return filesToReturn;
     }
 
+    /** Finds machine diles in the specified directory */
     function findFiles(dir) {
         var machineFiles = getFiles(dir);
         var tempList = [];
@@ -167,6 +179,7 @@ try {
         return tempList;
     }
 
+    /** Return all files in the defined directroy */
     function getFiles(srcpath) {
         return fs.readdirSync(srcpath);
     }
