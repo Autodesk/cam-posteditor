@@ -381,7 +381,7 @@
 		}
 	},
 	"scripts": {
-		"package": "vsce package",
+		"package": "vsce package --allow-star-activation",
 		"publish": "vsce publish",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "node ./node_modules/vscode/bin/test"
