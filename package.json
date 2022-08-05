@@ -34,13 +34,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npm run build:react && npm run build:bundle",
+    "build": "npm run build:react && npm run build:bundle && npm run build:vsix",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "eslint:check": "npx eslint .",
     "eslint:fix": "npx eslint --fix --ext .ts,.tsx .",
     "build:react": "react-scripts build",
-    "build:bundle": "npx gulp"
+    "build:bundle": "npx gulp",
+    "build:vsix": "cd ./vs-code-extension && npm run package && cd .."
   },
   "eslintConfig": {
     "extends": [
