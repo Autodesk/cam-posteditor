@@ -13,5 +13,5 @@ gulp.task("default", () => {
         ignore: ["png"],
       })
     )
-    .pipe(gulp.dest("./VSCodeExtension/res/GCodeDebugger"));
+    .pipe(gulp.dest("./vs-code-extension/res/g-code-debugger"));
 });

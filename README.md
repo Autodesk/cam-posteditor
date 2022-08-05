@@ -38,19 +38,24 @@ The license does not grant permission to use the trade names, trademarks, servic
 
 ## Building the VSCode extension
 
-- Change the directory to VSCodeExtension
+- Change the directory to vs-code-extension
+- Install dependencies with `npm install`
 - Package the vsix file using `npm run package`
 - You can now install the package in VS-Code
 
-## Building the G code debugger in VSCode extension
+## Building and running the G code debugger with the VSCode extension
 
-- Get the latest postprocessor.
-- Build GCodeDebugger with `npm run build` command. It should create bundled version `VSCodeExtension/res/GCodeDebugger/index.html`.
+- Download either the windows-post or mac-post folder from https://github.com/Autodesk/cam-posteditor/tree/master/vs-code-extension/res/post-with-debugging. Make a note of which folder you copy this to, you will need it later.
+- Install the packages by running `npm install` (Note: you may need to install GTK see https://github.com/Automattic/node-canvas/wiki/Installation%3A-Windows)
+- Build the g-code-debugger from the project root directory with the `npm run build` command. It should create bundled version `vs-code-extension/res/g-code-debugger/index.html`.
+- Change directory to vs-code-extension and run `npm install` followed by `npm run package` to create a vsix file.
+- In vscode, install the extension from the vsix file you just created.
 - In debugger panel choose `Run Extension` and press `F5`. A new VSCode window should be opened with running extension.
+- Enable the g-code-debugger by going to the extension settings and checking the "New Debugger" checkbox.
 - Press `F1` and type `HSM`, select `Change post executable`, and select location of postprocessor from first step.
 - Open some post from library.
 - On the left side panel, in CNC selector select cnc file.
-- Press `F1` and type `HSM`, select `post utility\Post Process`.
+- Press `F1` and type `HSM`, select `HSM: Change post executable` and browse for the file you downloaded earlier.
 - If post processing was successfull you should see G-code debugger view.
 
 ## Third-Party Trademarks, Software Credits and Attributions

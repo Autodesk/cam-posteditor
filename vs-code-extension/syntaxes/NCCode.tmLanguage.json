@@ -1,0 +1,51 @@
+
+{
+	"name": "nccode",
+	"scopeName": "source.nccode",
+	"patterns": [
+		{"include": "#keywords"},
+		{"include": "#strings"}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+                    "name": "comment.gcode",
+                    "match": "(\\(.+\\))"
+                },
+				{
+					"name": "support.type.workOffset",
+					"match": "[gG][ \\t]*[5][3-9\\.]*"
+				},
+				{
+					"name": "keyword.control.gcode",
+					"match": "[gG][ \\t]*[0-9][0-9\\.]*"
+				},
+				{
+					"name": "support.function.mcode",
+					"match": "[mM][ \\t]*[0-9][0-9\\.]*"
+				},
+				{
+					"name": "support.variable.feed",
+					"match": "(?i)[fF][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
+				},
+				{
+					"name": "invalid.positionz",
+					"match": "(?i)[zZ][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
+				},
+				{
+					"name": "string.positions",
+					"match": "(?i)[xyzabcijkfuvwXYZABCIJKFUVW][ \\t]*[\\=]?[\\-\\+]?[0-9\\.]+"
+				},
+				{
+					"name": "support.type.offsets",
+					"match": "[hHdDlL][ \\t]*[\\=]?[0-9][0-9\\.]*"
+				},
+				{
+					"name": "support.type.tool",
+					"match": "[tTsS][ \\t]*[\\=]?[0-9][0-9\\.]*"
+				}
+		   ]
+		}
+	}
+}
