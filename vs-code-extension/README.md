@@ -29,7 +29,12 @@ To get started with this extension, install from the VS Code marketplace or usin
 You can download factory posts via the online post library:
 http://cam.autodesk.com/posts
 
+### G-Code debugging
+Press `F1` and type `HSM`, select `HSM: Change post executable` and browse for the post.exe which you will find in the .vscode extension folder
+e.g. C:\Users\$User\.vscode\extensions\autodesk.hsm-post-processor-$Version\res\post-with-debugging\windows-post\x64\post.exe 
+Note that you need to fill in the $User with your username and the $Version with the extension version (you may find it easier to browse to this location).
 
+To enable the debugger: go to the extension settings and check the "New Debugger" option.
 
 ## About
 Autodesk Fusion 360 Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  

@@ -45,7 +45,7 @@ The license does not grant permission to use the trade names, trademarks, servic
 
 ## Building and running the G code debugger with the VSCode extension
 
-- Either extract the postprocessor with debug support from the vsix file (extract the file with your preferred compression tool from res/post-with-debugging) or download from https://github.com/Autodesk/cam-posteditor/tree/master/vs-code-extension/res/post-with-debugging/ - mac and windows versions available. Make a note of which folder you extract this to, you will need it later.
+- Download either the windows-post or mac-post folder from https://github.com/Autodesk/cam-posteditor/tree/master/vs-code-extension/res/post-with-debugging. Make a note of which folder you copy this to, you will need it later.
 - Install the packages by running `npm install` (Note: you may need to install GTK see https://github.com/Automattic/node-canvas/wiki/Installation%3A-Windows)
 - Build the g-code-debugger from the project root directory with the `npm run build` command. It should create bundled version `vs-code-extension/res/g-code-debugger/index.html`.
 - Change directory to vs-code-extension and run `npm install` followed by `npm run package` to create a vsix file.
@@ -55,7 +55,7 @@ The license does not grant permission to use the trade names, trademarks, servic
 - Press `F1` and type `HSM`, select `Change post executable`, and select location of postprocessor from first step.
 - Open some post from library.
 - On the left side panel, in CNC selector select cnc file.
-- Press `F1` and type `HSM`, select `post utility\Post Process`.
+- Press `F1` and type `HSM`, select `HSM: Change post executable` and browse for the file you downloaded earlier.
 - If post processing was successfull you should see G-code debugger view.
 
 ## Third-Party Trademarks, Software Credits and Attributions
