@@ -28,7 +28,7 @@
             "type": "extensionHost",
             "request": "launch",
             "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}/VSCodeExtension"
+                "--extensionDevelopmentPath=${workspaceFolder}/vs-code-extension"
             ]
         }
     ]
