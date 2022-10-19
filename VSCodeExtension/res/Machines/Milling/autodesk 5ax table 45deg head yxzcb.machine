@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<machine xmlns="http://www.hsmworks.com/xml/2009/machine">
+
+  <vendor>Autodesk</vendor>
+
+  <model>Generic 5-axis (BC Head-Head slanted)</model>
+
+  <description>This machine has YXZCB axis on the Head (B axis is 45 degrees slanted)</description>
+
+  <control></control>
+
+  <machining additive="no" inspection="no" jet="no" milling="yes" turning="no"/>
+
+  <dimensions depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <capacities depth="0mm" height="0mm" weight="0kg" width="0mm"/>
+
+  <png128></png128>
+
+  <mtk></mtk>
+
+  <controllerConfigurations></controllerConfigurations>
+
+  <fusion>
+    <model></model>
+  </fusion>
+
+  <custom>
+    <data></data>
+    <name></name>
+    <softwareVersion></softwareVersion>
+    <network ip="" port="" protocol=""/>
+    <serial></serial>
+  </custom>
+
+  <coolant options="FLOOD"/>
+
+  <multiAxis adjust="yes" angle="10deg" cone="3deg" feedRateType="inverse" linearizationTolerance="0.040000000000000001mm" method="off" reconfigure="yes" tolerance="0.040000000000000001mm"/>
+
+  <tooling maximumToolDiameter="0mm" maximumToolLength="0mm" maximumToolWeight="0kg" numberOfTools="100" toolChanger="yes" toolPreload="yes"/>
+
+  <machiningTime ratio="1" toolChangeTime="15s"/>
+
+  <capabilities maximumBlockProcessingSpeed="0" maximumFeedrate="0mm/min" workOffsets="100"/>
+
+  <simulation retractOnIndexing="yes" shortestAngularRotation="yes" tableAttachPoint="0mm 0mm 0mm" toolAttachPoint="-1.7569454199999999e-06mm -3.1040519999999994e-07mm 799.99999956440308mm" wcs="0mm 0mm 0mm">
+    <machineAssembly></machineAssembly>
+  </simulation>
+
+  <post>
+    <postProcessor>system://machinesimulation.cps</postProcessor>
+    <postProperties>
+      <Parameters/>
+    </postProperties>
+    <setupSheet></setupSheet>
+    <setupSheetProperties/>
+  </post>
+
+  <axis actuator="linear" coordinate="Y" homePosition="0mm" id="Y" link="head" maximumFeed="0mm/min" name="" offset="0mm 0mm 0mm" range="-2000mm 2000mm" rapidFeed="0mm/min" resolution="0mm"/>
+
+  <axis actuator="linear" coordinate="X" homePosition="0mm" id="X" link="head" maximumFeed="0mm/min" name="" offset="0mm 0mm 0mm" range="-725mm 725mm" rapidFeed="0mm/min" resolution="0mm"/>
+
+  <axis actuator="linear" coordinate="Z" homePosition="0mm" id="Z" link="head" maximumFeed="0mm/min" name="" offset="0mm 0mm 0mm" range="-800mm 0mm" rapidFeed="0mm/min" resolution="0mm"/>
+
+  <axis actuator="rotational" axis="0 0.70710689059324994 0.70710667177982989" control="driven" coordinate="Y" cyclic="no" homePosition="0deg" id="V" link="head" maximumFeed="21600deg/min" name="" offset="-4.2131393099999992e-06mm 121.248855780729mm 1059.7014549002101mm" preference="dont care" range="-180deg 180deg" rapidFeed="0deg/min" resolution="0deg" tcp="yes"/>
+
+  <axis actuator="rotational" axis="0 0 1" control="driven" coordinate="Z" cyclic="no" homePosition="0deg" id="U" link="head" maximumFeed="21600deg/min" name="" offset="-4.2131391399999996e-06mm 197.71320388051672mm 1256.1658030000001mm" preference="dont care" range="-360deg 360deg" rapidFeed="0deg/min" resolution="0deg" tcp="yes"/>
+
+  <spindle axis="0 0 1" maximumSpeed="99999rpm" minimumSpeed="0rpm">
+    <description></description>
+  </spindle>
+
+</machine>

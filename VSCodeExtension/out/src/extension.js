@@ -19,7 +19,6 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 */
-
 // pull the relevant node modules
 const vscode = require("vscode");
 const fs = require('fs')
@@ -37,6 +36,8 @@ const CNCList = require("./cncList");
 const machineList = require("./machineList");
 /** Property sidebar */
 const properties = require("./properties");
+/** List of supported machine file extensions */
+const machineFileExtensions = [".machine", ".mch"]
 
 /** Location of the selected CNC file */
 let cncFile = "";
@@ -56,8 +57,6 @@ let temporaryFolder = path.join(tmp, "Autodesk", "VSCode");
 let customCNC = path.join(temporaryFolder, "CustomCNCFiles");
 /** Location for the custom machine files to be stored */
 let customMachines = path.join(temporaryFolder, "CustomMachineFiles");
-/** Location for the settings file. Used to store the post executable location */
-let settingsLocation = path.join(resLocation, "settings.json");
 /** Temporary location for storing the property JSON */
 let propertyJSONpath = path.join(temporaryFolder, "Properties");
 /** The directory where all code will be output to */
@@ -92,14 +91,7 @@ function activate(context) {
 
   // create temporary folder if required
   makeFolder(outputDir);
-  makeFolder(propertyJSONpath);
-
-  // clear properties folder on startup
-  removeFilesInFolder(propertyJSONpath)
-  wait(300)
-
-  makeFolder(propertyJSONpath);
-
+  config.update("propertyJSON", {})
 
   // registering the appropriate event handlers
   vscode.workspace.onDidSaveTextDocument(savedoc);
@@ -151,7 +143,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.downloadCNCExtractor', () => { downloadCNCExtractor() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.enableAutoComplete', () => { setAutoComplete(true) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.disableAutoComplete', () => { setAutoComplete(false) }));
-  context.subscriptions.push(vscode.commands.registerCommand('HSM.selectCNCFile', () => { checkDirSize(cncFilesLocation) }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.selectCNCFile', () => { checkDirSize(cncFilesLocation) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.showDebuggedCode', () => { showDebuggedCode() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.disableLineSelection', () => { disableLineSelection() }));
   context.subscriptions.push(vscode.commands.registerCommand('functionList.refreshEntry', () => { functionSelectionProvider.refresh() }));
@@ -161,7 +153,8 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('machineList.refreshMachineList', () => { machineTree.refreshTree() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setCNC', selectedFile => { setCNCFile(selectedFile) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setMachine', selectedFile => { setMachineFile(selectedFile) }));
-  context.subscriptions.push(vscode.commands.registerCommand('HSM.postProcess', () => { postProcess(vscode.window.activeTextEditor.document.fileName) }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.postProcess', () => { postProcess(vscode.window.activeTextEditor.document.fileName) }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.setIncludePath', () => { setIncludePath(); }))
   context.subscriptions.push(vscode.commands.registerCommand('hsm.updatePostProperties', () => { updatePostProperties() }));
   context.subscriptions.push(vscode.commands.registerCommand('functionList.revealRange', (editor, range) => { highlightRange(editor, range) }));
   context.subscriptions.push(vscode.commands.registerCommand('extension.startHSMPlugin', () => { generalExtensionOptions() }));
@@ -293,16 +286,16 @@ function selectItem(element, reset) {
   }
 
   let cpsPath = getCpsPath();
-  var hash = getHash(cpsPath);
+  var hash = crypto.createHash('md5').update(cpsPath).digest('hex');
   var jsonPath = path.join(propertyJSONpath, hash + ".json");
 
   var lines = fs.readFileSync(jsonPath);
-  if (lines.length <= 1) {
-    errorMessage("Post processor properties json file not found!");
+  if (lines.length > 1) {
+    var obj = JSON.parse(lines);
+  } else {
+    vscode.window.showErrorMessage("Post processor properties json file not found!");
     return;
   }
-
-  var obj = JSON.parse(lines);
 
   if (reset) {
     if (obj.defaults.properties[string[0]].value != undefined) {
@@ -310,18 +303,18 @@ function selectItem(element, reset) {
     } else {
       obj.changed.properties[string[0]] = obj.defaults.properties[string[0]];
     }
-    writePropertyJSON(obj, jsonPath);
-    statusMessage("Reset of property '" + string[0] + "' was successful", 5000);
+    writeJSON(obj, jsonPath);
+    vscode.window.setStatusBarMessage("Reset of property '" + string[0] + "' was successful", 5000);
     return;
   }
 
   var propertyIds = [];
   for (var key in obj.changed.properties) {
-    let propertySelections = obj.changed.properties;
     if (obj.changed.hasOwnProperty('propertyDefinitions')) {
-      propertySelections = obj.changed.propertyDefinitions;
+      var propertySelections = obj.changed.propertyDefinitions;
+    } else {
+      var propertySelections = obj.changed.properties;
     }
-
     if (key == string[0] && propertySelections[key] != undefined) {
       if (propertySelections[key].type == "enum") {
         for (var v in propertySelections[key].values) {
@@ -348,31 +341,48 @@ function selectItem(element, reset) {
     vscode.window.showQuickPick(items, opts).then((selected) => {
       if (selected != undefined) {
         var option = selected.label == undefined ? selected : selected.label;
-        statusMessage("Property '" + string[0] + "' successfully changed to '" + option + "'", 5000);
         var selection = propertyIds.length > 1 ? option : JSON.parse(option);
         if (obj.changed.properties[string[0]].value != undefined) {
           obj.changed.properties[string[0]].value = selection
         } else {
           obj.changed.properties[string[0]] = selection
         }
-        writePropertyJSON(obj, jsonPath);
+        writeJSON(obj, jsonPath);
+        vscode.window.setStatusBarMessage("Property '" + string[0] + "' successfully changed to '" + option + "'", 5000);
       }
     });
   } else { // use input box for values
     var options = { placeHolder: "Specify your value for the property here" + " (current value: '" + string[1] + "')" };
     vscode.window.showInputBox(options).then((input) => {
       if (input != undefined && input != "") {
-        statusMessage("Property '" + string[0] + "' successfully changed to '" + input + "'", 5);
+        vscode.window.setStatusBarMessage("Property '" + string[0] + "' successfully changed to '" + input + "'", 5);
         var inputValue = isNaN(input) ? input : parseFloat(input);
         if (obj.changed.properties[string[0]].value != undefined) {
           obj.changed.properties[string[0]].value = inputValue
         } else {
           obj.changed.properties[string[0]] = inputValue
         }
-        writePropertyJSON(obj, jsonPath);
+        writeJSON(obj, jsonPath);
       }
     });
   }
+}
+
+/** Writes out the property JSON file */
+function writeJSON(obj, jsonPath) {
+  var JSONData = obj;
+  var file = fs.createWriteStream(jsonPath);
+  file.on('error', function(errors) {});
+  file.write(JSON.stringify(JSONData));
+  file.end(function() {
+    wait(100);
+    vscode.commands.executeCommand('propertyList.refreshPropertyList');
+    config = vscode.workspace.getConfiguration("HSMPostUtility");
+    var postOnPropertyChange = config.get("postOnPropertyChange");
+    if (postOnPropertyChange) {
+      vscode.commands.executeCommand('HSM.postProcess');
+    }
+  });
 }
 
 /** Saves the active document */
@@ -398,11 +408,7 @@ function savedoc() {
 
 /** Write the post processor location to a settings file so it is remembered between sessions */
 function writePostToSettings() {
-  var JSONData = { "postExecutable": postExecutable };
-  var file = fs.createWriteStream(settingsLocation);
-  file.on('error', function (errors) { });
-  file.write(JSON.stringify(JSONData));
-  file.end();
+  config.update("postExecutablePath", postExecutable)
 }
 
 /** Used to check whether the user selects the same character twice (for two click line jumping) */
@@ -452,7 +458,7 @@ function handleSelectionChange(event) {
          * When the line is found, get look at the line above (which is the call stack) and
          * get the characters after the second ':'. These will be an integer with the line
          * number that created the output 
-         */ 
+         */
         if (!line.includes("!DEBUG") && notNotes && !moved) {
           if (currentIndex == selectedLine) {
             if (selectedLine == lastSelectedLine) {
@@ -513,7 +519,7 @@ function selectSub(dir) {
   vscode.window.showQuickPick(newList).then(val => {
     if (val == "Browse...") {
       vscode.window.showOpenDialog({ openFiles: true, filters: { 'CNC Files': ['cnc'] } }).then(val => {
-        var selectedPath = val[0].path.substr(1, val[0].path.length);
+        var selectedPath = val[0].path.substring(1, val[0].path.length - 1);
         cncFile = selectedPath;
       });
     } else {
@@ -529,7 +535,7 @@ function checkDirSize(dir) {
   if (dirs.length > 0) {
     selectSub(dir);
   } else {
-    selectCNCFile(dir);
+    setCNCFile(dir);
   }
 }
 
@@ -571,10 +577,15 @@ function openAndShowFile(filePath) {
   }
 }
 
+/** Post processes using the defined post script */
 function postProcess(postLocation) {
   if (!checkActiveDocumentForPost() || !cncFile) {
     return;
   }
+  if (!fileExists(postExecutable)) {
+    locatePostEXE(true);
+  }
+
   removeFilesInFolder(outputDir) // clear output folder prior posting
   var child = require('child_process').execFile;
   // get the post processor executable location
@@ -598,16 +609,33 @@ function postProcess(postLocation) {
   if (shorten) {
     parameters.push("--shorten", lineLimit);
   }
+
+  // Set the unit
   parameters.push("--property", "unit", units.toString());
-  parameters.push("--property", "programName", "1005");
+  
+  // get the program name from the user settings
+  let programName = config.get('programName');
+  // if no name has been specified, use 1001
+  if (programName == '') {
+    config.update('programName', '1001');
+    programName = '1001';
+    vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
+  }
+  parameters.push("--property", "programName", programName);
+
+  let includePath = config.get('includePath');
+
+  if (fileExists(includePath)) {
+    parameters.push("--include", includePath);
+  }
+
   parameters.unshift(postLocation, cncFile, outputpath);
 
   executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
   wait(100);
-
-  var hash = getHash(postFile);
+  var hash = crypto.createHash('md5').update(postFile).digest('hex');
   var jsonPath = path.join(propertyJSONpath, hash + ".json");
-  if (fileExists(jsonPath)) {
+  if (fs.existsSync(jsonPath)) {
     var lines = fs.readFileSync(jsonPath);
     if (lines.length > 1) {
       var obj = JSON.parse(lines);
@@ -760,7 +788,7 @@ function removeDebugLines(outputFile, postLocation) {
 
 
     var file = fs.createWriteStream(outputFile);
-    file.on('error', () => {});
+    file.on('error', () => { });
     file.write(lines);
     file.end(() => {
       wait(150);
@@ -793,7 +821,7 @@ function downloadCNCExtractor() {
   uri.path = path.join(os.userInfo().homedir.toString(), 'export cnc file to vs code.cps');
   vscode.window.showSaveDialog({ filters: { 'HSM Post Processor': ['cps'] }, defaultUri: uri }).then(val => {
     if (val) {
-      fs.createReadStream(ncToCopy).pipe(fs.createWriteStream(val.path.substr(1, val.path.length)));
+      fs.createReadStream(ncToCopy).pipe(fs.createWriteStream(val.path.substring(1, val.path.length - 1)));
       message("Post saved");
     }
   });
@@ -1043,6 +1071,20 @@ function cleanupProperties() {
       propertyTree.refresh();
     }
   });
+  removeFilesInFolder(propertyJSONpath)
+}
+
+/** Adds an include path to the users setting directory */
+function setIncludePath() {
+  vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false }).then(val => {
+    var selectedPath = val[0].path.substring(1, val[0].path.length - 1);
+    if (fs.existsSync(selectedPath)) {
+      config.update('includePath', selectedPath)
+      vscode.window.showInformationMessage("Include path successfully set to: " + selectedPath);
+    } else {
+      vscode.window.showErrorMessage("The selected Include path does not exist: " + selectedPath);
+    }
+  });
 }
 
 /**
@@ -1090,10 +1132,10 @@ function locatePostEXE(findPostAutomatically) {
       }
     }
   }
-  message((findPostAutomatically ? "Post executable cannot be found. " : "") + "Please select your post executable", "Browse...").then((val) => {
+  vscode.window.showInformationMessage((findPostAutomatically ? "Post executable cannot be found. " : "") + "Please select your post executable", "Browse...").then((val) => {
     if (val == "Browse...") {
       vscode.window.showOpenDialog({ openFiles: true, filters: {} }).then(val => {
-        var selectedPath = val[0].path.substr(1, val[0].path.length);
+        var selectedPath = val[0].path;
         if (fileExists(selectedPath) && selectedPath.toLowerCase().includes("post")) {
           postExecutable = selectedPath;
           writePostToSettings();
@@ -1113,19 +1155,7 @@ function locatePostEXE(findPostAutomatically) {
  * If non-existant, it will be located automatically
  */
 function checkPostKernel() {
-  try {
-    if (fileExists(settingsLocation)) {
-      var lines = fs.readFileSync(settingsLocation);
-      if (lines.length > 1) {
-        var sett = JSON.parse(lines);
-        if (sett.postExecutable) postExecutable = sett.postExecutable;
-      }
-    } else {
-      fs.writeFileSync(settingsLocation, "");
-    }
-  } catch (e) {
-    errorMessage(e.toString());
-  }
+  postExecutable = config.get("postExecutablePath");
   if (!fileExists(postExecutable)) {
     locatePostEXE(true);
   }
@@ -1166,22 +1196,6 @@ function importCustomFile(type) {
   });
 }
 
-/** Writes the JSON properties */
-function writePropertyJSON(obj, jsonPath) {
-  var JSONData = obj;
-  var file = fs.createWriteStream(jsonPath);
-  file.on('error', function (errors) { });
-  file.write(JSON.stringify(JSONData));
-  file.end(function () {
-    wait(100);
-    executeCommand('propertyList.refreshPropertyList');
-    var postOnPropertyChange = config.get("postOnPropertyChange");
-    if (postOnPropertyChange) {
-      executeCommand('HSM.postProcess');
-    }
-  });
-}
-
 /** Copy the custom data to a temp location for future use */
 function backupCustomData() {
   copyCustomFiles("cnc", path.join(resLocation, "CNC files", "Custom"), customCNC, true); // copy custom cnc files to temporary directory
@@ -1210,7 +1224,7 @@ function addCPSToJSLanguage() {
     const obj = "\"*.cps\": \"javascript\"";
     if (currentLanguageConfiguration) {
       let tempLanguage = JSON.stringify(currentLanguageConfiguration);
-      tempLanguage = tempLanguage.substr(0, tempLanguage.length - 1);
+      tempLanguage = tempLanguage.substring(0, tempLanguage.length - 1);
       if (tempLanguage.includes(":")) {
         tempLanguage += ",";
       }
@@ -1241,7 +1255,7 @@ function disableLineSelection() {
 /** Adds an additional folder to the CNC selections sidebar */
 function addFolderToCNCTree() {
   vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false }).then(val => {
-    var selectedPath = val[0].path.substr(1, val[0].path.length);
+    var selectedPath = val[0].path.substring(1, val[0].path.length - 1);
     cncTree.addFolder(selectedPath);
     cncTree.refreshTree();
   });
@@ -1250,10 +1264,7 @@ function addFolderToCNCTree() {
 /** Edits the selected machine file */
 function editMachineFile(machine) {
   if (machine != undefined) {
-    var openPath = vscode.Uri.file(element.src);
-    vscode.workspace.openTextDocument(openPath).then(doc => {
-      showDoc(doc, vscode.viewColumn.One, true);
-    });
+    showDoc(vscode.workspace.openTextDocument(machine), vscode.window.activeTextEditor.viewColumn);
   }
 }
 
@@ -1264,7 +1275,7 @@ function setCNCFile(selectedFile) {
     statusMessage("CNC file set", 2000);
     var postOnSelection = config.get("postOnCNCSelection");
     if (postOnSelection) {
-      executeCommand('HSM.postProcess');
+      postProcess(vscode.window.activeTextEditor.document.fileName)
     }
   }
 }
@@ -1272,20 +1283,24 @@ function setCNCFile(selectedFile) {
 /** Activates the selected machine */
 var machineFileStatusBar = undefined;
 function setMachineFile(selectedFile) {
-    if (selectedFile.toLowerCase().includes(".machine")) {
-      machineFile = selectedFile;
-      statusMessage("Machine file updated", 2000);
-      if (machineFileStatusBar == undefined) {
-        machineFileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-      }
-      var machineFileName = getFileName(selectedFile, path.extname(selectedFile));
-      machineFileStatusBar.text = "Machine: " + machineFileName;
-      machineFileStatusBar.show();
-      var postOnMachineSelection = config.get("postOnMachineSelection");
-      if (postOnMachineSelection) {
-        executeCommand('HSM.postProcess');
-      }
+  if (isMachineFile(selectedFile)) {
+    machineFile = selectedFile;
+    vscode.window.setStatusBarMessage("Machine file updated", 2000);
+    if (machineFileStatusBar == undefined) {
+      machineFileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
     }
+    var machineFileName = path.basename(selectedFile, path.extname(selectedFile));
+    machineFileStatusBar.text = "Machine: " + machineFileName;
+    machineFileStatusBar.show();
+    var postOnMachineSelection = config.get("postOnMachineSelection");
+    if (postOnMachineSelection) {
+      postProcess(vscode.window.activeTextEditor.document.fileName)
+    }
+  }
+}
+
+function isMachineFile(input) {
+  return machineFileExtensions.some(ext => input.toLowerCase().includes(ext));
 }
 
 /** Fixes the line endings within the active file */
@@ -1301,14 +1316,14 @@ async function fixEOL() {
 }
 
 /** Selects the specified range */
-function highlightRange(editor, range){
+function highlightRange(editor, range) {
   editor.revealRange(range, vscode.TextEditorRevealType.Default);
   editor.selection = new vscode.Selection(range.start, range.start);
   executeCommand('workbench.action.focusActiveEditorGroup');
 }
 
 /** Provides a few general extension options to the user */
-function generalExtensionOptions(){
+function generalExtensionOptions() {
   checkActiveDocumentForPost();
   checkPostKernel();
 
@@ -1391,9 +1406,9 @@ function openFolder(path) {
     return;
   }
   if (os.type() == "Windows_NT") {
-    require('child_process').exec('start "" "' + folderLocation + '"');
+    require('child_process').exec('start "" "' + path + '"');
   } else {
-    require('child_process').exec('open "" "' + folderLocation + '"');
+    require('child_process').exec('open "" "' + path + '"');
   }
 }
 
@@ -1501,4 +1516,3 @@ function moveLine(line) {
     }
   }
 }
-
