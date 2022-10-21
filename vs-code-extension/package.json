@@ -427,6 +427,8 @@
 		}
 	},
 	"scripts": {
+		"package": "vsce package --allow-star-activation",
+		"publish": "vsce publish",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "node ./node_modules/vscode/bin/test"
 	},
@@ -441,7 +443,7 @@
 		"eslint": "^8.20.0",
 		"mocha": "^10.0.0",
 		"typescript": "^2.5.2",
-		"vscode": "^0.9.9"
+		"vscode": "^1.0.5"
 	},
 	"__metadata": {
 		"id": "d7881a36-c8dd-487b-8ab1-0f00cc4980bd",
