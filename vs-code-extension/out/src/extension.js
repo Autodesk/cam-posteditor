@@ -698,7 +698,6 @@ function postProcess(postLocation) {
       } else {
         message("Post processing failed: " + err.message + data.toString());
       }
-      vscode.debug.activeDebugConsole.append(data.toString());
       return;
     }
     
@@ -1157,7 +1156,7 @@ function locatePostEXE(findPostAutomatically) {
   vscode.window.showInformationMessage((findPostAutomatically ? "Post executable cannot be found. " : "") + "Please select your post executable", "Browse...").then((val) => {
     if (val == "Browse...") {
       vscode.window.showOpenDialog({ openFiles: true, filters: {} }).then(val => {
-        var selectedPath = val[0].path.substring(1, val[i].path.length);
+        var selectedPath = val[0].path.substring(1, val[0].path.length);
         if (fileExists(selectedPath) && selectedPath.toLowerCase().includes("post")) {
           postExecutable = selectedPath;
           writePostToSettings();
