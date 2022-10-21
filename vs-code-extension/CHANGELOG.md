@@ -3,6 +3,7 @@
 Added:
   - Major refactoring
   - Support for .mch (machine V2)
+  - Pre-release of new G-code debugger
 
 
 ## 3.5.8

@@ -26,15 +26,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vsc = require("vscode");
 const fs = require("fs");
 const path = require("path");
-const resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
-const settingsLocation = path.join(resLocation, "settings.json");
 const os = require('os')
 const crypto = require('crypto');
 const tmp = os.tmpdir();
 /** Object for accessing user preferences */
-let config = vsc.workspace.getConfiguration("HSMPostUtility");
+let config = vsc.workspace.getConfiguration("AutodeskPostUtility");
 // set a location for post properties
-const propertyJSONpath = path.join(tmp, "Autodesk", "VSCode", "Properties");
+const propertyJSONpath =  path.join(tmp, "AutodeskPostUtility", "Properties");
 let equal = false;
 let postLoc = undefined;
 try {
@@ -136,7 +134,7 @@ try {
                     this.writeJSON(obj);
                 }
             }
-            const sortProperties = vsc.workspace.getConfiguration("HSMPostUtility").get("sortPropertiesAlphabetically");
+            const sortProperties = vsc.workspace.getConfiguration("AutodeskPostUtility").get("sortPropertiesAlphabetically");
             if (sortProperties) {
                 items.sort(compare);
             }
@@ -251,13 +249,13 @@ try {
         if (!fs.existsSync(postLoc)) {
             vsc.commands.executeCommand('hsm.findPostExe');
         }
-        if (!fs.existsSync(config.get('postExecutablePath'))) {
+        if (!fs.existsSync(vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath'))) {
             vsc.commands.executeCommand('hsm.findPostExe')
         }
 
         wait(100);
 
-        postLoc = config.get('postExecutablePath');
+        postLoc = vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath');
 
         if (fs.existsSync(postLoc)) {
             return postLoc;
@@ -276,15 +274,11 @@ try {
         var child = require('child_process').execFile;
         var executablePath = postLoc;
         var parameters = ["--interrogate", "--quiet", cpsPath, jsonTemp];
-        if (fs.existsSync(settingsLocation)) {
-          var lines = fs.readFileSync(settingsLocation)
-          if (lines.length > 1) {
-            var data = JSON.parse(lines)
-            if (fs.existsSync(data.includeLocation)) {
-              parameters.push("--include", data.includeLocation);
-            }
-          }
+        var includePath = vsc.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
+        if (fs.existsSync(includePath)) {
+          parameters.push("--include", includePath);
         }
+
         child(executablePath, parameters, function(err, data) {
             if (err) {
                 vsc.window.showInformationMessage("Failed to interrogate post processor properties.");

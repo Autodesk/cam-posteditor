@@ -78,9 +78,9 @@ try {
                             let tempFiles = findFiles(files[i][1]);
                             for (let f = 0; f < tempFiles.length; f++) {
                                 let treeItem = new vsc.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
-                                    .includes(".machine") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                                    .includes(".m") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
                                 treeItem.command = { command: "hsm.setMachine", title: "", arguments: [tempFiles[f][1]] };
-                                if (tempFiles[f][0].toLocaleLowerCase().includes(".machine") && tempFiles[f][1].toLowerCase().includes("custom")) {
+                                if (tempFiles[f][0].toLocaleLowerCase().includes(".m") && tempFiles[f][1].toLowerCase().includes("custom")) {
                                     treeItem.contextValue = "customFile"; treeItem.src = tempFiles[f][1];
                                 }
                                 treeItem.src = tempFiles[f][1];
@@ -173,7 +173,7 @@ try {
         var machineFiles = getFiles(dir);
         var tempList = [];
         for (var i = 0; i < machineFiles.length; ++i) {
-            if (fs.statSync(path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || machineFiles[i].toLocaleLowerCase().includes(".machine"))
+            if (fs.statSync(path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || machineFiles[i].toLocaleLowerCase().includes(".m"))
                 tempList.push([machineFiles[i].replace(/^.*[\\\/]/, ''), path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))]);
         }
         return tempList;

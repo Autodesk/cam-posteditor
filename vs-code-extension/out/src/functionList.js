@@ -176,7 +176,7 @@ try {
     }
     /** Gets user defined settings and updates variables */
     function getSettings() {
-        let opts = vscode.workspace.getConfiguration("HSMPostUtility");
+        let opts = vscode.workspace.getConfiguration("AutodeskPostUtility");
         sortFunctionList = opts.get("sortFunctionListAlphabetically");
         autoUpdate = opts.get("autoUpdateFunctionList");
         topLevel += getNames(["Function"]);
