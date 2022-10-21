@@ -409,7 +409,6 @@ function savedoc() {
 
 /** Write the post processor location to a settings file so it is remembered between sessions */
 function writePostToSettings() {
-  postExecutable
   vscode.workspace.getConfiguration("AutodeskPostUtility").update("postExecutablePath", postExecutable, true);
 }
 
