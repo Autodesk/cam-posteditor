@@ -418,6 +418,11 @@
 					"default": true,
 					"description": "If true, the auto line selection will be enabled"
 				},
+				"AutodeskPostUtility.newDebugger": {
+					"type": "boolean",
+					"default": false,
+					"description": "If true, the new G-Code debugger will be used."
+				},
 				"AutodeskPostUtility.showDebuggedCode": {
 					"type": "boolean",
 					"default": true,
