@@ -82,7 +82,7 @@ let enableLineSelection = vscode.workspace.getConfiguration("AutodeskPostUtility
 /** Stores the active debug window */
 let currentDebugPanel = undefined;
 /** Location of the gcode debugging utility */
-const gcodeDebuggerLocation = path.join(resLocation, "GCodeDebugger" , "index.html");
+const gcodeDebuggerLocation = path.join(resLocation, "g-code-debugger" , "index.html");
 let gcontext;
 
 /** Activates the add-in and initializes all user options */
@@ -630,7 +630,7 @@ function postProcess(postLocation) {
   let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
   let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
   let units = selectUnits();
-  let newDebugger = false; //vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger", false);
+  let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
   let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
 
   // define the arguments for post processing
