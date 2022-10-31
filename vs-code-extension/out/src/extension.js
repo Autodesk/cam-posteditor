@@ -79,8 +79,6 @@ let lastSelectedLine = undefined;
 let amountToMove = 0;
 /** if enabled, auto line-selection will occur (when selecting a line in the outputted code) */
 let enableLineSelection = vscode.workspace.getConfiguration("AutodeskPostUtility").get("enableAutoLineSelection");
-/** used to determine whether to show the full debugged code output, or just the generated code */
-let showDebugOutput = false;
 /** Stores the active debug window */
 let currentDebugPanel = undefined;
 /** Location of the gcode debugging utility */
@@ -195,10 +193,10 @@ function setAutoComplete(active) {
 function showDebuggedCode() {
   vscode.window.showQuickPick(["True", "False"]).then(val => {
     if (val == "True") {
-      showDebugOutput = true;
       enableLineSelection = false;
+      vscode.workspace.getConfiguration("AutodeskPostUtility").update("showDebuggedCode", true, true);
     } else if (val == "False") {
-      showDebugOutput = false;
+      vscode.workspace.getConfiguration("AutodeskPostUtility").update("showDebuggedCode", false, true);
       enableLineSelection = vscode.workspace.getConfiguration("AutodeskPostUtility").get("enableAutoLineSelection");
     }
   });
@@ -208,7 +206,7 @@ function showDebuggedCode() {
 function deleteCNCFile(src) {
   deleteFile(src);
   deleteFile(path.join(customCNC, getFileName(src)));
-  message(element.label + " deleted");
+  message(path.basename(src) + " deleted");
   cncTree.refreshTree();
 }
 
@@ -216,7 +214,7 @@ function deleteCNCFile(src) {
 function deleteMachineFile(src) {
   deleteFile(src);
   deleteFile(path.join(customMachines, getFileName(src)));
-  message(element.label + " deleted");
+  message(path.basename(src) + " deleted");
   if (src.toString() == machineFile.toString()) {
     executeCommand('hsm.clearMachineSelection')
   }
@@ -238,7 +236,6 @@ function showPostEngineVersion() {
         message(data); // displays the current post engine version
       }
     });
-    wait(300);
   } catch (e) {
     message(e.toString());
   }
@@ -602,17 +599,22 @@ function findErrorLine(log) {
 function openAndShowFile(filePath) {
   if (filePath) {
     // workaround since VS Code does not refresh the output sometimes
-    vscode.workspace.openTextDocument(filePath).then(document => showDoc(document, vscode.ViewColumn.Two, true));
-    showDoc(filePath, vscode.ViewColumn.Two, true)
-
+    vscode.workspace.openTextDocument(path.join(resLocation, 'loading.txt')).then(document => 
+      vscode.window.showTextDocument(document, vscode.ViewColumn.Two, true)).then(complete=>
+        vscode.workspace.openTextDocument(filePath).then(outputDoc => 
+          vscode.window.showTextDocument(outputDoc, vscode.ViewColumn.Two, true))
+        )
   }
 }
 
 /** Post processes using the defined post script */
 function postProcess(postLocation) {
-  if (!checkActiveDocumentForPost() || !cncFile) {
+  if (!checkActiveDocumentForPost()) {
+    vscode.window.showWarningMessage("The active document is not a postprocessor file.")
+    return
+  } else if (!cncFile) {
     checkDirSize(cncFilesLocation);
-    return;
+    return
   }
   if (!fileExists(postExecutable)) {
     locatePostEXE(true);
@@ -664,7 +666,7 @@ function postProcess(postLocation) {
   parameters.unshift(postLocation, cncFile, outputpath);
 
   executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
-  wait(100);
+
   var hash = crypto.createHash('md5').update(postFile).digest('hex');
   var jsonPath = path.join(propertyJSONpath, hash + ".json");
   if (fs.existsSync(jsonPath)) {
@@ -747,16 +749,16 @@ function postProcess(postLocation) {
           null,
           gcontext.subscriptions
         );
-      } else if (!showDebugOutput) {
+      } else if (!vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
         removeDebugLines(outputpath, postLocation);
       } else {
         // wait to ensure posting has finished
-        wait(500);
+        wait(100);
         openAndShowFile(outputpath)
       }
     }
 
-    if (!showDebugOutput) {
+    if (!vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
       var filesInOutputFolder = [];
       fs.readdirSync(outputDir).forEach(file => {
         let fullPath = path.join(outputDir, file);
@@ -804,14 +806,10 @@ function removeDebugLines(outputFile, postLocation) {
       }
     }
 
-    wait(200);
-
-
     var file = fs.createWriteStream(outputFile);
     file.on('error', () => { });
     file.write(lines);
     file.end(() => {
-      wait(150);
       if (postLocation != undefined) {
         openAndShowFile(outputFile);
       }
@@ -1265,7 +1263,7 @@ function disableLineSelection() {
       enableLineSelection = false;
     } else if (val == "False") {
       vscode.workspace.getConfiguration("AutodeskPostUtility").update("enableAutoLineSelection", true, true);
-      if (!showDebugOutput) {
+      if (!vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
         enableLineSelection = true;
       }
     }
@@ -1300,6 +1298,7 @@ function setCNCFile(selectedFile) {
     var cncFileName = path.basename(selectedFile,path.extname(selectedFile));
     cncFileStatusBar.text = "CNC file: " + cncFileName;
     cncFileStatusBar.show();
+    if(!checkActiveDocumentForPost()) { return; }
     var postOnSelection = vscode.workspace.getConfiguration("AutodeskPostUtility").get("postOnCNCSelection");
     if (postOnSelection) {
       postProcess(vscode.window.activeTextEditor.document.fileName)
