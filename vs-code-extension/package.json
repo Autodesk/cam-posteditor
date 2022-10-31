@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion 360 Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.0.1",
+	"version": "4.0.0",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -14,7 +14,7 @@
 		"vscode": "^1.18.0"
 	},
 	"categories": [
-		"Languages",
+		"Programming Languages",
 		"Other"
 	],
 	"activationEvents": [
@@ -61,7 +61,7 @@
 			{
 				"command": "extension.startHSMPlugin",
 				"title": "Post Utility",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "functionList.refreshEntry",
@@ -74,21 +74,21 @@
 			{
 				"command": "hsm.disableLineSelection",
 				"title": "Disable auto line selection",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.enableAutoComplete",
 				"title": "Enable auto complete for the current document",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.disableAutoComplete",
 				"title": "Disable auto complete in the current document",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.showDebuggedCode",
-				"title": "HSM: Show debugged code"
+				"title": "Autodesk: Show debugged code"
 			},
 			{
 				"command": "cncList.refreshCNCList",
@@ -125,91 +125,111 @@
 			{
 				"command": "hsm.changePostExe",
 				"title": "Change post executable",
-				"category": "HSM"
+				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.setIncludePath",
+				"title": "Set include path...",
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.updatePostProperties",
 				"title": "Update post properties for current file...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.foldPropertyList",
 				"title": "Fold property list...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.downloadCNCExtractor",
 				"title": "Download CNC exporting post processor",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.encryptPost",
 				"title": "Encrypt post processor",
-				"category": "HSM"
+				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.mergePost",
+				"title": "Merge post processor",
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.decryptPost",
 				"title": "Decrypt post processor",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.deleteCNCFile",
 				"title": "Delete CNC File",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.deleteMachineFile",
 				"title": "Delete machine file...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.openFolder",
 				"title": "Open folder",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
-				"command": "hsm.openFile",
-				"title": "Open file...",
-				"category": "HSM"
+				"command": "hsm.editMachineFile",
+				"title": "Edit machine file...",
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.importCNC",
 				"title": "Import CNC file...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.showVarHelpFile",
 				"title": "Post help",
-				"category": "HSM"
-			},
-			{
-				"command": "hsm.changeProperty",
-				"title": "Change...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.resetProperty",
 				"title": "Reset to default...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.clearMachineSelection",
 				"title": "Clear selected machine...",
-				"category": "HSM"
+				"category": "Autodesk"
 			},
 			{
 				"command": "hsm.importMachine",
 				"title": "Import machine file...",
-				"category": "HSM"
+				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.showPostEngineVersion",
+				"title": "Show Post Processor Engine Version...",
+				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.postProcess",
+				"title": "Post Process",
+				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.selectCNCFile",
+				"title": "Set CNC file",
+				"category": "Autodesk"
 			}
 		],
 		"keybindings": [
 			{
-				"command": "HSM.selectCNCFile",
+				"command": "hsm.selectCNCFile",
 				"key": "Ctrl+Alt+c"
 			},
 			{
-				"command": "HSM.postProcess",
+				"command": "hsm.postProcess",
 				"key": "ctrl+alt+g"
 			}
 		],
@@ -279,7 +299,7 @@
 					"when": "view == machineList&&viewItem == openFolder"
 				},
 				{
-					"command": "hsm.openFile",
+					"command": "hsm.editMachineFile",
 					"when": "view == machineList&&viewItem != openFolder"
 				},
 				{
@@ -306,49 +326,60 @@
 		},
 		"configuration": {
 			"type": "object",
-			"title": "HSM Post Utility",
+			"title": "Autodesk Post Utility",
 			"properties": {
-				"HSMPostUtility.sortFunctionListAlphabetically": {
+				"AutodeskPostUtility.postExecutablePath": {
+					"type": "string",
+					"default": "",
+					"description": "The location for the Fusion 360 post executable"
+				},
+				"AutodeskPostUtility.propertyJSON": {
+					"type": "object",
+					"default": {},
+					"description": "Automatically set property that contain the post properties.",
+					"readOnly": true
+				},
+				"AutodeskPostUtility.sortFunctionListAlphabetically": {
 					"type": "boolean",
 					"default": true,
 					"description": "Alphabetically sort the function list"
 				},
-				"HSMPostUtility.sortPropertiesAlphabetically": {
+				"AutodeskPostUtility.sortPropertiesAlphabetically": {
 					"type": "boolean",
 					"default": true,
 					"description": "Alphabetically sort the post property list"
 				},
-				"HSMPostUtility.postOnSave": {
+				"AutodeskPostUtility.postOnSave": {
 					"type": "boolean",
 					"default": true,
 					"description": "Post processes the active CPS file when the document is saved. This will only post if the debug window is open"
 				},
-				"HSMPostUtility.postOnPropertyChange": {
+				"AutodeskPostUtility.postOnPropertyChange": {
 					"type": "boolean",
 					"default": true,
 					"description": "Post processes the active CPS file when a property was changed. This will only post if the debug window is open"
 				},
-				"HSMPostUtility.autoUpdateFunctionList": {
+				"AutodeskPostUtility.autoUpdateFunctionList": {
 					"type": "boolean",
 					"default": true,
 					"description": "Updates the function list automatically, without the need for refreshing"
 				},
-				"HSMPostUtility.shortenOutputCode": {
+				"AutodeskPostUtility.shortenOutputCode": {
 					"type": "boolean",
 					"default": true,
 					"description": "Limits the outputted movement blocks to the value set by shortenOutputLineLimit setting, making the outputted code easier to navigate"
 				},
-				"HSMPostUtility.shortenOutputLineLimit": {
+				"AutodeskPostUtility.shortenOutputLineLimit": {
 					"type": "integer",
 					"default": 50,
 					"description": "Set the number of movement blocks to be used by the Shorten Output setting"
 				},
-				"HSMPostUtility.timeoutForPostProcessing": {
+				"AutodeskPostUtility.timeoutForPostProcessing": {
 					"type": "integer",
 					"default": 10,
-					"description": "Set the timeout for post processing in seconds."
+					"description": "Set the timeout for post processing in seconds"
 				},
-				"HSMPostUtility.outputUnits": {
+				"AutodeskPostUtility.outputUnits": {
 					"type": "string",
 					"enum": [
 						"MM",
@@ -357,25 +388,40 @@
 					"default": "MM",
 					"description": "Sets the desired output units for post processing"
 				},
-				"HSMPostUtility.postOnCNCSelection": {
+				"AutodeskPostUtility.includePath": {
+					"type": "string",
+					"default": "",
+					"description": "Sets an include path for use in post processing"
+				},
+				"AutodeskPostUtility.programName": {
+					"type": "string",
+					"default": "1001",
+					"description": "Defines the name used for post processing"
+				},
+				"AutodeskPostUtility.postOnCNCSelection": {
 					"type": "boolean",
 					"default": true,
 					"description": "If true, post processing will occur as soon as a CNC file is selected"
 				},
-				"HSMPostUtility.twoClickLineJumping": {
+				"AutodeskPostUtility.postOnMachineSelection": {
+					"type": "boolean",
+					"default": true,
+					"description": "If true, post processing will occur as soon as a machine file is selected"
+				},
+				"AutodeskPostUtility.twoClickLineJumping": {
 					"type": "boolean",
 					"default": false,
 					"description": "If true, it takes two clicks for the line jumping to work"
 				},
-				"HSMPostUtility.enableAutoLineSelection": {
+				"AutodeskPostUtility.enableAutoLineSelection": {
 					"type": "boolean",
 					"default": true,
 					"description": "If true, the auto line selection will be enabled"
 				},
-				"HSMPostUtility.newDebugger": {
+				"AutodeskPostUtility.showDebuggedCode": {
 					"type": "boolean",
-					"default": false,
-					"description": "If true, the new G-Code debugger will be used. This requires special post.exe."
+					"default": true,
+					"description": "If true, a full debug output will be shown when posting"
 				}
 			}
 		}
@@ -392,19 +438,21 @@
 	},
 	"homepage": "https://github.com/Autodesk/cam-posteditor/blob/master/README.md",
 	"devDependencies": {
-		"typescript": "^2.5.2",
-		"vscode": "^1.0.5",
-		"mocha": "^3.5.0",
-		"eslint": "^4.6.1",
+		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.0",
-		"@types/mocha": "^2.2.42"
+		"eslint": "^8.20.0",
+		"mocha": "^10.0.0",
+		"typescript": "^2.5.2",
+		"vscode": "^1.0.5"
 	},
 	"__metadata": {
 		"id": "d7881a36-c8dd-487b-8ab1-0f00cc4980bd",
-		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
 		"publisherDisplayName": "Autodesk",
+		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
 		"isPreReleaseVersion": false,
-		"preRelease": false,
-		"installedTimestamp": 1641472042715
+		"targetPlatform": "undefined",
+		"updated": false,
+		"isApplicationScoped": false,
+		"installedTimestamp": 1662973499378
 	}
 }

@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-  Copyright (c) 2017 by Autodesk, Inc.
+  Copyright (c) 2022 by Autodesk, Inc.
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -22,26 +22,24 @@
   SOFTWARE.
 */
 
-Object.defineProperty(exports, "__esModule", {value: true});
+Object.defineProperty(exports, "__esModule", { value: true });
 const vsc = require("vscode");
 const fs = require("fs");
 const path = require("path");
-const resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
-const settingsLocation = path.join(resLocation, "settings.json");
 const os = require('os')
 const crypto = require('crypto');
-const { strict } = require("assert");
 const tmp = os.tmpdir();
+/** Object for accessing user preferences */
+let config = vsc.workspace.getConfiguration("AutodeskPostUtility");
 // set a location for post properties
-const propertyJSONpath = path.join(tmp, "Autodesk", "VSCode", "Properties");
+const propertyJSONpath =  path.join(tmp, "AutodeskPostUtility", "Properties");
 let equal = false;
 let postLoc = undefined;
 try {
     class propertyDataProvider {
         constructor(_context) {
-
-            vsc.window.onDidChangeActiveTextEditor(editor => {if (editor) this.refresh();});
-            vsc.workspace.onDidSaveTextDocument(editor => {if (editor) this.refresh();});
+            vsc.window.onDidChangeActiveTextEditor(editor => { if (editor) this.refresh(); });
+            vsc.workspace.onDidSaveTextDocument(editor => { if (editor) this.refresh(); });
             this._context = _context;
             this._onDidChangeTreeData = new vsc.EventEmitter();
             this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -52,15 +50,7 @@ try {
             if (vsc.window.activeTextEditor != undefined && vsc.window.activeTextEditor.document.fileName.toUpperCase().indexOf(".CPS") >= 0) {
                 var jsonTemp = getPath().jsonTemp;
                 var jsonPath = getPath().jsonPath;
-                if (!fs.existsSync(propertyJSONpath)) {
-                    if (!fs.existsSync(path.join(tmp, "Autodesk"))) {
-                        fs.mkdirSync(path.join(tmp, "Autodesk"))
-                    }
-                    if (!fs.existsSync(path.join(tmp, "Autodesk", "VSCode"))) {
-                        fs.mkdirSync(path.join(tmp, "Autodesk", "VSCode"));
-                    }
-                    fs.mkdirSync(propertyJSONpath);
-                }
+                makeFolder(propertyJSONpath)
                 interrogatePost();
                 this.checkForDifferences(true, jsonPath, jsonTemp);
 
@@ -76,14 +66,14 @@ try {
                         for (var key in obj.properties) { // extract properties
                             let setting;
                             if (typeof obj.properties[key] === "object") {
-                              if (obj.properties[key].value != undefined) {
-                                setting = obj.properties[key].value;
-                              } else { // property without default value detected 
-                                vsc.window.showErrorMessage("Property" + " '" + key + "' " + "is invalid since no default value is defined.");
-                                setting = "### ERROR ###"
-                              }
+                                if (obj.properties[key].value != undefined) {
+                                    setting = obj.properties[key].value;
+                                } else { // property without default value detected 
+                                    vsc.window.showErrorMessage("Property" + " '" + key + "' " + "is invalid since no default value is defined.");
+                                    setting = "### ERROR ###"
+                                }
                             } else {
-                              setting = obj.properties[key];
+                                setting = obj.properties[key];
                             }
                             let treeItem = new vsc.TreeItem(key + " : " + setting);
                             if (obj.hasOwnProperty('propertyDefinitions')) {
@@ -95,11 +85,11 @@ try {
                                     treeItem.tooltip = obj.properties[key].description;
                                 }
                             }
-                            treeItem.command = {command: "hsm.directSelect", title: "", arguments: [key + " : " + setting]};
+                            treeItem.command = { command: "hsm.directSelect", title: "", arguments: [key + " : " + setting] };
                             items.push(treeItem);
                         }
-  
-                        var JSONData = {"defaults": obj, "changed": obj};
+
+                        var JSONData = { "defaults": obj, "changed": obj };
                         this.writeJSON(JSONData);
                     }
                 } else {
@@ -111,16 +101,16 @@ try {
                         let setting;
                         let defaultSetting;
                         if (typeof obj.changed.properties[key] === "object") {
-                          if (obj.changed.properties[key].value != undefined) {
-                            setting = obj.changed.properties[key].value;
-                            defaultSetting = obj.defaults.properties[key].value;
-                          } else { // property without default value detected 
-                            vsc.window.showErrorMessage("Property" + " '" + key + "' " + "is invalid since no default value is defined.");
-                            setting = "### ERROR ###"
-                          }
+                            if (obj.changed.properties[key].value != undefined) {
+                                setting = obj.changed.properties[key].value;
+                                defaultSetting = obj.defaults.properties[key].value;
+                            } else { // property without default value detected 
+                                vsc.window.showErrorMessage("Property" + " '" + key + "' " + "is invalid since no default value is defined.");
+                                setting = "### ERROR ###"
+                            }
                         } else {
-                          setting = obj.changed.properties[key];
-                          defaultSetting = obj.defaults.properties[key];
+                            setting = obj.changed.properties[key];
+                            defaultSetting = obj.defaults.properties[key];
                         }
 
                         let treeItem = new vsc.TreeItem(key + " : " + setting);
@@ -138,13 +128,13 @@ try {
                                 treeItem.tooltip = obj.changed.properties[key].description
                             }
                         }
-                        treeItem.command = {command: "hsm.directSelect", title: "", arguments: [key + " : " + setting]};
+                        treeItem.command = { command: "hsm.directSelect", title: "", arguments: [key + " : " + setting] };
                         items.push(treeItem);
                     }
                     this.writeJSON(obj);
                 }
             }
-            const sortProperties = vsc.workspace.getConfiguration("HSMPostUtility").get("sortPropertiesAlphabetically");
+            const sortProperties = vsc.workspace.getConfiguration("AutodeskPostUtility").get("sortPropertiesAlphabetically");
             if (sortProperties) {
                 items.sort(compare);
             }
@@ -153,7 +143,7 @@ try {
         getTreeItem(element) {
             return element;
         }
-   
+
         checkForDifferences(skipInterrogate, jsonPath, jsonTemp) {
             if (!skipInterrogate) {
                 interrogatePost();
@@ -185,6 +175,7 @@ try {
             }
         }
 
+        /** Writes the updated property JSON to a temporary location */
         writeJSON(JSONData) {
             var jsonTemp = getPath().jsonTemp;
             if (JSONData == undefined) {
@@ -194,7 +185,7 @@ try {
                     var obj = JSON.parse(lines)
                     var JSONData = { "defaults": obj, "changed": obj };
                 } else {
-                    vsc.window.showInformationMessage("Failed to read post properties.");
+                    vsc.window.showInformationMessage("Failed to write properties JSON file.");
                     return;
                 }
               }
@@ -216,12 +207,14 @@ try {
             }
             this._onDidChangeTreeData.fire();
         }
-        forceInterrogation () {
+
+        forceInterrogation() {
             interrogatePost();
         }
         refresh() {
             this._onDidChangeTreeData.fire();
         }
+        /** Returns a path to the appropriate icon */
         getIcon() {
             let icon = 'status-modified.svg';
             return this._context.asAbsolutePath(path.join('res', 'icons', icon));
@@ -229,6 +222,7 @@ try {
     }
     exports.propertyDataProvider = propertyDataProvider;
 
+    /** wait a defined amount of time (milliseconds) */
     function wait(ms) {
         var start = new Date().getTime();
         var end = start;
@@ -237,6 +231,7 @@ try {
         }
     }
 
+    /** Checks if the JSON objects are equal */
     function jsonEqual(a, b) {
         return JSON.stringify(a) === JSON.stringify(b);
     }
@@ -247,30 +242,29 @@ try {
         var jsonTemp = path.join(propertyJSONpath, hash + "_temp.json");
         var jsonPath = path.join(propertyJSONpath, hash + ".json");
         return {cpsPath: cpsPath, jsonTemp: jsonTemp, jsonPath: jsonPath};
-    }   
+    }
 
+    /** Returns the post location */
     function getPostExePath() {
-        if (!postLoc) {
-            if (fs.existsSync(settingsLocation)) {
-                var lines = fs.readFileSync(settingsLocation);
-                if (lines.length > 1) {
-                    var sett = JSON.parse(lines);
-                    if (sett.postLocation) {
-                        postLoc = sett.postLocation;
-                        return postLoc;
-                    } else {
-                        vsc.commands.executeCommand('hsm.findPostExe');
-                    }
-                }
-            } else {
-                vsc.commands.executeCommand('hsm.findPostExe');
-            }
-            return undefined;
-        } else {
+        if (!fs.existsSync(postLoc)) {
+            vsc.commands.executeCommand('hsm.findPostExe');
+        }
+        if (!fs.existsSync(vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath'))) {
+            vsc.commands.executeCommand('hsm.findPostExe')
+        }
+
+        wait(100);
+
+        postLoc = vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath');
+
+        if (fs.existsSync(postLoc)) {
             return postLoc;
+        } else {
+            return undefined;
         }
     }
 
+    /** Interrogate the post processor to get the property information */
     function interrogatePost() {
         if (getPostExePath() == undefined) {
             return;
@@ -280,15 +274,22 @@ try {
         var child = require('child_process').execFile;
         var executablePath = postLoc;
         var parameters = ["--interrogate", "--quiet", cpsPath, jsonTemp];
+        var includePath = vsc.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
+        if (fs.existsSync(includePath)) {
+          parameters.push("--include", includePath);
+        }
+
         child(executablePath, parameters, function(err, data) {
             if (err) {
-                vsc.window.showInformationMessage("Failed to read post properties.");
+                vsc.window.showInformationMessage("Failed to interrogate post processor properties.");
                 return;
             }
         });
         wait(800);
     }
 
+
+    /** Compare te two labels */
     function compare(a, b) {
         if (a.label < b.label) {
             return -1;
@@ -298,6 +299,22 @@ try {
         }
         return 0;
     }
+    
+    function makeFolder(dir) {
+        if (fs.existsSync(dir)) {
+          return; // folder already exists
+        }
+        let tempDir = dir;
+        while(!fs.existsSync(path.dirname(tempDir))){
+          tempDir = path.dirname(tempDir);
+          if(fs.existsSync(path.dirname(tempDir))){
+            fs.mkdirSync(tempDir);
+            tempDir = dir;
+          }
+        }
+        fs.mkdirSync(dir);
+      }
+
 } catch (e) {
     vsc.window.showErrorMessage(e.toString());
 }

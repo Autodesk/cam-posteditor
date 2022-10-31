@@ -1,9 +1,23 @@
 # Change Log
-##4.0.1
-  - Removed custom folder
-##4.0.0
-Added: 
+## 4.0.0
+Added:
+  - Major refactoring
+  - Support for .mch (machine V2)
   - Pre-release of new G-code debugger
+
+
+## 3.5.8
+Fixed:
+  - Issues with missing function
+
+## 3.5.6
+Added:
+  - Merge post feature
+  - Option to show the current post processor engine version in use
+  - Option to post process automatically when a machine file is selected
+Changed:
+  - Updated generic milling machine configuration files
+
 ##3.5.5
 Added: 
   - Post encryption

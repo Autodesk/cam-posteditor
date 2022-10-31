@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-  Copyright (c) 2017 by Autodesk, Inc.
+  Copyright (c) 2022 by Autodesk, Inc.
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,9 @@ Object.defineProperty(exports, "__esModule", {value: true});
 const vscode = require("vscode");
 const path = require("path");
 let topLevel = [];
-let selectItem = true;
+/** True if the user setting is set to sort alphabetically */
 let sortFunctionList = true;
+/** True if the user setting wants the function list to automatically update (more resource intensive) */
 let autoUpdate = true;
 try {
     class functionNode {
@@ -43,7 +44,7 @@ try {
             this.funcs = [];
             this.node = node;
         }
-    
+        /** Sorts the items */
         sortItems(a, b) {
             if (a.node.name.toLowerCase() > b.node.name.toLowerCase()) {
                 return 1;
@@ -63,6 +64,7 @@ try {
             this.onDidChangeTreeData = this._onDidChangeTreeData.event;
             this.context = context;
             getSettings();
+            // Register the event handlers
             vscode.window.onDidChangeActiveTextEditor(editor => {if (editor) this.refresh();});
             vscode.workspace.onDidCloseTextDocument(document => {if (!this.editor.document) {this.refresh();} });
             vscode.workspace.onDidChangeTextDocument(event => {if (!event.document.isDirty && event.document === this.editor.document) {this.refresh();} });
@@ -84,11 +86,14 @@ try {
                 this.editor = editor;
                 if (editor) {
                     getSettings();
+                    /** Contains the functions for the active document */
                     let funcs = yield this.getFunctionList(editor.document);
                     if (!funcs) return;
+                    /** Filters out 'lower level' functions so only global functions are shown */
                     if (topLevel.indexOf(-1) < 0) funcs = funcs.filter(func => topLevel.indexOf(func.kind) >= 0);
                     const functions = funcs.map(func => new functionNode(func));
                     let treeFunctions = [];
+                    /** Add all the functions to the tree and ensure the range is stored with them */
                     functions.forEach(cfile => {
                         treeFunctions = treeFunctions.
                             filter(cnode => cnode !== cfile && cnode.node.location.range.contains(cfile.node.location.range));
@@ -101,6 +106,7 @@ try {
                         }
                         treeFunctions.push(cfile);
                     });
+                    // Sort the function list alphabetically if the user setting is active
                     if (sortFunctionList) {
                         tree.sort();
                     }
@@ -108,7 +114,7 @@ try {
                 this.tree = tree;
             });
         }
-
+        /** Gets the children of the selected node. Top level functions are shown, so this shouldn't be needed */
         getChildren(node) {
             return __awaiter(this, void 0, void 0, function*() {
                 if (node) {
@@ -120,15 +126,18 @@ try {
                 }
             });
         }
+        /** Returns the function list from the vscode document symbol provider */
         getFunctionList(document) {
             return vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', document.uri);
         }
 
+        /** Returns the appropriate icon for the function (active or inactive) */
         getIcon(ico) {
             let icon = ico ? 'active.svg' : 'func.svg';
             return this.context.asAbsolutePath(path.join('res', 'icons', icon));
         }
 
+        /** Constructs the tree item for the defined function */
         getTreeItem(funcItem) {
             const {kind} = funcItem.node;
             let treeItem = new vscode.TreeItem(funcItem.node.name);
@@ -136,11 +145,13 @@ try {
             const range = funcItem.node.location.range;
             const selectedLine = vscode.window.activeTextEditor.selection.start.line;
         
+            // Sets a custom icon for whichever function the cursor is currently in
             if (selectedLine >= range.start.line && selectedLine <= range.end.line) {
                 treeItem.iconPath = this.getIcon(true);
             } else {
                 treeItem.iconPath = this.getIcon(false);
             }
+            // assigns a range and function to the option in the tree
             treeItem.command = {
                 command: 'functionList.revealRange',
                 title: '',
@@ -149,7 +160,6 @@ try {
                     range
                 ]
             };
-        
             return treeItem;
         }
         refresh() {
@@ -164,16 +174,12 @@ try {
             return typeof v == "undefined" ? -1 : v;
         });
     }
-
+    /** Gets user defined settings and updates variables */
     function getSettings() {
-        let opts = vscode.workspace.getConfiguration("HSMPostUtility");
+        let opts = vscode.workspace.getConfiguration("AutodeskPostUtility");
         sortFunctionList = opts.get("sortFunctionListAlphabetically");
         autoUpdate = opts.get("autoUpdateFunctionList");
-        selectItem = true;
         topLevel += getNames(["Function"]);
-    }
-
-    function highlightFunction() {
     }
 } catch (e) {
     vscode.window.showErrorMessage(e.toString());

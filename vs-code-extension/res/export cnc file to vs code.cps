@@ -1,18 +1,23 @@
 /**
-  Copyright (C) 2018 by Autodesk, Inc.
+  Copyright (C) 2012-2021 by Autodesk, Inc.
   All rights reserved.
-  
+
+  Autodesk intermediate post processor configuration.
+
+  $Revision$
+  $Date$
+
   FORKID {D38E0AF6-F1A7-4C6D-A0FA-C99BB29E65AE}
 */
 
 description = "Export CNC file to Visual Studio Code";
 vendor = "Autodesk";
 vendorUrl = "http://www.autodesk.com";
-legal = "Copyright (C) 2012-2018 by Autodesk, Inc.";
+legal = "Copyright (C) 2012-2021 by Autodesk, Inc.";
 certificationLevel = 2;
 minimumRevision = 41666;
 
-longDescription = "The post installs the CNC file for use with the Autodesk HSM Post Processor extension for Visual Studio Code.";
+longDescription = "Postprocessor to generate CNC files for use with the Autodesk HSM Post Processor extension for Visual Studio Code.";
 
 capabilities = CAPABILITY_INTERMEDIATE;
 
@@ -90,10 +95,10 @@ function onClose() {
     for (var name in result) {
       var value = result[name];
       switch (name) {
-        case "Autodesk.hsm-post-processor":
-          extension = name + "-" + value;
-          foundExtension = true;
-          break;
+      case "Autodesk.hsm-post-processor":
+        extension = name + "-" + value;
+        foundExtension = true;
+        break;
       }
     }
     if (!foundExtension) {
@@ -121,4 +126,11 @@ function onClose() {
     writeln("Success, your CNC file " + "\"" + fileName + "\"" + " is now located in " + "\"" + destPath + "\"" + ".");
     writeln("You need to manually import the CNC file in VS Code by a right click into the CNC Selector panel and select 'Import CNC file...'.");
   }
+}
+
+//Dummy function for additive toopath
+function onLinearExtrude() {
+}
+
+function onCircularExtrude() {
 }
