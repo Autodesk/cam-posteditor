@@ -33,9 +33,15 @@
     <serial></serial>
   </custom>
 
+  <machine_connector capability="no" connectionMethod="Ethernet (TCP/IP)">
+    <application machineConnectorIdent="" machineConnectorIp="127.0.0.1" machineConnectorPath="" machineConnectorPort="50000"/>
+    <serial_connection baudRate="115200" bits="7" dataBufferSerial="100" flow="XON/XOFF" parity="Even" port="1" stopBits="1"/>
+    <ethernet_connection MDCPort="5051" dataBufferEthernet="10100"/>
+  </machine_connector>
+
   <coolant options="FLOOD"/>
 
-  <multiAxis adjust="yes" angle="10deg" cone="3deg" feedRateType="tcp" linearizationTolerance="0.040000000000000001mm" method="off" reconfigure="no" tolerance="0.040000000000000001mm"/>
+  <multiAxis adjust="yes" angle="10deg" bpwRatio="1" cone="3deg" feedrateMethod="fpm" feedrateType="combination" linearizationTolerance="0.040000000000000001mm" maximumFeedrate="9999.9899999999998" method="off" outputTolerance="0.5" reconfigure="no" safePlungeFeedrate="250mm/min" safeRetractDistance="25mm" safeRetractFeedrate="500mm/min" stockExpansion="2.5mm 2.5mm 2.5mm" tolerance="0.040000000000000001mm" virtualToolTip="no"/>
 
   <tooling maximumToolDiameter="0mm" maximumToolLength="0mm" maximumToolWeight="0kg" numberOfTools="100" toolChanger="yes" toolPreload="yes"/>
 
@@ -43,7 +49,7 @@
 
   <capabilities maximumBlockProcessingSpeed="0" maximumFeedrate="0mm/min" workOffsets="100"/>
 
-  <simulation retractOnIndexing="yes" shortestAngularRotation="yes" tableAttachPoint="0mm 0mm 0mm" toolAttachPoint="-1.2588762800000001e-06mm -4.0936560099999989e-06mm 800mm" wcs="0mm 0mm 0mm">
+  <simulation retractOnIndexing="yes" shortestAngularRotation="yes" tableAttachPoint="0mm 0mm 0mm" toolAttachPoint="-1.2588762799999999e-06mm -4.0936560099999989e-06mm 800mm" wcs="0mm 0mm 0mm">
     <machineAssembly></machineAssembly>
   </simulation>
 
@@ -54,6 +60,7 @@
     </postProperties>
     <setupSheet></setupSheet>
     <setupSheetProperties/>
+    <outputFolder></outputFolder>
   </post>
 
   <axis actuator="linear" coordinate="Z" homePosition="0mm" id="Z" link="head" maximumFeed="0mm/min" name="" offset="0mm 0mm 0mm" range="-700mm 0mm" rapidFeed="0mm/min" resolution="0mm"/>
