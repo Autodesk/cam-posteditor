@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion 360 Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.0.0",
+	"version": "4.1.0",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -115,6 +115,14 @@
 				}
 			},
 			{
+				"command": "machineList.addFolder",
+				"title": "Add folder",
+				"icon": {
+					"dark": "res/icons/add.svg",
+					"light": "res/icons/add.svg"
+				}
+			},
+			{
 				"command": "propertyList.initializePropertyList",
 				"title": "Initialize Property List",
 				"icon": {
@@ -186,6 +194,11 @@
 				"command": "hsm.importCNC",
 				"title": "Import CNC file...",
 				"category": "Autodesk"
+			},
+			{
+				"command": "hsm.changeProperty",
+				"category": "Autodesk",
+				"title": "Change property"
 			},
 			{
 				"command": "hsm.showVarHelpFile",
@@ -272,6 +285,11 @@
 				},
 				{
 					"command": "machineList.refreshMachineList",
+					"when": "view == machineList",
+					"group": "navigation"
+				},
+				{
+					"command": "machineList.addFolder",
 					"when": "view == machineList",
 					"group": "navigation"
 				},
@@ -425,8 +443,18 @@
 				},
 				"AutodeskPostUtility.showDebuggedCode": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "If true, a full debug output will be shown when posting"
+				},
+				"AutodeskPostUtility.customCNCLocations": {
+					"type": "object",
+					"readOnly": true,
+					"description": "Object containing CNC locations"
+				},
+				"AutodeskPostUtility.customMachineLocations": {
+					"type": "object",
+					"readOnly": true,
+					"description": "Object containing CNC locations"
 				}
 			}
 		}
