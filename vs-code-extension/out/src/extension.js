@@ -597,6 +597,23 @@ function findErrorLine(log) {
   });
 }
 
+function findWarningMessages(log) {
+  fs.readFile(log, function (err, data) {
+    if (err) throw err;
+    var array = data.toString().split('\n');
+    for (var i = array.length - 1; i > 0; --i) {
+      if (array[i].toUpperCase().includes("WARNING:")) {
+          vscode.window.showWarningMessage("Post processing completed with warnings. Do you want to open the log file for details?", "Yes", "No").then(answer => {
+          if (answer === "Yes") {
+            openAndShowFile(logPath);
+          }
+        });
+        break
+      }
+    }
+  });
+}
+
 /** Opens and shows a file */
 function openAndShowFile(filePath) {
   if (filePath) {
@@ -774,6 +791,11 @@ function postProcess(postLocation) {
 
       for (var i = 0; i < files.length; i++) {
         removeDebugLines(files[i]);
+      }
+    }
+    if (vscode.workspace.getConfiguration("AutodeskPostUtility").get("showWarningMessages")) {
+      if (fileExists(logPath)) {
+        findWarningMessages(logPath)
       }
     }
   });

@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion 360 Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.1.0",
+	"version": "4.1.1",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -455,6 +455,11 @@
 					"type": "object",
 					"readOnly": true,
 					"description": "Object containing CNC locations"
+				},
+				"AutodeskPostUtility.showWarningMessages": {
+					"type": "boolean",
+					"default": false,
+					"description": "If true, you will get notified when the log file includes warning messages."
 				}
 			}
 		}
