@@ -262,7 +262,7 @@ function mergePost() {
       }
     });
     wait(300);
-    showDoc(vscode.workspace.openTextDocument(mergeFile), vscode.window.activeTextEditor.viewColumn);
+    showDoc(vscode.workspace.openTextDocument(mergeFile), vscode.ViewColumn.One);
   } catch (e) {
     message(e.toString());
   }
@@ -1218,23 +1218,25 @@ function importCustomFile(type) {
 
   let log = "";
   vscode.window.showOpenDialog({ openFiles: true, canSelectMany: true, filters: fileFilter }).then((val) => {
-    for (var i = 0; i < val.length; ++i) {
-      var selectedPath = val[i].path.toString().substring(1, val[i].path.length);
-      if (fileExists(selectedPath)) {
-        let copyLocation = path.join(resLocation, fileType, "Custom", getFileName(selectedPath));
-        copyFile(selectedPath, copyLocation);
-        log += "\"" + getFileName(selectedPath) + "\"\n";
-      } else {
-        errorMessage("Import of " + fileType + " file(s) failed.");
+    if (val) {
+      for (var i = 0; i < val.length; ++i) {
+        var selectedPath = val[i].path.toString().substring(1, val[i].path.length);
+        if (fileExists(selectedPath)) {
+          let copyLocation = path.join(resLocation, fileType, "Custom", getFileName(selectedPath));
+          copyFile(selectedPath, copyLocation);
+          log += "\"" + getFileName(selectedPath) + "\"\n";
+        } else {
+          errorMessage("Import of " + fileType + " file(s) failed.");
+          return;
+        }
+      }
+      message("The following " + fileType + " file(s) have been successfully imported:\n" + log);
+      if (type == "machineFile") {
+        executeCommand('machineList.refreshMachineList');
         return;
       }
+      executeCommand('cncList.refreshCNCList');
     }
-    message("The following " + fileType + " file(s) have been successfully imported:\n" + log);
-    if (type == "machineFile") {
-      executeCommand('machineList.refreshMachineList');
-      return;
-    }
-    executeCommand('cncList.refreshCNCList');
   });
 }
 
@@ -1257,26 +1259,9 @@ function restoreCustomData() {
 }
 /** Updates users langague file to ensure CPS is detected as a JS file */
 function addCPSToJSLanguage() {
-  let currentLanguageConfiguration = vscode.workspace.getConfiguration("files").get("associations");
-  let stringLang = "";
-  if (currentLanguageConfiguration) {
-    stringLang = JSON.stringify(currentLanguageConfiguration);
-  }
-  if (!stringLang.toLowerCase().includes("*.cps")) {
-    const obj = "\"*.cps\": \"javascript\"";
-    if (currentLanguageConfiguration) {
-      let tempLanguage = JSON.stringify(currentLanguageConfiguration);
-      tempLanguage = tempLanguage.substring(1, tempLanguage.length - 1);
-      if (tempLanguage.includes(":")) {
-        tempLanguage += ",";
-      }
-      tempLanguage += obj + "}";
-      currentLanguageConfiguration = JSON.parse(tempLanguage);
-    } else {
-      currentLanguageConfiguration = JSON.parse(obj);
-    }
-    vscode.workspace.getConfiguration("files").update("associations", currentLanguageConfiguration, true);
-  }
+  let currentLanguageConfiguration = vscode.workspace.getConfiguration("files");
+  let newLanguageConfiguration = Object.assign({}, currentLanguageConfiguration.associations, {"*.cps" : "javascript"});
+  vscode.workspace.getConfiguration("files").update("associations", newLanguageConfiguration, true);
 }
 
 /** Disables the automatic line finding option on output code */
@@ -1297,9 +1282,11 @@ function disableLineSelection() {
 /** Adds an additional folder to the CNC selections sidebar */
 function addFolderToCNCTree() {
   vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false }).then(val => {
-    var selectedPath = val[0].path.substring(1, val[0].path.length);
-    cncTree.addFolder(selectedPath);
-    cncTree.refreshTree();
+    if (val) {
+      var selectedPath = val[0].path.substring(1, val[0].path.length);
+      cncTree.addFolder(selectedPath);
+      cncTree.refreshTree();
+    }
   });
 }
 
@@ -1315,7 +1302,7 @@ function addFolderToMachineTree() {
 /** Edits the selected machine file */
 function editMachineFile(machine) {
   if (machine != undefined) {
-    showDoc(vscode.workspace.openTextDocument(machine), vscode.window.activeTextEditor.viewColumn);
+    showDoc(vscode.workspace.openTextDocument(machine), vscode.ViewColumn.One);
   }
 }
 
