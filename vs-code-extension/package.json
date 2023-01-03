@@ -201,11 +201,6 @@
 				"title": "Change property"
 			},
 			{
-				"command": "hsm.showVarHelpFile",
-				"title": "Post help",
-				"category": "Autodesk"
-			},
-			{
 				"command": "hsm.resetProperty",
 				"title": "Reset to default...",
 				"category": "Autodesk"
