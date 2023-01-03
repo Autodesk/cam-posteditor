@@ -42,7 +42,7 @@ try {
             files = findFiles(path.join(resLocation, "Machines"));
             // find all the files defined in the additional folders
             let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customMachineLocations")
-            if (additionalFolders.folders) {
+            if (additionalFolders && additionalFolders.folders) {
                 for (let i = 0; i < additionalFolders.folders.length; ++i) {
                     if (fs.existsSync(additionalFolders.folders[i])) {
                         files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
@@ -120,22 +120,24 @@ try {
                         if (files[i][0].toLowerCase().includes(".machine") || files[i][0].toLowerCase().includes(".mch")) {
                             exten.setMachine(files[i][1]);
                         } else {
-                            let fusionLocalFolder = "";
+                            let fusionLocalFolder = undefined;
                             if (process.platform == "win32") {
                                 fusionLocalFolder = path.join(process.env.LOCALAPPDATA, "autodesk", "Autodesk Fusion 360");
                             } else {
                                 fusionLocalFolder = path.join(process.env.HOME, "Library", "application support", "autodesk", "CAM360", "machines");
                             }
-                            let allFiles = getFilesFromDir(fusionLocalFolder, [".machine", ".mch"]);
-                            for (let j = 0; j < allFiles.length; ++j) {
-                                let fullPath = path.join(fusionLocalFolder, allFiles[j]);
-                                let name = allFiles[j].replace(/^.*[\\\/]/, '');
-                                let treeItem = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
-                                treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
-                                treeItem.src = fullPath;
-                                items.push(treeItem);
+                            if (fs.existsSync(fusionLocalFolder)) {
+                              let allFiles = getFilesFromDir(fusionLocalFolder, [".machine", ".mch"]);
+                              for (let j = 0; j < allFiles.length; ++j) {
+                                  let fullPath = path.join(fusionLocalFolder, allFiles[j]);
+                                  let name = allFiles[j].replace(/^.*[\\\/]/, '');
+                                  let treeItem = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
+                                  treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
+                                  treeItem.src = fullPath;
+                                  items.push(treeItem);
+                              }
+                              for (var tf = 0; tf < allFiles.length; tf++) { files.push(allFiles[tf]); }
                             }
-                            for (var tf = 0; tf < allFiles.length; tf++) { files.push(allFiles[tf]); }
                         }
                         break;
                     }
@@ -156,7 +158,7 @@ try {
             files.unshift(allFilesName);
             this._onDidChangeTreeData.fire();
             let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customMachineLocations")
-            if  (additionalFolders.folders) {
+            if  (additionalFolders && additionalFolders.folders) {
                 for (let i = 0; i < additionalFolders.folders.length; i++) {
                     if (fs.existsSync(additionalFolders.folders[i])) {
                         files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
@@ -184,6 +186,9 @@ try {
 
     /** Finds all files of the defined file type in the specified directory and it's subdirectories */
     function getFilesFromDir(dir, fileTypes) {
+        if (!fs.existsSync(dir)) {
+            return
+        }
         var filesToReturn = [];
         function walkDir(currentPath) {
             var files = fs.readdirSync(currentPath);
@@ -202,6 +207,9 @@ try {
 
     /** Finds machine diles in the specified directory */
     function findFiles(dir) {
+        if (!fs.existsSync(dir)) {
+            return
+        }
         var machineFiles = getFiles(dir);
         var tempList = [];
         for (var i = 0; i < machineFiles.length; ++i) {
@@ -213,6 +221,9 @@ try {
 
     /** Return all files in the defined directroy */
     function getFiles(srcpath) {
+        if (!fs.existsSync(srcpath)) {
+            return
+        }
         return fs.readdirSync(srcpath);
     }
 } catch (e) {
