@@ -23,12 +23,12 @@
 */
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const vsc = require("vscode");
+const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 const exten = require("./extension");
 const process = require("process");
-var resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
+var resLocation = path.join(vscode.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
 var files = [];
 var allFilesName = "All files";
 var localFusion = "Local";
@@ -36,10 +36,19 @@ try {
     class machineDataProvider {
         constructor(_context) {
             this._context = _context;
-            this._onDidChangeTreeData = new vsc.EventEmitter();
+            this._onDidChangeTreeData = new vscode.EventEmitter();
             this.onDidChangeTreeData = this._onDidChangeTreeData.event;
             files = [];
             files = findFiles(path.join(resLocation, "Machines"));
+            // find all the files defined in the additional folders
+            let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customMachineLocations")
+            if (additionalFolders.folders) {
+                for (let i = 0; i < additionalFolders.folders.length; ++i) {
+                    if (fs.existsSync(additionalFolders.folders[i])) {
+                        files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
+                    }
+                }
+            }
             files.unshift(localFusion);
             files.unshift(allFilesName);
         }
@@ -51,17 +60,17 @@ try {
                 // Create the tree items for all files and folders
                 for (let i = 0; i < files.length; ++i) {
                     if (files[i] != allFilesName && files[i] != localFusion) {
-                        let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
-                            .includes(".m") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                        let treeItem = new vscode.TreeItem(files[i][0], files[i][0].toLowerCase()
+                            .includes(".m") ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
                         treeItem.contextValue = "openFolder";
                         treeItem.src = files[i][1];
                         items.push(treeItem);
                     } else {
                         if (files[i] == allFilesName) {
-                            let treeItem = new vsc.TreeItem(allFilesName, vsc.TreeItemCollapsibleState.Collapsed);
+                            let treeItem = new vscode.TreeItem(allFilesName, vscode.TreeItemCollapsibleState.Collapsed);
                             items.push(treeItem);
                         } else {
-                            let treeItem = new vsc.TreeItem(localFusion, vsc.TreeItemCollapsibleState.Collapsed);
+                            let treeItem = new vscode.TreeItem(localFusion, vscode.TreeItemCollapsibleState.Collapsed);
                             items.push(treeItem);
                         }
                     }
@@ -77,8 +86,8 @@ try {
                             // if not, it's a directory so build up the children
                             let tempFiles = findFiles(files[i][1]);
                             for (let f = 0; f < tempFiles.length; f++) {
-                                let treeItem = new vsc.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
-                                    .includes(".m") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                                let treeItem = new vscode.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
+                                    .includes(".m") ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
                                 treeItem.command = { command: "hsm.setMachine", title: "", arguments: [tempFiles[f][1]] };
                                 if (tempFiles[f][0].toLocaleLowerCase().includes(".m") && tempFiles[f][1].toLowerCase().includes("custom")) {
                                     treeItem.contextValue = "customFile"; treeItem.src = tempFiles[f][1];
@@ -98,7 +107,7 @@ try {
                             for (let j = 0; j < allFiles.length; ++j) {
                                 let fullPath = path.join(resLocation, "Machines", allFiles[j]);
                                 let name = allFiles[j].replace(/^.*[\\\/]/, '');
-                                let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
+                                let treeItem = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
                                 treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
                                 treeItem.src = fullPath;
                                 items.push(treeItem);
@@ -121,7 +130,7 @@ try {
                             for (let j = 0; j < allFiles.length; ++j) {
                                 let fullPath = path.join(fusionLocalFolder, allFiles[j]);
                                 let name = allFiles[j].replace(/^.*[\\\/]/, '');
-                                let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
+                                let treeItem = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
                                 treeItem.command = { command: "hsm.setMachine", title: "", arguments: [fullPath] };
                                 treeItem.src = fullPath;
                                 items.push(treeItem);
@@ -146,9 +155,32 @@ try {
             files.unshift(localFusion);
             files.unshift(allFilesName);
             this._onDidChangeTreeData.fire();
+            let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customMachineLocations")
+            if  (additionalFolders.folders) {
+                for (let i = 0; i < additionalFolders.folders.length; i++) {
+                    if (fs.existsSync(additionalFolders.folders[i])) {
+                        files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
+                    }
+                }
+            }
+        }
+         /** Adds a defined folder to the list of machine files */
+        addFolder(path) {
+            addCustomFolder(path);
         }
     }
     exports.machineDataProvider = machineDataProvider;
+    
+
+    /** Adds the defined path to the list of machine files */
+    function addCustomFolder(path) {
+        let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customMachineLocations")
+        if (!additionalFolders.folders) {
+            additionalFolders.folders = []
+        }
+        additionalFolders.folders.push(path);
+        vscode.workspace.getConfiguration("AutodeskPostUtility").update("customMachineLocations", additionalFolders, true);
+    }
 
     /** Finds all files of the defined file type in the specified directory and it's subdirectories */
     function getFilesFromDir(dir, fileTypes) {
@@ -173,7 +205,7 @@ try {
         var machineFiles = getFiles(dir);
         var tempList = [];
         for (var i = 0; i < machineFiles.length; ++i) {
-            if (fs.statSync(path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || machineFiles[i].toLocaleLowerCase().includes(".m"))
+            if (fs.statSync(path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))).isDirectory() || machineFiles[i].toLocaleLowerCase().includes(".mch") || machineFiles[i].toLocaleLowerCase().includes(".machine"))
                 tempList.push([machineFiles[i].replace(/^.*[\\\/]/, ''), path.join(dir, machineFiles[i].replace(/^.*[\\\/]/, ''))]);
         }
         return tempList;
@@ -184,5 +216,5 @@ try {
         return fs.readdirSync(srcpath);
     }
 } catch (e) {
-    vsc.window.showErrorMessage(e.toString());
+    vscode.window.showErrorMessage(e.toString());
 }

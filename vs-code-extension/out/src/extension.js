@@ -84,6 +84,7 @@ let currentDebugPanel = undefined;
 /** Location of the gcode debugging utility */
 const gcodeDebuggerLocation = path.join(resLocation, "g-code-debugger" , "index.html");
 let gcontext;
+let cncTree, machineTree, propertyTree, functionSelectionProvider;
 
 /** Activates the add-in and initializes all user options */
 function activate(context) {
@@ -109,13 +110,13 @@ function activate(context) {
   addCPSToJSLanguage();
 
   // add sidebars
-  const cncTree = new CNCList.cncDataProvider(context);
+  cncTree = new CNCList.cncDataProvider(context);
   vscode.window.registerTreeDataProvider('cncList', cncTree);
-  const machineTree = new machineList.machineDataProvider(context);
+  machineTree = new machineList.machineDataProvider(context);
   vscode.window.registerTreeDataProvider('machineList', machineTree);
-  const propertyTree = new properties.propertyDataProvider(context);
+  propertyTree = new properties.propertyDataProvider(context);
   vscode.window.registerTreeDataProvider('propertyList', propertyTree);
-  const functionSelectionProvider = new functionNodes.functionListProvider(context);
+  functionSelectionProvider = new functionNodes.functionListProvider(context);
   vscode.window.registerTreeDataProvider('functionList', functionSelectionProvider);
 
   /** Register all commands */
@@ -150,6 +151,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('cncList.refreshCNCList', () => { cncTree.refreshTree() }));
   context.subscriptions.push(vscode.commands.registerCommand('cncList.addFolder', () => { addFolderToCNCTree() }));
   context.subscriptions.push(vscode.commands.registerCommand('machineList.refreshMachineList', () => { machineTree.refreshTree() }));
+  context.subscriptions.push(vscode.commands.registerCommand('machineList.addFolder', () => { addFolderToMachineTree() }));  
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setCNC', selectedFile => { setCNCFile(selectedFile) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setMachine', selectedFile => { setMachineFile(selectedFile) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.postProcess', () => { postProcess(vscode.window.activeTextEditor.document.fileName) }));
@@ -517,10 +519,10 @@ function selectSub(dir) {
   vscode.window.showQuickPick(newList).then(val => {
     if (val == "Browse...") {
       vscode.window.showOpenDialog({ openFiles: true, filters: { 'CNC Files': ['cnc'] } }).then(val => {
-        var selectedPath = val[0].path.substring(1, val[0].path.length - 1);
+        var selectedPath = val[0].path.substring(1, val[0].path.length);
         cncFile = selectedPath;
       });
-    } else {
+    } else if (val) {
       checkDirSize(path.join(dir, val));
     }
   });
@@ -839,7 +841,7 @@ function downloadCNCExtractor() {
   uri.path = path.join(os.userInfo().homedir.toString(), 'export cnc file to vs code.cps');
   vscode.window.showSaveDialog({ filters: { 'Autodesk Post Processor': ['cps'] }, defaultUri: uri }).then(val => {
     if (val) {
-      fs.createReadStream(ncToCopy).pipe(fs.createWriteStream(val.path.substring(1, val.path.length - 1)));
+      fs.createReadStream(ncToCopy).pipe(fs.createWriteStream(val.path.substring(1, val.path.length)));
       message("Post saved");
     }
   });
@@ -1014,7 +1016,7 @@ function updatePostProperties() {
           if (endPosition == -1) {
             endPosition = array[i].length;
           }
-          propertyValue = array[i].slice(array[i].indexOf("=") + 1).substring(0, endPosition).replace(/\n|\r/g, "");
+          propertyValue = array[i].slice(array[i].indexOf("=") + 1).substring(1, endPosition).replace(/\n|\r/g, "");
 
           if (str.slice(str.indexOf("=")).search(/[*\;/]/g) > -1) { // extract remaining line, stop if there is a comment or semicolon
             remainingString = array[i].substring(array[i].search(/[*\;/]/g)).replace(/\n|\r/g, '');
@@ -1242,7 +1244,7 @@ function addCPSToJSLanguage() {
     const obj = "\"*.cps\": \"javascript\"";
     if (currentLanguageConfiguration) {
       let tempLanguage = JSON.stringify(currentLanguageConfiguration);
-      tempLanguage = tempLanguage.substring(0, tempLanguage.length - 1);
+      tempLanguage = tempLanguage.substring(1, tempLanguage.length - 1);
       if (tempLanguage.includes(":")) {
         tempLanguage += ",";
       }
@@ -1273,9 +1275,18 @@ function disableLineSelection() {
 /** Adds an additional folder to the CNC selections sidebar */
 function addFolderToCNCTree() {
   vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false }).then(val => {
-    var selectedPath = val[0].path.substring(1, val[0].path.length - 1);
+    var selectedPath = val[0].path.substring(1, val[0].path.length);
     cncTree.addFolder(selectedPath);
     cncTree.refreshTree();
+  });
+}
+
+/** Adds an additional folder to the CNC selections sidebar */
+function addFolderToMachineTree() {
+  vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false }).then(val => {
+    var selectedPath = val[0].path.substring(1, val[0].path.length);
+    machineTree.addFolder(selectedPath);
+    machineTree.refreshTree();
   });
 }
 

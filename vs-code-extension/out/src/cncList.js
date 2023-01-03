@@ -23,12 +23,11 @@
 */
 
 Object.defineProperty(exports, "__esModule", {value: true});
-const vsc = require("vscode");
+const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 const exten = require("./extension");
-let resLocation = path.join(vsc.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
-let additionalFolders = path.join(resLocation, "CNC files", "customLocations.json");
+let resLocation = path.join(vscode.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
 /** Contains a list of all available CNC files */
 let files = [];
 let allFilesName = "All files";
@@ -36,20 +35,17 @@ let allFilesName = "All files";
 class cncDataProvider {
     constructor(_context) {
         this._context = _context;
-        this._onDidChangeTreeData = new vsc.EventEmitter();
+        this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         files = [];
         // find all the files in the default storage location
         files = findFiles(path.join(resLocation, "CNC files"));
         // find all the files defined in the additional folders
-        if (fs.existsSync(additionalFolders)) {
-            let lines = fs.readFileSync(additionalFolders);
-            if (lines.length > 1) {
-                let lineJson = JSON.parse(lines);
-                for (let i = 0; i < lineJson.folders.length; ++i) {
-                    if (fs.existsSync(lineJson.folders[i])) {
-                        files = files.concat([[path.basename(lineJson.folders[i]),lineJson.folders[i]]]);   
-                    }
+        let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customCNCLocations")
+        if (additionalFolders.folders) {
+            for (let i = 0; i < additionalFolders.folders.length; ++i) {
+                if (fs.existsSync(additionalFolders.folders[i])) {
+                    files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
                 }
             }
         }
@@ -62,13 +58,13 @@ class cncDataProvider {
             for (let i = 0; i < files.length; ++i) {
                 if (files[i] != allFilesName) {
                     // Constructs a tree item for the found CNC file
-                    let treeItem = new vsc.TreeItem(files[i][0], files[i][0].toLowerCase()
-                        .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                    let treeItem = new vscode.TreeItem(files[i][0], files[i][0].toLowerCase()
+                        .includes(".cnc") ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
                     treeItem.contextValue = "openFolder";
                     treeItem.src = files[i][1];
                     items.push(treeItem);
                 } else {
-                    let treeItem = new vsc.TreeItem(allFilesName, vsc.TreeItemCollapsibleState.Collapsed);
+                    let treeItem = new vscode.TreeItem(allFilesName, vscode.TreeItemCollapsibleState.Collapsed);
                     items.push(treeItem);
                 }
             }
@@ -83,8 +79,8 @@ class cncDataProvider {
                         let tempFiles = findFiles(files[i][1]);
                         for (let f = 0; f < tempFiles.length; f++) {
                             // Turn off the collapsed state if it's a CNC file, show it if it's a directory (to allow expansion)
-                            let treeItem = new vsc.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
-                                .includes(".cnc") ? vsc.TreeItemCollapsibleState.None : vsc.TreeItemCollapsibleState.Collapsed);
+                            let treeItem = new vscode.TreeItem(tempFiles[f][0], tempFiles[f][0].toLowerCase()
+                                .includes(".cnc") ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
                             // Set the approrate command for when the item is clicked
                             treeItem.command = {command: "hsm.setCNC", title: "", arguments: [tempFiles[f][1]]};
                             if (tempFiles[f][0].toLocaleLowerCase().includes(".cnc") && tempFiles[f][1].toLowerCase().includes("custom")) {
@@ -105,7 +101,7 @@ class cncDataProvider {
                         for (let j = 0; j < allFiles.length; ++j) {
                             let fullPath = path.join(resLocation, "CNC files", allFiles[j]);
                             let name = allFiles[j].replace(/^.*[\\\/]/, '');
-                            let treeItem = new vsc.TreeItem(name, vsc.TreeItemCollapsibleState.None);
+                            let treeItem = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.None);
                             treeItem.command = {command: "hsm.setCNC", title: "", arguments: [fullPath]};
                             treeItem.src = fullPath;
                             items.push(treeItem);
@@ -129,14 +125,11 @@ class cncDataProvider {
         files = [];
         files = findFiles(path.join(resLocation, "CNC files"));
         files.unshift(allFilesName);
-        if (fs.existsSync(additionalFolders)) {
-            let lines = fs.readFileSync(additionalFolders);
-            if (lines.length > 1) {
-                let lineJson = JSON.parse(lines);
-                for (let i = 0; i < lineJson.folders.length; ++i) {
-                    if (fs.existsSync(lineJson.folders[i])) {
-                        files = files.concat([[path.basename(lineJson.folders[i]),lineJson.folders[i]]]);   
-                    }
+        let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customCNCLocations")
+        if  (additionalFolders.folders) {
+            for (let i = 0; i < additionalFolders.folders.length; i++) {
+                if (fs.existsSync(additionalFolders.folders[i])) {
+                    files = files.concat([[path.basename(additionalFolders.folders[i]),additionalFolders.folders[i]]]);   
                 }
             }
         }
@@ -152,15 +145,12 @@ exports.cncDataProvider = cncDataProvider;
 
 /** Adds the defined path to the list of CNC files */
 function addCustomFolder(path) {
-    let json = {"folders": []};
-    if (fs.existsSync(additionalFolders)) {
-        let lines = fs.readFileSync(additionalFolders);
-        if (lines.length > 1) {
-            json = JSON.parse(lines);
-        }
+    let additionalFolders = vscode.workspace.getConfiguration("AutodeskPostUtility").get("customCNCLocations")
+    if (!additionalFolders.folders) {
+        additionalFolders.folders = []
     }
-    json.folders.push(path);
-    fs.writeFileSync(additionalFolders, JSON.stringify(json));
+    additionalFolders.folders.push(path);
+    vscode.workspace.getConfiguration("AutodeskPostUtility").update("customCNCLocations", additionalFolders, true);
 }
 
 /** Returns all the files from within the defined directory */
