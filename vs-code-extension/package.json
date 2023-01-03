@@ -481,7 +481,7 @@
 		"eslint": "^8.20.0",
 		"mocha": "^10.0.0",
 		"typescript": "^2.5.2",
-		"vscode": "^1.0.5"
+		"vscode": "^1.1.37"
 	},
 	"__metadata": {
 		"id": "d7881a36-c8dd-487b-8ab1-0f00cc4980bd",
