@@ -69,6 +69,10 @@ let outputpath = path.join(outputDir, "debuggedfile.nc");
 let logPath = path.join(outputDir, "debuggedfile.log");
 /** The path containing the full debug posted output */
 let debugOutputpath = path.join(outputDir, "debuggedfile.nc2");
+/** The path containing the cam input commands from full debug info */
+let debugInputPath = path.join(outputDir, "debuginput.nc2");
+/** The path containing the intermediate commands from full debug info */
+let debugCommandsPath = path.join(outputDir, "debugcommands.nc2");
 /** Set the location of the stored custom files */
 let cncFilesLocation = path.join(resLocation, "CNC files");
 /** Object for accessing user preferences */
@@ -411,6 +415,119 @@ function writePostToSettings() {
   vscode.workspace.getConfiguration("AutodeskPostUtility").update("postExecutablePath", postExecutable, true);
 }
 
+/** Function to parse debug callstack line */
+function parseCallStackLine(line) {
+  // Expecting following format: !DEBUG: <number> <filename>:<line number>
+  const regex = /!DEBUG: (\d+) ([^:]+):(\d+)/
+  const result = line.match(regex);
+  if (!result) {
+    return false;
+  }
+  return {
+    depth: parseInt(result[1]),
+    file: result[2],
+    line: parseInt(result[3])
+  }
+}
+
+function ncClickOld(selectedLine) {
+  // Read through the lines in the debug output to find the line which is selected in the non-debug view
+  fs.readFile(debugOutputpath, function (err, data) {
+    if (err) throw err;
+    let array = data.toString().split('\n');
+    let lineData = [];
+    //let lineToMoveTo = 0;
+    let currentIndex = 0;
+    let notNotes = true;
+    let moved = false;
+    for (let i = 0; i < array.length; i++) {
+      // support for notes. These are not output on debug lines, so they must be skipped
+      line = array[i].toUpperCase()
+      if (line.includes("!DEBUG")) {
+        notNotes = true;
+        if (line.includes("NOTES") || line.toUpperCase().includes("MATERIAL")) {
+          notNotes = false;
+        }
+      }
+
+      /**
+       * When the line is found, get look at the line above (which is the call stack) and
+       * get the characters after the second ':'. These will be an integer with the line
+       * number that created the output 
+       */
+      if (!line.includes("!DEBUG") && notNotes && !moved) {
+        if (currentIndex == selectedLine) {
+          var callEntry;
+          if (selectedLine == lastSelectedLine) {
+            // parsing the int will error (or splitting will error) when it is out of the stack trace
+            // so we default back to 0 to start at the bottom of the stack trace again
+            callEntry = parseCallStackLine(lineData[lineData.length - (amountToMove + 1)]);
+            if (!callEntry) {
+              amountToMove = 0;
+              callEntry = parseCallStackLine(lineData[lineData.length - (amountToMove + 1)]);
+            }
+            /*try {
+              lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
+              if (isNaN(lineToMoveTo)) {
+                amountToMove = 0;
+                lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
+              }
+            } catch (e) {
+              amountToMove = 0;
+              lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
+            }*/
+          }
+          // move to the defined line
+          if (callEntry) {
+            moveLine(callEntry.line, callEntry.file);
+            // move up the stack trace on next click
+            amountToMove = amountToMove + 1;
+          }
+          moved = true;
+        }
+        currentIndex += 1;
+      }
+      lineData.push(line);
+    }
+  });
+}
+
+let commandAmountToMove = 0;
+
+function commandSelected(selectedCommand) {
+  commandContext = commandMap[commandOutputMap[selectedCommand]];
+  if (commandContext && commandContext.stack.length > 0) {
+    if (commandAmountToMove >= commandContext.stack.length) {
+      commandAmountToMove = 0;
+    }
+    callEntry = commandContext.stack[commandAmountToMove];
+    moveLine(callEntry.line, callEntry.file, vscode.ViewColumn.Two);
+    ++commandAmountToMove;
+
+    moveLine(commandContext.input + 1, debugInputPath, vscode.ViewColumn.One);
+  }
+}
+
+function selectCommand(selectedCommand) {
+  commandAmountToMove = 0;
+  moveLine(selectedCommand + 1, debugCommandsPath, vscode.ViewColumn.Three);
+  commandSelected(selectedCommand);
+}
+
+function ncClickNew(selectedLine) {
+  lineContext = linesMap[linesOutputMap[selectedLine]];
+  if (lineContext && lineContext.stack.length > 0) {
+    if (amountToMove >= lineContext.stack.length) {
+      amountToMove = 0;
+    }
+    callEntry = lineContext.stack[amountToMove];
+    moveLine(callEntry.line, callEntry.file, vscode.ViewColumn.Four);
+    ++amountToMove;
+
+    selectCommand(lineContext.command);
+  }
+}
+
 /** Used to check whether the user selects the same character twice (for two click line jumping) */
 let secondClick = false;
 /** The event gets called a few times (VSCode isssue). % 2 ensures we only use this once per click */
@@ -421,7 +538,8 @@ function handleSelectionChange(event) {
     return undefined;
   }
 
-  if (vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") && !vscode.window.activeTextEditor.document.fileName.includes(".log") && times % 2 == 0) {
+  if ((vscode.window.activeTextEditor.document.fileName.includes("debuggedfile") || vscode.window.activeTextEditor.document.fileName.includes("debugcommands"))
+      && !vscode.window.activeTextEditor.document.fileName.includes(".log") && times % 2 == 0) {
     var selectedLine = vscode.window.activeTextEditor.selection.start.line;
     let needTwoClicks = vscode.workspace.getConfiguration("AutodeskPostUtility").get("twoClickLineJumping"); // Allows users to copy and paste without jumping around in the code
     if (selectedLine != lastSelectedLine) {
@@ -435,57 +553,18 @@ function handleSelectionChange(event) {
       return;
     }
 
-    // Read through the lines in the debug output to find the line which is selected in the non-debug view
-    fs.readFile(debugOutputpath, function (err, data) {
-      if (err) throw err;
-      let array = data.toString().split('\n');
-      let lineData = [];
-      let lineToMoveTo = 0;
-      let currentIndex = 0;
-      let notNotes = true;
-      let moved = false;
-      for (let i = 0; i < array.length; i++) {
-        // support for notes. These are not output on debug lines, so they must be skipped
-        line = array[i].toUpperCase()
-        if (line.includes("!DEBUG")) {
-          notNotes = true;
-          if (line.includes("NOTES") || line.toUpperCase().includes("MATERIAL")) {
-            notNotes = false;
-          }
-        }
-
-        /**
-         * When the line is found, get look at the line above (which is the call stack) and
-         * get the characters after the second ':'. These will be an integer with the line
-         * number that created the output 
-         */
-        if (!line.includes("!DEBUG") && notNotes && !moved) {
-          if (currentIndex == selectedLine) {
-            if (selectedLine == lastSelectedLine) {
-              // parsing the int will error (or splitting will error) when it is out of the stack trace
-              // so we default back to 0 to start at the bottom of the stack trace again
-              try {
-                lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
-                if (isNaN(lineToMoveTo)) {
-                  amountToMove = 0;
-                  lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
-                }
-              } catch (e) {
-                amountToMove = 0;
-                lineToMoveTo = parseInt(lineData[lineData.length - (amountToMove + 1)].split(':')[2]);
-              }
-            }
-            // move to the defined line
-            moveLine(lineToMoveTo);
-            // move up the stack trace on next click
-            amountToMove = amountToMove + 1;
-            moved = true;
-          }
-          currentIndex += 1;
-        }
-        lineData.push(line);
+    if (vscode.window.activeTextEditor.document.fileName.includes("debugcommands")) {
+      commandSelected(selectedLine);
+    } else {
+      if (linesOutputMap) {
+        // New handler
+        ncClickNew(selectedLine);
+      } else {
+        // Old handler
+        ncClickOld(selectedLine);
       }
-    });
+    }
+
     lastSelectedLine = selectedLine;
   }
   times += 1;
@@ -615,13 +694,16 @@ function findWarningMessages(log) {
 }
 
 /** Opens and shows a file */
-function openAndShowFile(filePath) {
+function openAndShowFile(filePath, column) {
+  if (!column) {
+    column = vscode.ViewColumn.Two;
+  }
   if (filePath) {
     // workaround since VS Code does not refresh the output sometimes
     vscode.workspace.openTextDocument(path.join(resLocation, 'loading.txt')).then(document => 
-      vscode.window.showTextDocument(document, vscode.ViewColumn.Two, true)).then(complete=>
+      vscode.window.showTextDocument(document, column, true)).then(complete=>
         vscode.workspace.openTextDocument(filePath).then(outputDoc => 
-          vscode.window.showTextDocument(outputDoc, vscode.ViewColumn.Two, true))
+          vscode.window.showTextDocument(outputDoc, column, true))
         )
   }
 }
@@ -650,7 +732,7 @@ function postProcess(postLocation) {
   let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
   let units = selectUnits();
   let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
-  let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
+  let debugArg = "--debugreallyall";//newDebugger ? "--debugreallyall" : "--debugall";
 
   // define the arguments for post processing
   let parameters = ['--noeditor'];
@@ -777,22 +859,22 @@ function postProcess(postLocation) {
       }
     }
 
-    if (!vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
-      var filesInOutputFolder = [];
-      fs.readdirSync(outputDir).forEach(file => {
-        let fullPath = path.join(outputDir, file);
-        filesInOutputFolder.push(fullPath);
-      });
+    // if (!vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
+    //   var filesInOutputFolder = [];
+    //   fs.readdirSync(outputDir).forEach(file => {
+    //     let fullPath = path.join(outputDir, file);
+    //     filesInOutputFolder.push(fullPath);
+    //   });
 
-      // find files with names other than debuggedfile, used for posts which output subprograms as separate files
-      var files = filesInOutputFolder.filter(function (file) {
-        return file.indexOf("debuggedfile") === -1;
-      });
+    //   // find files with names other than debuggedfile, used for posts which output subprograms as separate files
+    //   var files = filesInOutputFolder.filter(function (file) {
+    //     return file.indexOf("debuggedfile") === -1;
+    //   });
 
-      for (var i = 0; i < files.length; i++) {
-        removeDebugLines(files[i]);
-      }
-    }
+    //   for (var i = 0; i < files.length; i++) {
+    //     removeDebugLines(files[i]);
+    //   }
+    // }
     if (vscode.workspace.getConfiguration("AutodeskPostUtility").get("showWarningMessages")) {
       if (fileExists(logPath)) {
         findWarningMessages(logPath)
@@ -801,12 +883,31 @@ function postProcess(postLocation) {
   });
 }
 
+var commandMap = [];
+var commandOutputMap = [];
+var linesMap = [];
+var linesOutputMap = [];
+
+function filterCallStack(callstack) {
+  return callstack.filter(callEntry => !callEntry.file.endsWith("inc.cps"));
+}
+
 /** creates a new file that excludes the debug lines outputted for line jumping */
 function removeDebugLines(outputFile, postLocation) {
   fs.readFile(outputFile, (err, data) => {
     let array = data.toString().split('\n');
     let lines = "";
     let lineData;
+    let inputLines = "";
+    let commandLines = "";
+    let callStack = [];
+    let currentInputCommand = -1;
+    let currentIntermediateCommand = -1;
+    let currentOutputLine = -1;
+    let currentLine = -1;
+
+    linesOutputMap = [];
+
     if (postLocation != undefined) {
       lineData = "!DEBUG:" + postLocation + '\n';
     }
@@ -814,8 +915,47 @@ function removeDebugLines(outputFile, postLocation) {
 
     // filter out debug lines from the new file
     for (var i = 0; i < array.length; i++) {
-      let line = array[i].toUpperCase()
+      let line = array[i];//.toUpperCase();
       let debugLine = line.includes("!DEBUG")
+      if (debugLine) {
+        if (line.startsWith("!DEBUG: command:")) {
+          // Handle cam input command
+          let inputCommand = line.slice("!DEBUG: command:".length);
+          inputLines += inputCommand + "\n";
+          ++currentInputCommand;
+        } else if (line.startsWith("!DEBUG: CommandIN:")) {
+          // Handle intermediate command creation
+          let parts = line.split(":");
+          commandMap[parseInt(parts[2])] = {
+            command: parts[3],
+            stack: filterCallStack(callStack),
+            input: currentInputCommand
+          };
+        } else if (line.startsWith("!DEBUG: CommandOUT:")) {
+          // Handle intermediate command printing
+          let parts = line.split(":");
+          let index = parseInt(parts[2]);
+          commandLines += commandMap[index].command + "\n";
+          ++currentIntermediateCommand;
+          commandOutputMap[currentIntermediateCommand] = index;
+        } else if (line.startsWith("!DEBUG: LineIN:")) {
+          // Handle output line generated
+          let parts = line.split(":");
+          linesMap[parseInt(parts[2])] = {
+            stack: filterCallStack(callStack),
+            command: currentIntermediateCommand
+          };
+        } else if (line.startsWith("!DEBUG: LineOUT:")) {
+          let parts = line.split(":");
+          currentOutputLine = parseInt(parts[2]);
+        }
+        callEntry = parseCallStackLine(line);
+        if (callEntry) {
+          callStack.push(callEntry);
+        } else {
+          callStack = [];
+        }
+      }
       if (!writeOutput && debugLine) {
         writeOutput = true;
       }
@@ -824,18 +964,41 @@ function removeDebugLines(outputFile, postLocation) {
       }
       if (!debugLine && writeOutput) {
         lines = lines + array[i] + '\n';
+        ++currentLine;
+        linesOutputMap[currentLine] = currentOutputLine;
       }
       if (postLocation != undefined) {
         lineData += array[i] + '\n';
       }
     }
 
-    var file = fs.createWriteStream(outputFile);
+    var file;
+    if (inputLines) {
+      file = fs.createWriteStream(debugInputPath);
+      file.on('error', () => { });
+      file.write(inputLines);
+      file.end(() => {
+        openAndShowFile(debugInputPath, vscode.ViewColumn.One);
+      });
+    }
+    if (commandLines) {
+      file = fs.createWriteStream(debugCommandsPath);
+      file.on('error', () => { });
+      file.write(commandLines);
+      file.end(() => {
+        openAndShowFile(debugCommandsPath, vscode.ViewColumn.Three);
+      });
+    }
+    if (inputLines || commandLines) {
+      openAndShowFile(postFile, vscode.ViewColumn.Two);
+      openAndShowFile(postFile, vscode.ViewColumn.Four);
+    }
+    file = fs.createWriteStream(outputFile);
     file.on('error', () => { });
     file.write(lines);
     file.end(() => {
       if (postLocation != undefined) {
-        openAndShowFile(outputFile);
+        openAndShowFile(outputFile, inputLines ? vscode.ViewColumn.Five : vscode.ViewColumn.Two);
       }
     });
     if (postLocation != undefined) {
@@ -1557,11 +1720,17 @@ function removeFilesInFolder(dir) {
 }
 
 /** Moves the current selection to the specified line */
-function moveLine(line) {
+function moveLine(line, fileName, column) {
   var docFound = false;
+  if (!column) {
+    column = vscode.ViewColumn.One;
+  }
+  if (!fileName) {
+    fileName = postFile;//.toUpperCase();
+  }
   for (var i = 0; i < vscode.window.visibleTextEditors.length; i++) {
     var activeFile = vscode.window.visibleTextEditors[i];
-    if (activeFile.document.fileName == postFile) {
+    if (activeFile.document.fileName.toUpperCase().endsWith(fileName.toUpperCase()) && activeFile.viewColumn == column) {
       docFound = true;
       if (enableLineSelection) {
         // selection event selects from char 0 to 1000 to ensure the full line is highlighted
@@ -1570,9 +1739,28 @@ function moveLine(line) {
       }
     }
   }
+  if (docFound) {
+    return;
+  }
+  vscode.workspace.findFiles("**/" + fileName.toLowerCase()).then(files => {
+    for (var i = 0; i < files.length; ++i) {
+      var fileURI = files[i];
+      if (fileURI.fsPath.endsWith(fileName)) {
+        docFound = true;
+        if (enableLineSelection) {
+          vscode.workspace.openTextDocument(fileURI).then(document => {
+            vscode.window.showTextDocument(document, column, true).then(editor => {
+              editor.selection = new vscode.Selection(new vscode.Position(line - 1, 0), new vscode.Position(line - 1, 1000));
+              editor.revealRange(editor.selection, vscode.TextEditorRevealType.InCenter);
+            });
+          });
+        }
+      }
+    }
+  });
   if (!docFound) {
     if (!enableLineSelection) {
-      errorMessage("The post processor (" + postFile + ") that created this output has been closed!");
+      errorMessage("The post processor (" + fileName + ") that created this output has been closed!");
     }
   }
 }
