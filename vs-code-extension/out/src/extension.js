@@ -556,7 +556,7 @@ function handleSelectionChange(event) {
     if (vscode.window.activeTextEditor.document.fileName.includes("debugcommands")) {
       commandSelected(selectedLine);
     } else {
-      if (linesOutputMap) {
+      if (commandMap && commandMap.length) {
         // New handler
         ncClickNew(selectedLine);
       } else {
@@ -892,6 +892,19 @@ function filterCallStack(callstack) {
   return callstack.filter(callEntry => !callEntry.file.endsWith("inc.cps"));
 }
 
+function formatInputCommand(line) {
+  try {
+    let command = JSON.parse(line);
+    let result = command.name;
+    if (command.args) {
+      result += JSON.stringify(command.args);
+    }
+    return result;
+  } catch(e) {
+    return line;
+  }
+}
+
 /** creates a new file that excludes the debug lines outputted for line jumping */
 function removeDebugLines(outputFile, postLocation) {
   fs.readFile(outputFile, (err, data) => {
@@ -921,7 +934,7 @@ function removeDebugLines(outputFile, postLocation) {
         if (line.startsWith("!DEBUG: command:")) {
           // Handle cam input command
           let inputCommand = line.slice("!DEBUG: command:".length);
-          inputLines += inputCommand + "\n";
+          inputLines += formatInputCommand(inputCommand) + "\n";
           ++currentInputCommand;
         } else if (line.startsWith("!DEBUG: CommandIN:")) {
           // Handle intermediate command creation
@@ -973,23 +986,21 @@ function removeDebugLines(outputFile, postLocation) {
     }
 
     var file;
-    if (inputLines) {
+    if (inputLines && commandLines) {
       file = fs.createWriteStream(debugInputPath);
       file.on('error', () => { });
       file.write(inputLines);
       file.end(() => {
         openAndShowFile(debugInputPath, vscode.ViewColumn.One);
       });
-    }
-    if (commandLines) {
+
       file = fs.createWriteStream(debugCommandsPath);
       file.on('error', () => { });
       file.write(commandLines);
       file.end(() => {
         openAndShowFile(debugCommandsPath, vscode.ViewColumn.Three);
       });
-    }
-    if (inputLines || commandLines) {
+
       openAndShowFile(postFile, vscode.ViewColumn.Two);
       openAndShowFile(postFile, vscode.ViewColumn.Four);
     }
@@ -998,7 +1009,7 @@ function removeDebugLines(outputFile, postLocation) {
     file.write(lines);
     file.end(() => {
       if (postLocation != undefined) {
-        openAndShowFile(outputFile, inputLines ? vscode.ViewColumn.Five : vscode.ViewColumn.Two);
+        openAndShowFile(outputFile, commandLines ? vscode.ViewColumn.Five : vscode.ViewColumn.Two);
       }
     });
     if (postLocation != undefined) {
