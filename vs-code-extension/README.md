@@ -1,6 +1,6 @@
 # Autodesk Fusion 360 Post Processor Utility for Visual Studio Code
 
-Welcome to the Autodesk Fusion 360 post editing extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion 360, Inventor HSM, Inventor HSM Express, HSMWorks, and HSMXpress. Please note that this utility is not compatible with FeatureCAM, PartMarker, and PowerMILL.
+Welcome to the Autodesk Fusion 360 Post Utility extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion 360, Inventor HSM and HSMWorks. Please note that this utility is not compatible with FeatureCAM, PartMarker and PowerMILL.
 
 To learn more about the CAM solutions see:
 https://www.autodesk.com/solutions/manufacturing/cam
@@ -24,17 +24,13 @@ The extension is distributed under the MIT license. See LICENSE.txt.
 
 
 ## Get started
-To get started with this extension, install from the VS Code marketplace or using the VSIX. Once installed, open a .cps file and press F1 and type 'HSM Post Utility' then click 'help' for instructions on how to use the extension.
+To get started with this extension, install from the VS Code marketplace or using the VSIX. Once installed, open a .cps file and press F1 and type 'Autodesk HSM Post Utility' then click 'help' for instructions on how to use the extension.
 
 You can download factory posts via the online post library:
 http://cam.autodesk.com/posts
 
-### G-Code debugging
-Press `F1` and type `HSM`, select `HSM: Change post executable` and browse for the post.exe which you will find in the .vscode extension folder
-e.g. C:\Users\$User\.vscode\extensions\autodesk.hsm-post-processor-$Version\res\post-with-debugging\windows-post\x64\post.exe 
-Note that you need to fill in the $User with your username and the $Version with the extension version (you may find it easier to browse to this location).
-
-To enable the debugger: go to the extension settings and check the "New Debugger" option.
+The documentation of the postprocessor can be found here:
+https://cam.autodesk.com/posts/reference/index.html
 
 ## About
 Autodesk Fusion 360 Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  

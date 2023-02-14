@@ -1,4 +1,10 @@
 # Change Log
+## 4.1.3
+Fixed:
+  - Fixed broken link to help file
+Changed:
+  - Updated readme file
+
 ## 4.1.2
 Fixed:
   - Fixed a bug that caused the extension to stop working

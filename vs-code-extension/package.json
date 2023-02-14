@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion 360 Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.1.2",
+	"version": "4.1.3",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -61,7 +61,7 @@
 			{
 				"command": "extension.startHSMPlugin",
 				"title": "Post Utility",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "functionList.refreshEntry",
@@ -74,21 +74,21 @@
 			{
 				"command": "hsm.disableLineSelection",
 				"title": "Disable auto line selection",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.enableAutoComplete",
 				"title": "Enable auto complete for the current document",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.disableAutoComplete",
 				"title": "Disable auto complete in the current document",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.showDebuggedCode",
-				"title": "Autodesk: Show debugged code"
+				"title": "Autodesk HSM Post Utility: Show debugged code"
 			},
 			{
 				"command": "cncList.refreshCNCList",
@@ -133,107 +133,107 @@
 			{
 				"command": "hsm.changePostExe",
 				"title": "Change post executable",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.setIncludePath",
 				"title": "Set include path...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.updatePostProperties",
 				"title": "Update post properties for current file...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.foldPropertyList",
 				"title": "Fold property list...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.downloadCNCExtractor",
 				"title": "Download CNC exporting post processor",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.encryptPost",
 				"title": "Encrypt post processor",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.mergePost",
 				"title": "Merge post processor",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.decryptPost",
 				"title": "Decrypt post processor",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.deleteCNCFile",
 				"title": "Delete CNC File",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.deleteMachineFile",
 				"title": "Delete machine file...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.openFolder",
 				"title": "Open folder",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.editMachineFile",
 				"title": "Edit machine file...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.importCNC",
 				"title": "Import CNC file...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.changeProperty",
-				"category": "Autodesk",
+				"category": "Autodesk HSM Post Utility",
 				"title": "Change property"
 			},
 			{
-				"command": "hsm.showVarHelpFile",
-				"title": "Post help",
-				"category": "Autodesk"
+				"command": "hsm.showHelpFile",
+				"title": "Post Utility help",
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.resetProperty",
 				"title": "Reset to default...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.clearMachineSelection",
 				"title": "Clear selected machine...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.importMachine",
 				"title": "Import machine file...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.showPostEngineVersion",
 				"title": "Show Post Processor Engine Version...",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.postProcess",
 				"title": "Post Process",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			},
 			{
 				"command": "hsm.selectCNCFile",
 				"title": "Set CNC file",
-				"category": "Autodesk"
+				"category": "Autodesk HSM Post Utility"
 			}
 		],
 		"keybindings": [

@@ -128,6 +128,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importMachine', () => { importCustomFile("machineFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => { locatePostEXE(false) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.findPostExe', () => { checkPostKernel() }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.showHelpFile', () => { showHelpFile() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteCNCFile', (element) => { deleteCNCFile(element.src) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteMachineFile', (element) => { deleteMachineFile(element.src) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.openFolder', (element) => { openFolder(element.src) }));
@@ -1575,4 +1576,9 @@ function moveLine(line) {
       errorMessage("The post processor (" + postFile + ") that created this output has been closed!");
     }
   }
+}
+
+/** Opens the post processor training manual PDF directly the Post Utility section */
+function showHelpFile() {
+  vscode.env.openExternal(vscode.Uri.parse('https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf#%5B%7B%22num%22%3A68%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C51%2C441%2C0%5D'))
 }
