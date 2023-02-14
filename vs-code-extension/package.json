@@ -201,11 +201,6 @@
 				"title": "Change property"
 			},
 			{
-				"command": "hsm.showHelpFile",
-				"title": "Post Utility help",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
 				"command": "hsm.resetProperty",
 				"title": "Reset to default...",
 				"category": "Autodesk HSM Post Utility"

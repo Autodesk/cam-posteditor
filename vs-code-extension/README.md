@@ -24,12 +24,14 @@ The extension is distributed under the MIT license. See LICENSE.txt.
 
 
 ## Get started
-To get started with this extension, install from the VS Code marketplace or using the VSIX. Once installed, open a .cps file and press F1 and type 'Autodesk HSM Post Utility' then click 'help' for instructions on how to use the extension.
+A detailed documentation on how to use the Post Utility extension can be found in the Post Processor Training Guide
+under chapter 2 "Autodesk Post Processor Editor".
+The Training Guide can be found here: [Post Processor Training Guide](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
 
 You can download factory posts via the online post library:
 http://cam.autodesk.com/posts
 
-The documentation of the postprocessor can be found here:
+The documentation of the postprocessor API can be found here:
 https://cam.autodesk.com/posts/reference/index.html
 
 ## About

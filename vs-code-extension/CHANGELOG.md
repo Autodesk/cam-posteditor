@@ -3,7 +3,7 @@
 Fixed:
   - Fixed broken link to help file
 Changed:
-  - Updated readme file
+  - Updated readme
 
 ## 4.1.2
 Fixed:
