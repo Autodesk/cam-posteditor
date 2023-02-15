@@ -24,7 +24,7 @@ The extension is distributed under the MIT license. See LICENSE.txt.
 
 
 # Get started
-![Preview](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/AutodeskPostUtilityPreview.mp4)
+![Preview](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/preview.gif)
 
 A detailed documentation on how to use the Post Utility extension can be found in the Post Processor Training Guide
 under chapter 2 "Autodesk Post Processor Editor".
