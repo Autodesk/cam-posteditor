@@ -17,13 +17,15 @@ The extension is distributed under the MIT license. See LICENSE.txt.
 
 
 
-## Features
+# Features
 - Post directly from VS Code.
 - Quick view post processor variables and functions.
 - Jump to code by clicking line in NC output.
 
 
-## Get started
+# Get started
+![Preview](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/AutodeskPostUtilityPreview.mp4)
+
 A detailed documentation on how to use the Post Utility extension can be found in the Post Processor Training Guide
 under chapter 2 "Autodesk Post Processor Editor".
 The Training Guide can be found here: [Post Processor Training Guide](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
@@ -34,7 +36,7 @@ http://cam.autodesk.com/posts
 The documentation of the postprocessor API can be found here:
 https://cam.autodesk.com/posts/reference/index.html
 
-## About
+# About
 Autodesk Fusion 360 Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  
 
 All use of this Software is subject to the Autodesk terms of service accepted accepted upon access or use of this Service or made available on the Autodesk webpage.  Autodesk terms of service for Autodesk’s various web services can be found [here](https://www.autodesk.com/company/legal-notices-trademarks/terms-of-service-autodesk360-web-services).
@@ -54,7 +56,7 @@ Autodesk Cloud and Desktop Components
 This Service may incorporate or use background Autodesk online and desktop technology components.  For information about these components, see [Autodesk Cloud Platform Components](https://www.autodesk.com/company/legal-notices-trademarks/autodesk-cloud-platform-components) and [Autodesk Desktop Platform Components](https://www.autodesk.com/company/legal-notices-trademarks/autodesk-desktop-platform-components).
 
 
-## Third-Party Trademarks, Software Credits and Attributions
+# Third-Party Trademarks, Software Credits and Attributions
 <details>
   <summary>Details here:</summary>
   
