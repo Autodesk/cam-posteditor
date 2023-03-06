@@ -1,28 +1,34 @@
 # Autodesk Fusion 360 Post Editor for Visual Studio Code
 
-Welcome to the Autodesk Fusion 360 post editing extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid the post-author when working on post development specifically for Fusion 360, Inventor HSM, Inventor HSM Express, HSMWorks, and HSMXpress. Please note that this utility is not compatible with FeatureCAM, PartMarker, and PowerMILL.
+Welcome to the Autodesk Fusion 360 Post Utility extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion 360, Inventor CAM and HSMWorks. Please note that this utility is not compatible with FeatureCAM, PartMarker and PowerMILL.
 
-To learn more about the CAM solutions see:
-https://www.autodesk.com/solutions/manufacturing/cam
+To learn more about the CAM solutions see: https://www.autodesk.com/solutions/manufacturing/cam
 
-The repository for the extension is hosted at:
-https://github.com/Autodesk/cam-posteditor
+The repository for the extension is hosted at: https://github.com/Autodesk/cam-posteditor
 
-You can get the installation for Visual Studio Code at:
-https://marketplace.visualstudio.com/items?itemName=Autodesk.hsm-post-processor
+You can get the installation for Visual Studio Code at: https://marketplace.visualstudio.com/items?itemName=Autodesk.hsm-post-processor
 
 The extension is distributed under the MIT license. See LICENSE.txt.
 
-## Features
+# Features
 - Post directly from VS Code.
 - Quick view post processor variables and functions.
 - Jump to code by clicking line in NC output.
 
-## Get started
-To get started with this extension, install from the VS Code marketplace or using the VSIX. Once installed, open a .cps file and press F1 and type 'HSM Post Utility' then click 'help' for instructions on how to use the extension.
+
+# Get started
+![Preview](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/preview.gif)
+
+A detailed documentation on how to use the Post Utility extension can be found in the Post Processor Training Guide
+under chapter 2 "Autodesk Post Processor Editor".
+The Training Guide can be found here: [Post Processor Training Guide](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
 
 You can download factory posts via the online post library:
 http://cam.autodesk.com/posts
+
+The documentation of the postprocessor API can be found here:
+https://cam.autodesk.com/posts/reference/index.html
+
 
 ## Goals
 The goal of this project is to build a community that will create a great post-authoring experience in Fusion 360.
@@ -43,20 +49,6 @@ The license does not grant permission to use the trade names, trademarks, servic
 - Package the vsix file using `npm run package`
 - You can now install the package in VS-Code
 
-## Building and running the G code debugger with the VSCode extension
-
-- Download either the windows-post or mac-post folder from https://github.com/Autodesk/cam-posteditor/tree/master/vs-code-extension/res/post-with-debugging. Make a note of which folder you copy this to, you will need it later.
-- Install the packages by running `npm install` (Note: you may need to install GTK see https://github.com/Automattic/node-canvas/wiki/Installation%3A-Windows)
-- Build the g-code-debugger from the project root directory with the `npm run build` command. It should create bundled version `vs-code-extension/res/g-code-debugger/index.html`.
-- Change directory to vs-code-extension and run `npm install` followed by `npm run package` to create a vsix file.
-- In vscode, install the extension from the vsix file you just created.
-- In debugger panel choose `Run Extension` and press `F5`. A new VSCode window should be opened with running extension.
-- Enable the g-code-debugger by going to the extension settings and checking the "New Debugger" checkbox.
-- Press `F1` and type `HSM`, select `Change post executable`, and select location of postprocessor from first step.
-- Open some post from library.
-- On the left side panel, in CNC selector select cnc file.
-- Press `F1` and type `HSM`, select `HSM: Change post executable` and browse for the file you downloaded earlier.
-- If post processing was successfull you should see G-code debugger view.
 
 # Autodesk Fusion 360 Post Editor for Visual Studio Code  2023 © 2022 Autodesk Inc.  All rights reserved.  
 
