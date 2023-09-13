@@ -509,7 +509,7 @@ function checkForAutoComplete() {
 function onPickedItem(picked) {
   if (picked == "Post process") {
     if (!fileExists(cncFile)) {
-      checkDirSize(cncFilesLocation);
+      checkDirSize(cncFilesLocation, 'hsm.postProcess');
     } else {
       postProcess(vscode.window.activeTextEditor.document.fileName);
     }
@@ -519,7 +519,7 @@ function onPickedItem(picked) {
 }
 
 /** Selection of a subdirectory containing CNC files */
-function selectSub(dir) {
+function selectSub(dir, currentCommand = "") {
   var dirs = getDirectories(dir);
   var newList = [];
   for (var i = 0; i < dirs.length; i++) {
@@ -534,23 +534,23 @@ function selectSub(dir) {
         cncFile = selectedPath;
       });
     } else if (val) {
-      checkDirSize(path.join(dir, val));
+      checkDirSize(path.join(dir, val), currentCommand);
     }
   });
 }
 
 /** If a directory is selected, expand it if there are files in it. If not, select the CNC file */
-function checkDirSize(dir) {
+function checkDirSize(dir, currentCommand = "") {
   if (!dir) dir = path.join(resLocation, "CNC files");
   var dirs = getDirectories(dir);
   if (dirs.length > 0) {
-    selectSub(dir);
+    selectSub(dir, currentCommand);
   } else {
-    selectCNCFile(dir);
+    selectCNCFile(dir, currentCommand);
   }
 }
 
-function selectCNCFile(p) {
+function selectCNCFile(p, currentCommand = "") {
   // create a quick pick for CNC files
   var lists = fs.readdirSync(p);
   ListItems = [];
@@ -566,17 +566,19 @@ function selectCNCFile(p) {
     newList.push(basename);
   }
   QuickPickOptions = {placeHolder: "Select a the required CNC to post process"};
-  vscode.window.showQuickPick(newList).then(val => selectedCNCFile(val, ListItems));
+  vscode.window.showQuickPick(newList).then(val => selectedCNCFile(val, ListItems, currentCommand));
 }
 
-function selectedCNCFile(picked, fullList) {
+function selectedCNCFile(picked, fullList, currentCommand = "") {
   var itemToUse = undefined;
   for (var i = 0; i < fullList.length; i++) {
     var basename = path.basename(fullList[i]);
     if (picked == basename) itemToUse = fullList[i];
   }
-  if (itemToUse) setCNCFile(itemToUse);
-  vscode.commands.executeCommand('hsm.postProcess');
+  if (itemToUse) setCNCFile(itemToUse, currentCommand);
+  if (currentCommand != "") {
+    vscode.commands.executeCommand(currentCommand);
+  }
 }
 
 /** Gets the desired units from the users output settings */
@@ -643,7 +645,7 @@ function postProcess(postLocation) {
     vscode.window.showWarningMessage("The active document is not a postprocessor file.")
     return
   } else if (!cncFile) {
-    checkDirSize(cncFilesLocation);
+    checkDirSize(cncFilesLocation, 'hsm.postProcess');
     return
   }
   if (!fileExists(postExecutable)) {
@@ -815,18 +817,22 @@ function postProcess(postLocation) {
 /** Post processes using the defined post script with the primary and secondary post exes and then compares to outputs */
 function postCompare(postLocation) {
     if (!checkActiveDocumentForPost()) {
-        vscode.window.showWarningMessage("The active document is not a postprocessor file.")
-        return
-    } else if (!cncFile) {
-        checkDirSize(cncFilesLocation);
-        return
-    }
-    if (!fileExists(secondaryPostExecutable)) {
-        vscode.window.showWarningMessage("No secondary post processor has been selected.");
-        return;
+      vscode.window.showWarningMessage("The active document is not a postprocessor file.")
+      return
     }
     if (!fileExists(postExecutable)) {
-        locatePostEXE(true);
+      locatePostEXE(false);
+      vscode.window.showWarningMessage("Please select a primary post executable to run post compare.");
+      return;
+    }
+    if (!fileExists(secondaryPostExecutable)) {
+      locateSecondaryPostEXE()
+      vscode.window.showWarningMessage("Please select a secondary post executable to run post compare.");
+      return;
+    }
+    if (!cncFile) {
+      checkDirSize(cncFilesLocation, 'hsm.postCompare');
+      return
     }
 
     removeFilesInFolder(outputDir) // clear output folder prior posting
@@ -1452,7 +1458,7 @@ function editMachineFile(machine) {
 
 /** Activates the selected CNC file */
 var cncFileStatusBar = undefined;
-function setCNCFile(selectedFile) {
+function setCNCFile(selectedFile, currentCommand = "") {
   if (selectedFile.toLowerCase().includes(".cnc")) {
     cncFile = selectedFile;
     statusMessage("CNC file set", 2000);
@@ -1464,7 +1470,7 @@ function setCNCFile(selectedFile) {
     cncFileStatusBar.show();
     if(!checkActiveDocumentForPost()) { return; }
     var postOnSelection = vscode.workspace.getConfiguration("AutodeskPostUtility").get("postOnCNCSelection");
-    if (postOnSelection) {
+    if (postOnSelection && currentCommand === "") {
       postProcess(vscode.window.activeTextEditor.document.fileName)
     }
   }
