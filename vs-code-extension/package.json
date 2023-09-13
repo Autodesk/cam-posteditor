@@ -21,6 +21,7 @@
 		"onCommand:extension.startHSMPlugin",
 		"onCommand:hsm.showDebuggedCode",
 		"onCommand:hsm.changePostExe",
+		"onCommand:hsm.changeSecondaryPostExe",
 		"onCommand:hsm.updatePostProperties",
 		"onCommand:disableLineSelection",
 		"*",
@@ -136,6 +137,11 @@
 				"category": "Autodesk HSM Post Utility"
 			},
 			{
+				"command": "hsm.changeSecondaryPostExe",
+				"title": "Change secondary post executable",
+				"category": "Autodesk HSM Post Utility"
+			},
+			{
 				"command": "hsm.setIncludePath",
 				"title": "Set include path...",
 				"category": "Autodesk HSM Post Utility"
@@ -223,6 +229,11 @@
 			{
 				"command": "hsm.postProcess",
 				"title": "Post Process",
+				"category": "Autodesk HSM Post Utility"
+			},
+			{
+				"command": "hsm.postCompare",
+				"title": "Compare post processors",
 				"category": "Autodesk HSM Post Utility"
 			},
 			{
@@ -345,6 +356,11 @@
 					"type": "string",
 					"default": "",
 					"description": "The location for the Fusion 360 post executable"
+				},
+				"AutodeskPostUtility.secondaryPostExecutablePath": {
+					"type": "string",
+					"default": "",
+					"description": "The location for the secondary Fusion 360 post executable"
 				},
 				"AutodeskPostUtility.propertyJSON": {
 					"type": "object",
