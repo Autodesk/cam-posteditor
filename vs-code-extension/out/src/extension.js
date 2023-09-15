@@ -658,7 +658,9 @@ function postProcess(postLocation) {
   // get the post processor executable location
   executeCommand('notifications.clearAll');
 
-  let parameters = createParameters(postLocation, false);
+  
+  let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
+  let parameters = createParameters(postLocation, false, newDebugger);
 
   var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
   _timeout *= 1000; // convert to milliseconds
@@ -785,8 +787,9 @@ function postCompare(postLocation) {
     var child = require('child_process').execFile;
     // get the post processor executable location
 
-    let parameters = createParameters(postLocation, true, false);
-    let secondaryParameters = createParameters(postLocation, true, true);
+    
+    let parameters = createParameters(postLocation, true, false, false);
+    let secondaryParameters = createParameters(postLocation, true, false, true);
 
     var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
     _timeout *= 1000; // convert to milliseconds
@@ -814,7 +817,7 @@ function postCompare(postLocation) {
 }
 
 /** Creates parameters for post processing */
-function createParameters(postLocation, isPostCompare, isSecondary = false) {
+function createParameters(postLocation, isPostCompare, newDebugger, isSecondary = false) {
 
     let parameters = ['--noeditor'];
 
@@ -826,7 +829,6 @@ function createParameters(postLocation, isPostCompare, isSecondary = false) {
 
     // Set the debug mode
     if (!isPostCompare || vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
-      let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
       let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
       parameters.push(debugArg);
     }
