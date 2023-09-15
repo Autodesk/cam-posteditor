@@ -52,7 +52,7 @@ try {
                 var jsonPath = getPath().jsonPath;
                 makeFolder(propertyJSONpath)
                 interrogatePost();
-                this.checkForDifferences(true, jsonPath, jsonTemp);
+                this.checkForDifferences(true, false, jsonPath, jsonTemp);
 
                 if (!fs.existsSync(jsonPath) || !equal) { // existing user json not found or default properties were modified, start from scratch
                     if (fs.existsSync(jsonTemp)) {
@@ -144,9 +144,9 @@ try {
             return element;
         }
 
-        checkForDifferences(skipInterrogate, jsonPath, jsonTemp) {
+        checkForDifferences(skipInterrogate, isSecondary, jsonPath, jsonTemp) {
             if (!skipInterrogate) {
-                interrogatePost();
+                interrogatePost(isSecondary);
             }
             if (fs.existsSync(jsonPath)) { // check for differences in JSON files
                 if (fs.existsSync(jsonTemp)) {
@@ -245,15 +245,17 @@ try {
     }
 
     /** Returns the post location */
-    function getPostExePath() {
-        if (!fs.existsSync(postLoc)) {
-            vsc.commands.executeCommand('hsm.findPostExe');
-        }
-        if (!fs.existsSync(vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath'))) {
-            vsc.commands.executeCommand('hsm.findPostExe')
-        }
+    function getPostExePath(isSecondary = false) {
+        if (!isSecondary) {
+            if (!fs.existsSync(postLoc)) {
+                vsc.commands.executeCommand('hsm.findPostExe');
+            }
+            if (!fs.existsSync(vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath'))) {
+                vsc.commands.executeCommand('hsm.findPostExe')
+            }
 
-        wait(100);
+            wait(100);
+        }
 
         postLoc = vsc.workspace.getConfiguration("AutodeskPostUtility").get('postExecutablePath');
 
@@ -265,8 +267,8 @@ try {
     }
 
     /** Interrogate the post processor to get the property information */
-    function interrogatePost() {
-        if (getPostExePath() == undefined) {
+    function interrogatePost(isSecondary = false) {
+        if (getPostExePath(isSecondary) == undefined) {
             return;
         }
         var cpsPath = getPath().cpsPath;

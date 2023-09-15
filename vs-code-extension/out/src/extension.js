@@ -126,7 +126,8 @@ function activate(context) {
   /** Register all commands */
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.refreshPropertyList', () => { propertyTree.refresh() }));
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.interrogatePost', () => { propertyTree.forceInterrogation() }));
-  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferences', () => { propertyTree.checkForDifferences(false) }));
+  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferences', () => { propertyTree.checkForDifferences(false, false) }));
+  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferencesSecondary', () => { propertyTree.checkForDifferences(false, true) }));
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.initializePropertyList', () => { propertyTree.refreshTree() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importCNC', () => { importCustomFile("cncFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importMachine', () => { importCustomFile("machineFile") }));
@@ -657,65 +658,8 @@ function postProcess(postLocation) {
   // get the post processor executable location
   executeCommand('notifications.clearAll');
 
-  // get the user settings
-  config = vscode.workspace.getConfiguration("AutodeskPostUtility");
-  let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
-  let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
-  let units = selectUnits();
-  let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
-  let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
+  let parameters = createParameters(postLocation, false);
 
-  // define the arguments for post processing
-  let parameters = ['--noeditor'];
-  if (machineFile != "") {
-    parameters.unshift(machineFile);
-    parameters.unshift("--machine");
-  }
-  parameters.push(debugArg);
-  if (shorten) {
-    parameters.push("--shorten", lineLimit);
-  }
-
-  // Set the unit
-  parameters.push("--property", "unit", units.toString());
-  
-  // get the program name from the user settings
-  let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
-  // if no name has been specified, use 1001
-  if (programName == '') {
-    vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
-    programName = '1001';
-    vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
-  }
-  parameters.push("--property", "programName", programName);
-
-  let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
-
-  if (fileExists(includePath)) {
-    parameters.push("--include", includePath);
-  }
-
-  parameters.unshift(postLocation, cncFile, outputpath);
-
-  executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
-
-  var hash = crypto.createHash('md5').update(postFile).digest('hex');
-  var jsonPath = path.join(propertyJSONpath, hash + ".json");
-  if (fs.existsSync(jsonPath)) {
-    var lines = fs.readFileSync(jsonPath);
-    if (lines.length > 1) {
-      var obj = JSON.parse(lines);
-      if (obj.changed.properties) {
-        for (x in obj.changed.properties) {
-          var setting = obj.changed.properties[x].value != undefined ? obj.changed.properties[x].value : obj.changed.properties[x]
-          if (typeof setting == "string") {
-            setting = "'" + setting + "'";
-          }
-          parameters.push("--property", x, setting);
-        }
-      }
-    }
-  }
   var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
   _timeout *= 1000; // convert to milliseconds
   child(postExecutable, parameters, { timeout: _timeout }, function (err, data) {
@@ -816,6 +760,8 @@ function postProcess(postLocation) {
 
 /** Post processes using the defined post script with the primary and secondary post exes and then compares to outputs */
 function postCompare(postLocation) {
+  executeCommand('notifications.clearAll');
+  
     if (!checkActiveDocumentForPost()) {
       vscode.window.showWarningMessage("The active document is not a postprocessor file.")
       return
@@ -838,73 +784,10 @@ function postCompare(postLocation) {
     removeFilesInFolder(outputDir) // clear output folder prior posting
     var child = require('child_process').execFile;
     // get the post processor executable location
-    executeCommand('notifications.clearAll');
 
-    // get the user settings
-    let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
-    let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
-    let units = selectUnits();
+    let parameters = createParameters(postLocation, true, false);
+    let secondaryParameters = createParameters(postLocation, true, true);
 
-    // define the arguments for post processing
-    let parameters = ['--noeditor'];
-    if (machineFile != "") {
-        parameters.unshift(machineFile);
-        parameters.unshift("--machine");
-    }
-
-    if (vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
-      let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
-      let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
-      parameters.push(debugArg);
-    }
-
-    if (shorten) {
-        parameters.push("--shorten", lineLimit);
-    }
-
-    // Set the unit
-    parameters.push("--property", "unit", units.toString());
-
-    // get the program name from the user settings
-    let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
-    // if no name has been specified, use 1001
-    if (programName == '') {
-        vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
-        programName = '1001';
-        vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
-    }
-    parameters.push("--property", "programName", programName);
-
-    let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
-
-    if (fileExists(includePath)) {
-        parameters.push("--include", includePath);
-    }
-
-    let secondaryParameters = [...parameters];
-    parameters.unshift(postLocation, cncFile, outputpath);
-    secondaryParameters.unshift(postLocation, cncFile, secondaryoutputpath);
-
-    executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
-
-    var hash = crypto.createHash('md5').update(postFile).digest('hex');
-    var jsonPath = path.join(propertyJSONpath, hash + ".json");
-    if (fs.existsSync(jsonPath)) {
-        var lines = fs.readFileSync(jsonPath);
-        if (lines.length > 1) {
-            var obj = JSON.parse(lines);
-            if (obj.changed.properties) {
-                for (x in obj.changed.properties) {
-                    var setting = obj.changed.properties[x].value != undefined ? obj.changed.properties[x].value : obj.changed.properties[x]
-                    if (typeof setting == "string") {
-                        setting = "'" + setting + "'";
-                    }
-                    parameters.push("--property", x, setting);
-                    secondaryParameters.push("--property", x, setting);
-                }
-            }
-        }
-    }
     var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
     _timeout *= 1000; // convert to milliseconds
     child(postExecutable, parameters, { timeout: _timeout }, function (err, data) {
@@ -928,6 +811,86 @@ function postCompare(postLocation) {
       }
     });
 
+}
+
+/** Creates parameters for post processing */
+function createParameters(postLocation, isPostCompare, isSecondary = false) {
+
+    let parameters = ['--noeditor'];
+
+    // Set the machine
+    if (machineFile != "") {
+        parameters.unshift(machineFile);
+        parameters.unshift("--machine");
+    }
+
+    // Set the debug mode
+    if (!isPostCompare || vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
+      let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
+      let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
+      parameters.push(debugArg);
+    }
+  
+    // Set whether the output should be shortened
+    let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
+    let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
+    if (shorten) {
+        parameters.push("--shorten", lineLimit);
+    }
+  
+    // Set the unit
+    let units = selectUnits();
+    parameters.push("--property", "unit", units.toString());
+  
+    // Get the program name from the user settings
+    let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
+    // If no name has been specified, use 1001
+    if (programName == '') {
+        vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
+        programName = '1001';
+        vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
+    }
+    parameters.push("--property", "programName", programName);
+  
+    // Set the include path
+    let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
+    if (fileExists(includePath)) {
+        parameters.push("--include", includePath);
+    }
+    
+    // Set post, cnc and output paths
+    if (isSecondary) {
+      parameters.unshift(secondaryoutputpath);
+    } else {
+      parameters.unshift(outputpath)
+    }
+    parameters.unshift(postLocation, cncFile);
+  
+    if (isSecondary) {
+      executeCommand('propertyList.checkForDifferencesSecondary');
+    } else {
+      executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
+    }
+  
+    var hash = crypto.createHash('md5').update(postFile).digest('hex');
+    var jsonPath = path.join(propertyJSONpath, hash + ".json");
+    if (fs.existsSync(jsonPath)) {
+        var lines = fs.readFileSync(jsonPath);
+        if (lines.length > 1) {
+            var obj = JSON.parse(lines);
+            if (obj.changed.properties) {
+                for (x in obj.changed.properties) {
+                    var setting = obj.changed.properties[x].value != undefined ? obj.changed.properties[x].value : obj.changed.properties[x]
+                    if (typeof setting == "string") {
+                        setting = "'" + setting + "'";
+                    }
+                    parameters.push("--property", x, setting);
+                }
+            }
+        }
+    }
+
+    return parameters;
 }
 
 /** creates a new file that excludes the debug lines outputted for line jumping */
