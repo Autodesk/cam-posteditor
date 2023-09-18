@@ -134,7 +134,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importCNC', () => { importCustomFile("cncFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importMachine', () => { importCustomFile("machineFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => { locatePostEXE(false) }));
-  context.subscriptions.push(vscode.commands.registerCommand('hsm.changeSecondaryPostExe', () => { locateSecondaryPostEXE() }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.changeSecondaryPostExe', () => { locateSecondaryPostEXE(false) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.findPostExe', () => { checkPostKernel() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteCNCFile', (element) => { deleteCNCFile(element.src) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteMachineFile', (element) => { deleteMachineFile(element.src) }));
@@ -771,14 +771,20 @@ function postCompare(postLocation) {
       return
     }
     if (!fileExists(postExecutable)) {
-      locatePostEXE(false);
-      vscode.window.showWarningMessage("Please select a primary post executable to run post compare.");
-      return;
+      locatePostEXE(true);
+      if (!fileExists(postExecutable)) {
+        locatePostEXE(false);
+        vscode.window.showWarningMessage("Failed to find post processor automatically. Please select a primary post executable to run post compare.");
+        return;
+      }
     }
     if (!fileExists(secondaryPostExecutable)) {
-      locateSecondaryPostEXE()
-      vscode.window.showWarningMessage("Please select a secondary post executable to run post compare.");
-      return;
+      locateSecondaryPostEXE(true);
+      if (!fileExists(secondaryPostExecutable)) {
+        locateSecondaryPostEXE(false);
+        vscode.window.showWarningMessage("Failed to find legacy post processor automatically. Please select a secondary post executable to run post compare.");
+        return;
+      }
     }
     if (!cncFile) {
       checkDirSize(cncFilesLocation, 'hsm.postCompare');
@@ -1298,17 +1304,58 @@ function locatePostEXE(findPostAutomatically) {
 }
 
 /**
- *  Prompts user to select a secondary post exe
+ *  Locates the legacy post executable on the users system
+ *  
+ * Boolean argument defines if it should be located automatically
+ *  or if a user is prompted to select it
  */
-function locateSecondaryPostEXE() {
-    vscode.window.showInformationMessage("Please select your secondary post executable", "Browse...").then((val) => {
+function locateSecondaryPostEXE(findPostAutomatically) {
+  // Try find the fusion install location and use the legacy post exe from there. If we find it, the path is written to user settings
+  // if the location isn't found, prompt the user to manually select
+  if (findPostAutomatically) {
+    /** This prioritizes the latest post kernel */
+    let possibleLocations = ['develop', 'pre-production', 'production'];
+    if (process.platform == "win32") {
+      // ini location tells us the latest install location
+      for (const location of possibleLocations) {
+        let fusionDataFile = path.join(process.env.LOCALAPPDATA, "autodesk", "webdeploy", location, "6a0c9611291d45bb9226980209917c3d", "FusionLauncher.exe.ini");
+        if (fileExists(fusionDataFile)) {
+          let lines = fs.readFileSync(fusionDataFile, "utf16le").split("\n");
+          // try and find the .exe path
+          for (let j = 0; j < lines.length; ++j) {
+            let activeLine = lines[j];
+            if (activeLine.toLowerCase().includes("fusion360.exe")) {
+              // once found, we craft the path of the post.exe
+              let fusionInstallLocation = activeLine.substring(8, activeLine.length - 16);
+              secondaryPostExecutable = path.join(fusionInstallLocation, "Applications", "CAM360", "post-legacy", "post.exe");
+              // if the file exists, it will write it to the settings file
+              if (fileExists(secondaryPostExecutable)) {
+                writeSecondaryPostToSettings();
+                return;
+              }
+            }
+          }
+        }
+      }
+    } else {
+      for (const location of possibleLocations) {
+        secondaryPostExecutable = path.join(process.env.HOME, "Library", "application support", "autodesk", "webdeploy",
+          location, "Autodesk Fusion 360" + (location != "production" ? " [" + location + "]" : "") + ".app", "contents", "libraries", "applications", "CAM360", "post-legacy", "post")
+        if (fileExists(secondaryPostExecutable)) {
+          writeSecondaryPostToSettings();
+          return;
+        }
+      }
+    }
+  }
+    vscode.window.showInformationMessage((findPostAutomatically ? "Secondary post executable cannot be found. " : "") + "Please select your secondary post executable", "Browse...").then((val) => {
         if (val == "Browse...") {
             vscode.window.showOpenDialog({ openFiles: true, filters: {} }).then(val => {
                 var selectedPath = val[0].path.substring(1, val[0].path.length);
                 if (fileExists(selectedPath) && selectedPath.toLowerCase().includes("post")) {
                     secondaryPostExecutable = selectedPath;
                     writeSecondaryPostToSettings();
-                    message("Secondary post processor location updated correctly.")
+                    message("Legacy (secondary) post processor location updated correctly.")
                 } else {
                     message("The post EXE you selected is invalid or does not exist.");
                 }
