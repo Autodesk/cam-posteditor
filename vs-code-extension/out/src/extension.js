@@ -73,6 +73,8 @@ let logPath = path.join(outputDir, "debuggedfile.log");
 let debugOutputpath = path.join(outputDir, "debuggedfile.nc2");
 /** The path containing the NC code from the secondary post exe */;
 let secondaryoutputpath = path.join(outputDir, "secondarydebuggedfile.nc");
+/** The path containing the secondary post process log */
+let secondaryLogPath = path.join(outputDir, "secondarydebuggedfile.log");
 /** Set the location of the stored custom files */
 let cncFilesLocation = path.join(resLocation, "CNC files");
 /** Object for accessing user preferences */
@@ -801,9 +803,19 @@ function postCompare(postLocation) {
     });
 
     child(secondaryPostExecutable, secondaryParameters, { timeout: _timeout }, function (err, data) {
-        if (err) {
-          message("Secondary post processing failed. Please post process separately to troubleshoot.");
+      if (err) {
+        if (err.signal == "SIGTERM") {
+          errorMessage("Secondary post processing failed due to timeout.");
           return;
+        }
+        if (fileExists(secondaryLogPath)) {
+          message("Secondary post processing failed, see the log for details.");
+          openAndShowFile(secondaryLogPath);
+          findErrorLine(secondaryLogPath);
+        } else {
+          message("Secondary post processing failed: " + err.message + data.toString());
+        }
+        return;
       }
 
       if (fileExists(outputpath) && fileExists(secondaryoutputpath)) {
