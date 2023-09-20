@@ -49,6 +49,8 @@ let postFile = "";
 let machineFile = "";
 /** Location of the post executable */
 let postExecutable = "";
+/** Location of the secondary post executable */
+let secondaryPostExecutable = "";
 // find and store the location for the application resources
 let resLocation = path.join(vscode.extensions.getExtension("Autodesk.hsm-post-processor").extensionPath, "res");
 /** The operating systems temporary directory */
@@ -69,6 +71,10 @@ let outputpath = path.join(outputDir, "debuggedfile.nc");
 let logPath = path.join(outputDir, "debuggedfile.log");
 /** The path containing the full debug posted output */
 let debugOutputpath = path.join(outputDir, "debuggedfile.nc2");
+/** The path containing the NC code from the secondary post exe */;
+let secondaryoutputpath = path.join(outputDir, "secondarydebuggedfile.nc");
+/** The path containing the secondary post process log */
+let secondaryLogPath = path.join(outputDir, "secondarydebuggedfile.log");
 /** Set the location of the stored custom files */
 let cncFilesLocation = path.join(resLocation, "CNC files");
 /** Object for accessing user preferences */
@@ -122,11 +128,13 @@ function activate(context) {
   /** Register all commands */
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.refreshPropertyList', () => { propertyTree.refresh() }));
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.interrogatePost', () => { propertyTree.forceInterrogation() }));
-  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferences', () => { propertyTree.checkForDifferences(false) }));
+  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferences', () => { propertyTree.checkForDifferences(false, false) }));
+  context.subscriptions.push(vscode.commands.registerCommand('propertyList.checkForDifferencesSecondary', () => { propertyTree.checkForDifferences(false, true) }));
   context.subscriptions.push(vscode.commands.registerCommand('propertyList.initializePropertyList', () => { propertyTree.refreshTree() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importCNC', () => { importCustomFile("cncFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.importMachine', () => { importCustomFile("machineFile") }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.changePostExe', () => { locatePostEXE(false) }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.changeSecondaryPostExe', () => { locateSecondaryPostEXE(false) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.findPostExe', () => { checkPostKernel() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteCNCFile', (element) => { deleteCNCFile(element.src) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.deleteMachineFile', (element) => { deleteMachineFile(element.src) }));
@@ -155,6 +163,7 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setCNC', selectedFile => { setCNCFile(selectedFile) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setMachine', selectedFile => { setMachineFile(selectedFile) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.postProcess', () => { postProcess(vscode.window.activeTextEditor.document.fileName) }));
+  context.subscriptions.push(vscode.commands.registerCommand('hsm.postCompare', () => { postCompare(vscode.window.activeTextEditor.document.fileName) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.setIncludePath', () => { setIncludePath(); }))
   context.subscriptions.push(vscode.commands.registerCommand('hsm.updatePostProperties', () => { updatePostProperties() }));
   context.subscriptions.push(vscode.commands.registerCommand('functionList.revealRange', (editor, range) => { highlightRange(editor, range) }));
@@ -411,6 +420,11 @@ function writePostToSettings() {
   vscode.workspace.getConfiguration("AutodeskPostUtility").update("postExecutablePath", postExecutable, true);
 }
 
+/** Write the secondary post processor location to a settings file so it is remembered between sessions */
+function writeSecondaryPostToSettings() {
+    vscode.workspace.getConfiguration("AutodeskPostUtility").update("secondaryPostExecutablePath", secondaryPostExecutable, true);
+}
+
 /** Used to check whether the user selects the same character twice (for two click line jumping) */
 let secondClick = false;
 /** The event gets called a few times (VSCode isssue). % 2 ensures we only use this once per click */
@@ -498,7 +512,7 @@ function checkForAutoComplete() {
 function onPickedItem(picked) {
   if (picked == "Post process") {
     if (!fileExists(cncFile)) {
-      checkDirSize(cncFilesLocation);
+      checkDirSize(cncFilesLocation, 'hsm.postProcess');
     } else {
       postProcess(vscode.window.activeTextEditor.document.fileName);
     }
@@ -508,7 +522,7 @@ function onPickedItem(picked) {
 }
 
 /** Selection of a subdirectory containing CNC files */
-function selectSub(dir) {
+function selectSub(dir, currentCommand = "") {
   var dirs = getDirectories(dir);
   var newList = [];
   for (var i = 0; i < dirs.length; i++) {
@@ -523,23 +537,23 @@ function selectSub(dir) {
         cncFile = selectedPath;
       });
     } else if (val) {
-      checkDirSize(path.join(dir, val));
+      checkDirSize(path.join(dir, val), currentCommand);
     }
   });
 }
 
 /** If a directory is selected, expand it if there are files in it. If not, select the CNC file */
-function checkDirSize(dir) {
+function checkDirSize(dir, currentCommand = "") {
   if (!dir) dir = path.join(resLocation, "CNC files");
   var dirs = getDirectories(dir);
   if (dirs.length > 0) {
-    selectSub(dir);
+    selectSub(dir, currentCommand);
   } else {
-    selectCNCFile(dir);
+    selectCNCFile(dir, currentCommand);
   }
 }
 
-function selectCNCFile(p) {
+function selectCNCFile(p, currentCommand = "") {
   // create a quick pick for CNC files
   var lists = fs.readdirSync(p);
   ListItems = [];
@@ -555,17 +569,19 @@ function selectCNCFile(p) {
     newList.push(basename);
   }
   QuickPickOptions = {placeHolder: "Select a the required CNC to post process"};
-  vscode.window.showQuickPick(newList).then(val => selectedCNCFile(val, ListItems));
+  vscode.window.showQuickPick(newList).then(val => selectedCNCFile(val, ListItems, currentCommand));
 }
 
-function selectedCNCFile(picked, fullList) {
+function selectedCNCFile(picked, fullList, currentCommand = "") {
   var itemToUse = undefined;
   for (var i = 0; i < fullList.length; i++) {
     var basename = path.basename(fullList[i]);
     if (picked == basename) itemToUse = fullList[i];
   }
-  if (itemToUse) setCNCFile(itemToUse);
-  vscode.commands.executeCommand('hsm.postProcess');
+  if (itemToUse) setCNCFile(itemToUse, currentCommand);
+  if (currentCommand != "") {
+    vscode.commands.executeCommand(currentCommand);
+  }
 }
 
 /** Gets the desired units from the users output settings */
@@ -632,7 +648,7 @@ function postProcess(postLocation) {
     vscode.window.showWarningMessage("The active document is not a postprocessor file.")
     return
   } else if (!cncFile) {
-    checkDirSize(cncFilesLocation);
+    checkDirSize(cncFilesLocation, 'hsm.postProcess');
     return
   }
   if (!fileExists(postExecutable)) {
@@ -644,65 +660,10 @@ function postProcess(postLocation) {
   // get the post processor executable location
   executeCommand('notifications.clearAll');
 
-  // get the user settings
-  config = vscode.workspace.getConfiguration("AutodeskPostUtility");
-  let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
-  let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
-  let units = selectUnits();
-  let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
-  let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
-
-  // define the arguments for post processing
-  let parameters = ['--noeditor'];
-  if (machineFile != "") {
-    parameters.unshift(machineFile);
-    parameters.unshift("--machine");
-  }
-  parameters.push(debugArg);
-  if (shorten) {
-    parameters.push("--shorten", lineLimit);
-  }
-
-  // Set the unit
-  parameters.push("--property", "unit", units.toString());
   
-  // get the program name from the user settings
-  let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
-  // if no name has been specified, use 1001
-  if (programName == '') {
-    vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
-    programName = '1001';
-    vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
-  }
-  parameters.push("--property", "programName", programName);
+  let newDebugger = vscode.workspace.getConfiguration("AutodeskPostUtility").get("newDebugger");
+  let parameters = createParameters(postLocation, false, newDebugger);
 
-  let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
-
-  if (fileExists(includePath)) {
-    parameters.push("--include", includePath);
-  }
-
-  parameters.unshift(postLocation, cncFile, outputpath);
-
-  executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
-
-  var hash = crypto.createHash('md5').update(postFile).digest('hex');
-  var jsonPath = path.join(propertyJSONpath, hash + ".json");
-  if (fs.existsSync(jsonPath)) {
-    var lines = fs.readFileSync(jsonPath);
-    if (lines.length > 1) {
-      var obj = JSON.parse(lines);
-      if (obj.changed.properties) {
-        for (x in obj.changed.properties) {
-          var setting = obj.changed.properties[x].value != undefined ? obj.changed.properties[x].value : obj.changed.properties[x]
-          if (typeof setting == "string") {
-            setting = "'" + setting + "'";
-          }
-          parameters.push("--property", x, setting);
-        }
-      }
-    }
-  }
   var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
   _timeout *= 1000; // convert to milliseconds
   child(postExecutable, parameters, { timeout: _timeout }, function (err, data) {
@@ -799,6 +760,157 @@ function postProcess(postLocation) {
       }
     }
   });
+}
+
+/** Post processes using the defined post script with the primary and secondary post exes and then compares to outputs */
+function postCompare(postLocation) {
+  executeCommand('notifications.clearAll');
+  
+    if (!checkActiveDocumentForPost()) {
+      vscode.window.showWarningMessage("The active document is not a postprocessor file.")
+      return
+    }
+    if (!fileExists(postExecutable)) {
+      locatePostEXE(true);
+      if (!fileExists(postExecutable)) {
+        locatePostEXE(false);
+        vscode.window.showWarningMessage("Failed to find post processor automatically. Please select a primary post executable to run post compare.");
+        return;
+      }
+    }
+    if (!fileExists(secondaryPostExecutable)) {
+      locateSecondaryPostEXE(true);
+      if (!fileExists(secondaryPostExecutable)) {
+        locateSecondaryPostEXE(false);
+        vscode.window.showWarningMessage("Failed to find legacy post processor automatically. Please select a secondary post executable to run post compare.");
+        return;
+      }
+    }
+    if (!cncFile) {
+      checkDirSize(cncFilesLocation, 'hsm.postCompare');
+      return
+    }
+
+    removeFilesInFolder(outputDir) // clear output folder prior posting
+    var child = require('child_process').execFile;
+    // get the post processor executable location
+
+    
+    let parameters = createParameters(postLocation, true, false, false);
+    let secondaryParameters = createParameters(postLocation, true, false, true);
+
+    var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
+    _timeout *= 1000; // convert to milliseconds
+    child(postExecutable, parameters, { timeout: _timeout }, function (err, data) {
+        if (err) {
+            message("Primary post processing failed. Please post process separately to troubleshoot.");
+            return;
+        }
+    });
+
+    child(secondaryPostExecutable, secondaryParameters, { timeout: _timeout }, function (err, data) {
+      if (err) {
+        if (err.signal == "SIGTERM") {
+          errorMessage("Secondary post processing failed due to timeout.");
+          return;
+        }
+        if (fileExists(secondaryLogPath)) {
+          message("Secondary post processing failed, see the log for details.");
+          openAndShowFile(secondaryLogPath);
+          findErrorLine(secondaryLogPath);
+        } else {
+          message("Secondary post processing failed: " + err.message + data.toString());
+        }
+        return;
+      }
+
+      if (fileExists(outputpath) && fileExists(secondaryoutputpath)) {
+        let uri = vscode.Uri.file(outputpath);
+        let secondaryUri = vscode.Uri.file(secondaryoutputpath);
+        wait(100);
+        vscode.commands.executeCommand("vscode.diff", uri, secondaryUri, 'Primary output <-> Secondary output', { viewColumn: vscode.ViewColumn.Two });
+      }
+    });
+
+}
+
+/** Creates parameters for post processing */
+function createParameters(postLocation, isPostCompare, newDebugger, isSecondary = false) {
+
+    let parameters = ['--noeditor'];
+
+    // Set the machine
+    if (machineFile != "") {
+        parameters.unshift(machineFile);
+        parameters.unshift("--machine");
+    }
+
+    // Set the debug mode
+    if (!isPostCompare || vscode.workspace.getConfiguration("AutodeskPostUtility").get("showDebuggedCode")) {
+      let debugArg = newDebugger ? "--debugreallyall" : "--debugall";
+      parameters.push(debugArg);
+    }
+  
+    // Set whether the output should be shortened
+    let shorten = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputCode");
+    let lineLimit = vscode.workspace.getConfiguration("AutodeskPostUtility").get("shortenOutputLineLimit");
+    if (shorten) {
+        parameters.push("--shorten", lineLimit);
+    }
+  
+    // Set the unit
+    let units = selectUnits();
+    parameters.push("--property", "unit", units.toString());
+  
+    // Get the program name from the user settings
+    let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
+    // If no name has been specified, use 1001
+    if (programName == '') {
+        vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
+        programName = '1001';
+        vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
+    }
+    parameters.push("--property", "programName", programName);
+  
+    // Set the include path
+    let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
+    if (fileExists(includePath)) {
+        parameters.push("--include", includePath);
+    }
+    
+    // Set post, cnc and output paths
+    if (isSecondary) {
+      parameters.unshift(secondaryoutputpath);
+    } else {
+      parameters.unshift(outputpath)
+    }
+    parameters.unshift(postLocation, cncFile);
+  
+    if (isSecondary) {
+      executeCommand('propertyList.checkForDifferencesSecondary');
+    } else {
+      executeCommand('propertyList.checkForDifferences');  // TAG not needed anymore?
+    }
+  
+    var hash = crypto.createHash('md5').update(postFile).digest('hex');
+    var jsonPath = path.join(propertyJSONpath, hash + ".json");
+    if (fs.existsSync(jsonPath)) {
+        var lines = fs.readFileSync(jsonPath);
+        if (lines.length > 1) {
+            var obj = JSON.parse(lines);
+            if (obj.changed.properties) {
+                for (x in obj.changed.properties) {
+                    var setting = obj.changed.properties[x].value != undefined ? obj.changed.properties[x].value : obj.changed.properties[x]
+                    if (typeof setting == "string") {
+                        setting = "'" + setting + "'";
+                    }
+                    parameters.push("--property", x, setting);
+                }
+            }
+        }
+    }
+
+    return parameters;
 }
 
 /** creates a new file that excludes the debug lines outputted for line jumping */
@@ -1192,6 +1304,68 @@ function locatePostEXE(findPostAutomatically) {
 }
 
 /**
+ *  Locates the legacy post executable on the users system
+ *  
+ * Boolean argument defines if it should be located automatically
+ *  or if a user is prompted to select it
+ */
+function locateSecondaryPostEXE(findPostAutomatically) {
+  // Try find the fusion install location and use the legacy post exe from there. If we find it, the path is written to user settings
+  // if the location isn't found, prompt the user to manually select
+  if (findPostAutomatically) {
+    /** This prioritizes the latest post kernel */
+    let possibleLocations = ['develop', 'pre-production', 'production'];
+    if (process.platform == "win32") {
+      // ini location tells us the latest install location
+      for (const location of possibleLocations) {
+        let fusionDataFile = path.join(process.env.LOCALAPPDATA, "autodesk", "webdeploy", location, "6a0c9611291d45bb9226980209917c3d", "FusionLauncher.exe.ini");
+        if (fileExists(fusionDataFile)) {
+          let lines = fs.readFileSync(fusionDataFile, "utf16le").split("\n");
+          // try and find the .exe path
+          for (let j = 0; j < lines.length; ++j) {
+            let activeLine = lines[j];
+            if (activeLine.toLowerCase().includes("fusion360.exe")) {
+              // once found, we craft the path of the post.exe
+              let fusionInstallLocation = activeLine.substring(8, activeLine.length - 16);
+              secondaryPostExecutable = path.join(fusionInstallLocation, "Applications", "CAM360", "post-legacy", "post.exe");
+              // if the file exists, it will write it to the settings file
+              if (fileExists(secondaryPostExecutable)) {
+                writeSecondaryPostToSettings();
+                return;
+              }
+            }
+          }
+        }
+      }
+    } else {
+      for (const location of possibleLocations) {
+        secondaryPostExecutable = path.join(process.env.HOME, "Library", "application support", "autodesk", "webdeploy",
+          location, "Autodesk Fusion 360" + (location != "production" ? " [" + location + "]" : "") + ".app", "contents", "libraries", "applications", "CAM360", "post-legacy", "post")
+        if (fileExists(secondaryPostExecutable)) {
+          writeSecondaryPostToSettings();
+          return;
+        }
+      }
+    }
+  }
+    vscode.window.showInformationMessage((findPostAutomatically ? "Secondary post executable cannot be found. " : "") + "Please select your secondary post executable", "Browse...").then((val) => {
+        if (val == "Browse...") {
+            vscode.window.showOpenDialog({ openFiles: true, filters: {} }).then(val => {
+                var selectedPath = val[0].path.substring(1, val[0].path.length);
+                if (fileExists(selectedPath) && selectedPath.toLowerCase().includes("post")) {
+                    secondaryPostExecutable = selectedPath;
+                    writeSecondaryPostToSettings();
+                    message("Legacy (secondary) post processor location updated correctly.")
+                } else {
+                    message("The post EXE you selected is invalid or does not exist.");
+                }
+                return false;
+            });
+        }
+    });
+}
+
+/**
  * Verifies the existance of the post kernel
  * 
  * If non-existant, it will be located automatically
@@ -1308,7 +1482,7 @@ function editMachineFile(machine) {
 
 /** Activates the selected CNC file */
 var cncFileStatusBar = undefined;
-function setCNCFile(selectedFile) {
+function setCNCFile(selectedFile, currentCommand = "") {
   if (selectedFile.toLowerCase().includes(".cnc")) {
     cncFile = selectedFile;
     statusMessage("CNC file set", 2000);
@@ -1320,7 +1494,7 @@ function setCNCFile(selectedFile) {
     cncFileStatusBar.show();
     if(!checkActiveDocumentForPost()) { return; }
     var postOnSelection = vscode.workspace.getConfiguration("AutodeskPostUtility").get("postOnCNCSelection");
-    if (postOnSelection) {
+    if (postOnSelection && currentCommand === "") {
       postProcess(vscode.window.activeTextEditor.document.fileName)
     }
   }
