@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.1.4",
+	"version": "4.1.5",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -421,6 +421,21 @@
 					"type": "string",
 					"default": "",
 					"description": "Sets an include path for use in post processing"
+				},
+				"AutodeskPostUtility.useEmbeddedESLintRules": {
+					"type": "string",
+					"enum": [
+						"Disabled",
+						"Show ESLint issues only",
+						"Show and fix ESLint issues"
+					],
+					"enumDescriptions": [
+						"Disable usage of embedded ESLint rules.",
+						"This option will show ESLint issues only.",
+						"This option will show and fix ESLint issues automatically when saving the file."
+					],
+					"default": "Disabled",
+					"markdownDescription": "Enable to use Autodesk's ESLint rules for editing postprocessor files (CPS/CPI files). Note that the [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) must be installed to be able to use this feature."
 				},
 				"AutodeskPostUtility.programName": {
 					"type": "string",
