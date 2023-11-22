@@ -1,8 +1,8 @@
 {
 	"name": "hsm-post-processor",
-	"displayName": "Autodesk Fusion 360 Post Processor Utility",
+	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.1.3",
+	"version": "4.1.4",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -355,12 +355,12 @@
 				"AutodeskPostUtility.postExecutablePath": {
 					"type": "string",
 					"default": "",
-					"description": "The location for the Fusion 360 post executable"
+					"description": "The location for the Fusion post executable"
 				},
 				"AutodeskPostUtility.secondaryPostExecutablePath": {
 					"type": "string",
 					"default": "",
-					"description": "The location for the secondary Fusion 360 post executable"
+					"description": "The location for the secondary Fusion post executable"
 				},
 				"AutodeskPostUtility.propertyJSON": {
 					"type": "object",

@@ -1,6 +1,6 @@
-# Autodesk Fusion 360 Post Processor Utility for Visual Studio Code
+# Autodesk Fusion Post Processor Utility for Visual Studio Code
 
-Welcome to the Autodesk Fusion 360 Post Utility extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion 360, Inventor CAM and HSMWorks. Please note that this utility is not compatible with FeatureCAM, PartMarker and PowerMILL.
+Welcome to the Autodesk Fusion Post Utility extension for Visual Studio Code (https://code.visualstudio.com/). This extension adds several functions that will aid you when working on post development specifically for Fusion, Inventor CAM and HSMWorks. Please note that this utility is not compatible with FeatureCAM, PartMarker and PowerMILL.
 
 To learn more about the CAM solutions see:
 https://www.autodesk.com/solutions/manufacturing/cam
@@ -37,7 +37,7 @@ The documentation of the postprocessor API can be found here:
 https://cam.autodesk.com/posts/reference/index.html
 
 # About
-Autodesk Fusion 360 Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  
+Autodesk Fusion Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  
 
 All use of this Software is subject to the Autodesk terms of service accepted accepted upon access or use of this Service or made available on the Autodesk webpage.  Autodesk terms of service for Autodesk’s various web services can be found [here](https://www.autodesk.com/company/legal-notices-trademarks/terms-of-service-autodesk360-web-services).
 
