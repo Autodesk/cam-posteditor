@@ -102,6 +102,7 @@ function activate(context) {
   // registering the appropriate event handlers
   vscode.workspace.onDidSaveTextDocument(savedoc);
   vscode.window.onDidChangeActiveTextEditor(checkForAutoComplete);
+  vscode.window.onDidChangeActiveTextEditor(setEmbeddedEslintRules);
   vscode.window.onDidChangeTextEditorSelection(handleSelectionChange);
   cleanupProperties();
 
@@ -1239,6 +1240,31 @@ function setIncludePath() {
       vscode.window.showErrorMessage("The selected Include path does not exist: " + selectedPath);
     }
   });
+}
+
+/** Updates the settings.json file for ESlint usage depending on the user setting. */
+function setEmbeddedEslintRules() {
+  let currentEslintConfiguration = vscode.workspace.getConfiguration("eslint");
+  let currentEditorConfiguration = vscode.workspace.getConfiguration("editor");
+  let newEslintConfiguration = Object.assign({}, currentEslintConfiguration.overrideConfigFile, {"overrideConfigFile": path.join(resLocation, ".eslintrc.json")});
+  let newEditorConfiguration
+  switch (vscode.workspace.getConfiguration("AutodeskPostUtility").get("useEmbeddedESLintRules")) {
+    case "Disabled":
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": false});
+      newEslintConfiguration = Object.assign({}, currentEslintConfiguration.overrideConfigFile, {});
+      break;
+    case "Show ESLint issues only":
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": false});
+      break;
+    case "Show and fix ESLint issues":
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": true});
+      break;
+    default:
+      errorMessage("Unknown command for setting useEmbeddedESLintRules.")
+      return;
+  }
+  vscode.workspace.getConfiguration("eslint").update("options", newEslintConfiguration, true);
+  vscode.workspace.getConfiguration("editor").update("codeActionsOnSave", newEditorConfiguration, true);
 }
 
 /**
