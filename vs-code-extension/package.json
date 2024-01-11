@@ -435,7 +435,7 @@
 						"This option will show and fix ESLint issues automatically when saving the file."
 					],
 					"default": "Disabled",
-					"markdownDescription": "Enable to use Autodesk's ESLint rules for editing postprocessor files (CPS/CPI files). Note that the [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) must be installed to be able to use this feature."
+					"markdownDescription": "Enable to use Autodesk's ESLint rules for editing postprocessor files (CPS/CPI files). ESLint and the ESLint Extension must be installed on your system. If you haven't installed ESLint do so by running 'npm install -g eslint' for a global install. The [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) must be installed as well to be able to use this feature."
 				},
 				"AutodeskPostUtility.programName": {
 					"type": "string",
