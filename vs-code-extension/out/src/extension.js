@@ -971,15 +971,7 @@ function checkActiveDocumentForPost() {
 
 /** Downloads the CNC exporting post processor */
 function downloadCNCExtractor() {
-  const ncToCopy = path.join(resLocation, "export cnc file to vs code.cps");
-  var uri = vscode.Uri.file(ncToCopy);
-  uri.path = path.join(os.userInfo().homedir.toString(), 'export cnc file to vs code.cps');
-  vscode.window.showSaveDialog({ filters: { 'Autodesk Post Processor': ['cps'] }, defaultUri: uri }).then(val => {
-    if (val) {
-      fs.createReadStream(ncToCopy).pipe(fs.createWriteStream(val.path.substring(1, val.path.length)));
-      message("Post saved");
-    }
-  });
+  vscode.env.openExternal(vscode.Uri.parse('https://cam.autodesk.com/hsmposts?p=export_cnc_file_to_vs_code'));
 }
 
 /** Encrypts or decrypts the post process */
