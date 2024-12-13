@@ -253,20 +253,25 @@ function showPostEngineVersion() {
   }
 }
 
-/** Merges the post processor with any files with the '.merge.cps' extension in the same directory */
+/** Merges the post processor with any files with the '.merged.cps' extension in the same directory */
 function mergePost() {
   checkPostKernel();
   let child = require('child_process').execFile;
   let parameters = [];
   postFile = getCpsPath();
-  var mergeFile = postFile.split(".cps")[0] + ".merge.cps";
+  var mergeFile = postFile.split(".cps")[0] + ".merged.cps";
   parameters = [postFile, "--merge", mergeFile];
+
+  let includePath = vscode.workspace.getConfiguration("AutodeskPostUtility").get('includePath');
+  if (fileExists(includePath)) {
+      parameters.push("--include", includePath); // Set the include path
+  }
   try {
     var _timeout = vscode.workspace.getConfiguration("AutodeskPostUtility").get("timeoutForPostProcessing");
     _timeout *= 1000; // convert to milliseconds
-    child(postExecutable, parameters, { timeout: _timeout }, function (err, data) {
-      if (err) {
-        errorMessage("Merge failed.");
+    child(postExecutable, parameters, { timeout: _timeout }, function (err, stdout, stderr) {
+      if (stderr) {
+        errorMessage("Merge failed: " + stderr);
       } else {
         message("Merge successful. The merged post can be found in your post processors directory.");
       }
