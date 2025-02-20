@@ -865,11 +865,18 @@ function createParameters(postLocation, isPostCompare, newDebugger, isSecondary 
   
     // Get the program name from the user settings
     let programName = vscode.workspace.getConfiguration("AutodeskPostUtility").get('programName');
+    programName = programName.trim();
     // If no name has been specified, use 1001
     if (programName == '') {
         vscode.workspace.getConfiguration("AutodeskPostUtility").update('programName', '1001', true);
         programName = '1001';
         vscode.window.showInformationMessage('Program name hasn\'t been specified, using 1001 as the name');
+    }
+    if (programName.toUpperCase() == '#CNCFILENAME') {
+      programName = path.basename(cncFile, path.extname(cncFile));
+    }
+    if (programName.indexOf("'") == -1) {
+      programName = `'${programName}'`;
     }
     parameters.push("--property", "programName", programName);
   
@@ -1515,6 +1522,7 @@ function setCNCFile(selectedFile, currentCommand = "") {
     if (postOnSelection && currentCommand === "") {
       postProcess(vscode.window.activeTextEditor.document.fileName)
     }
+    
   }
 }
 

@@ -440,7 +440,7 @@
 				"AutodeskPostUtility.programName": {
 					"type": "string",
 					"default": "1001",
-					"description": "Defines the name used for post processing"
+					"description": "Defines the name used for post processing. You can input a number, an alphanumeric string, or #CNCFILENAME if you want to use the selected file's name."
 				},
 				"AutodeskPostUtility.postOnCNCSelection": {
 					"type": "boolean",
