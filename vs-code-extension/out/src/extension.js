@@ -1247,14 +1247,14 @@ function setEmbeddedEslintRules() {
   let newEditorConfiguration
   switch (vscode.workspace.getConfiguration("AutodeskPostUtility").get("useEmbeddedESLintRules")) {
     case "Disabled":
-      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": false});
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": "never"});
       newEslintConfiguration = Object.assign({}, currentEslintConfiguration.overrideConfigFile, {});
       break;
     case "Show ESLint issues only":
-      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": false});
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": "never"});
       break;
     case "Show and fix ESLint issues":
-      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": true});
+      newEditorConfiguration = Object.assign({}, currentEditorConfiguration.codeActionsOnSave, {"source.fixAll.eslint": "explicit"});
       break;
     default:
       errorMessage("Unknown command for setting useEmbeddedESLintRules.")
@@ -1262,6 +1262,7 @@ function setEmbeddedEslintRules() {
   }
   vscode.workspace.getConfiguration("eslint").update("options", newEslintConfiguration, true);
   vscode.workspace.getConfiguration("editor").update("codeActionsOnSave", newEditorConfiguration, true);
+  vscode.workspace.getConfiguration("eslint").update("useFlatConfig", false, true);
 }
 
 /**

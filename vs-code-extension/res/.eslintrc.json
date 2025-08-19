@@ -150,7 +150,12 @@
                 "no-magic-numbers": "off",
                 "no-mixed-operators": "off",
                 "no-mixed-requires": "error",
-                "no-multi-spaces": "off",
+                "no-multi-spaces": ["error", {
+                  "ignoreEOLComments": true,
+                  "exceptions": {
+                    "Property": true
+                   }
+                }],
                 "no-multi-str": "off",
                 "no-multiple-empty-lines": [2, {
                     "max": 1
