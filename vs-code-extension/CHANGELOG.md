@@ -1,4 +1,10 @@
 # Change Log
+## 4.1.7
+Fixed:
+  - The 'Merge post processor' feature does now utilize the include path if specified
+  - Fixed an issue where ESLint did not recognize the embedded rules file.
+Updated:
+  - Updated embedded ESLint rules file.
 ## 4.1.6
 Changed:
   - Option 'Download CNC exporting post processor' now redirects to the Fusion post library website
