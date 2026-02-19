@@ -1424,21 +1424,27 @@ function restoreCustomData() {
     copyCustomFiles("machine", customMachines, path.join(resLocation, "Machines", "Custom"), false);
   }
 }
-/** Copies globals.d.ts into node_modules/@types/post-processor so the TS language service picks it up automatically. */
+/** Copies globals.d.ts to the workspace root so the TS language service picks it up automatically. */
 function installTypeDeclarations() {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders || workspaceFolders.length === 0) return;
   const workspaceRoot = workspaceFolders[0].uri.fsPath;
-  const nmDir = path.join(workspaceRoot, "node_modules");
-  if (!fs.existsSync(nmDir)) return;
-  const targetDir = path.join(nmDir, "@types", "post-processor");
   const sourceFile = path.join(resLocation, "language files", "globals.d.ts");
-  const targetFile = path.join(targetDir, "index.d.ts");
+  if (!fs.existsSync(sourceFile)) return;
   try {
-    fs.mkdirSync(targetDir, { recursive: true });
-    fs.copyFileSync(sourceFile, targetFile);
+    var targetDir = path.join(workspaceRoot, "node_modules", "@types", "post-processor");
+    var targetFile = path.join(targetDir, "index.d.ts");
+    var needsCopy = true;
+    if (fs.existsSync(targetFile)) {
+      needsCopy = fs.statSync(sourceFile).size !== fs.statSync(targetFile).size;
+    }
+    if (needsCopy) {
+      fs.mkdirSync(targetDir, { recursive: true });
+      fs.copyFileSync(sourceFile, targetFile);
+    }
     var pkg = path.join(targetDir, "package.json");
     if (!fs.existsSync(pkg)) {
+      fs.mkdirSync(targetDir, { recursive: true });
       fs.writeFileSync(pkg, '{"name":"@types/post-processor","version":"1.0.0","types":"index.d.ts"}');
     }
   } catch (_) {}
