@@ -1,4 +1,10 @@
 # Change Log
+## 4.1.8
+Added:
+  - Automatic API IntelliSense: hover documentation and auto-completion for the Post Processor API is now provided automatically for .cps and .cpi files. No manual setup required.
+  - Added .cpi file association to JavaScript language mode.
+Removed:
+  - Removed 'Enable/Disable auto complete' commands. IntelliSense is now always available.
 ## 4.1.7
 Fixed:
   - The 'Merge post processor' feature does now utilize the include path if specified

@@ -1,2435 +1,2352 @@
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation. All rights reserved. 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this file except in compliance with the License. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0  
- 
-THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
-MERCHANTABLITY OR NON-INFRINGEMENT. 
- 
-See the Apache Version 2.0 License for specific language governing permissions
-and limitations under the License.
-***************************************************************************** */
-
-
-
-/// <reference no-default-lib="true"/>
-
-
-/////////////////////////////
-/// ECMAScript APIs
-/////////////////////////////
-
-declare const NaN: number;
-declare const Infinity: number;
-
 /**
-  * Evaluates JavaScript code and executes it.
-  * @param x A String value that contains valid JavaScript code.
-  */
-declare function eval(x: string): any;
+ * Autodesk CAM Post Processor API Type Declarations
+ *
+ * Provides IntelliSense and hover documentation for .cps / .cpi files.
+ * Based on: https://cam.autodesk.com/posts/reference/
+ *
+ * Copyright (c) 2012-2026 by Autodesk, Inc.
+ */
 
-/**
-  * Converts A string to an integer.
-  * @param s A string to convert into a number.
-  * @param radix A value between 2 and 36 that specifies the base of the number in numString.
-  * If this argument is not supplied, strings with a prefix of '0x' are considered hexadecimal.
-  * All other strings are considered decimal.
-  */
-declare function parseInt(s: string, radix?: number): number;
+// ---------------------------------------------------------------------------
+//  Vector
+// ---------------------------------------------------------------------------
 
-/**
-  * Converts a string to a floating-point number.
-  * @param string A string that contains a floating-point number.
-  */
-declare function parseFloat(string: string): number;
-
-/**
-  * Returns a Boolean value that indicates whether a value is the reserved value NaN (not a number).
-  * @param number A numeric value.
-  */
-declare function isNaN(number: number): boolean;
-
-/**
-  * Determines whether a supplied number is finite.
-  * @param number Any numeric value.
-  */
-declare function isFinite(number: number): boolean;
-
-/**
-  * Gets the unencoded version of an encoded Uniform Resource Identifier (URI).
-  * @param encodedURI A value representing an encoded URI.
-  */
-declare function decodeURI(encodedURI: string): string;
-
-/**
-  * Gets the unencoded version of an encoded component of a Uniform Resource Identifier (URI).
-  * @param encodedURIComponent A value representing an encoded URI component.
-  */
-declare function decodeURIComponent(encodedURIComponent: string): string;
-
-/**
-  * Encodes a text string as a valid Uniform Resource Identifier (URI)
-  * @param uri A value representing an encoded URI.
-  */
-declare function encodeURI(uri: string): string;
-
-/**
-  * Encodes a text string as a valid component of a Uniform Resource Identifier (URI).
-  * @param uriComponent A value representing an encoded URI component.
-  */
-declare function encodeURIComponent(uriComponent: string): string;
-
-interface PropertyDescriptor {
-    configurable?: boolean;
-    enumerable?: boolean;
-    value?: any;
-    writable?: boolean;
-    get?(): any;
-    set?(v: any): void;
+/** A 3-component vector (x, y, z). */
+declare class Vector {
+  constructor(x: number, y: number, z: number);
+  /** X component. */
+  x: number;
+  /** Y component. */
+  y: number;
+  /** Z component. */
+  z: number;
+  /** Returns the length (magnitude) of the vector. */
+  length: number;
+  /** Returns a negated copy of this vector. */
+  getNegated(): Vector;
+  /** Returns a normalized copy of this vector. */
+  getNormalized(): Vector;
+  /** Returns the absolute values of the components. */
+  getAbsolute(): Vector;
+  /** Returns the dot product with the given vector. */
+  getProduct(v: Vector): number;
+  /** Returns the minimum component value. */
+  getMinimum(): number;
+  /** Returns the maximum component value. */
+  getMaximum(): number;
+  /** Returns the Euclidean distance to another point. */
+  getDistance(v: Vector): number;
+  /** Returns the cross product of this vector with v. */
+  cross(v: Vector): Vector;
+  /** Returns the dot product with v. */
+  dot(v: Vector): number;
+  /** Adds two vectors. */
+  static sum(a: Vector, b: Vector): Vector;
+  /** Subtracts b from a. */
+  static diff(a: Vector, b: Vector): Vector;
+  /** Returns true if this vector equals v (within tolerance). */
+  isEqual(v: Vector): boolean;
+  /** Returns true if this is a zero vector (within tolerance). */
+  isZero(): boolean;
+  /** Returns true if this vector is non-zero. */
+  isNonZero(): boolean;
+  /** Returns the component value at the given index (0=x, 1=y, 2=z). */
+  getCoordinate(index: number): number;
+  /** Sets the component value at the given index. */
+  setCoordinate(index: number, value: number): void;
+  toString(): string;
 }
 
-interface PropertyDescriptorMap {
-    [s: string]: PropertyDescriptor;
+// ---------------------------------------------------------------------------
+//  VectorPair
+// ---------------------------------------------------------------------------
+
+/** A pair of vectors. Returned by polar mode activation. */
+declare class VectorPair {
+  /** The first vector. */
+  first: Vector;
+  /** The second vector. */
+  second: Vector;
 }
 
-interface Object {
-    /** The initial value of Object.prototype.constructor is the standard built-in Object constructor. */
-    constructor: Function;
+// ---------------------------------------------------------------------------
+//  Matrix
+// ---------------------------------------------------------------------------
 
-    /** Returns a string representation of an object. */
-    toString(): string;
-
-    /** Returns a date converted to a string using the current locale. */
-    toLocaleString(): string;
-
-    /** Returns the primitive value of the specified object. */
-    valueOf(): Object;
-
-    /**
-      * Determines whether an object has a property with the specified name.
-      * @param v A property name.
-      */
-    hasOwnProperty(v: string): boolean;
-
-    /**
-      * Determines whether an object exists in another object's prototype chain.
-      * @param v Another object whose prototype chain is to be checked.
-      */
-    isPrototypeOf(v: Object): boolean;
-
-    /**
-      * Determines whether a specified property is enumerable.
-      * @param v A property name.
-      */
-    propertyIsEnumerable(v: string): boolean;
+/** A 3×3 rotation/orientation matrix. */
+declare class Matrix {
+  constructor();
+  /** Returns the forward direction (first column). */
+  getForward(): Vector;
+  /** Returns the up direction (second column). */
+  getUp(): Vector;
+  /** Returns the right direction (third column). */
+  getRight(): Vector;
+  /** Returns the transposed matrix. */
+  getTransposed(): Matrix;
+  /** Returns the Euler angles for a given convention. */
+  getEuler(convention: number): Vector;
+  /** Returns the Euler angles as ZYZ. */
+  getEuler2(convention: number): Vector;
+  /** Returns true if this is an identity matrix. */
+  isIdentity(): boolean;
+  /** Multiplies this matrix by another. */
+  multiply(m: Matrix): Matrix;
+  /** Sets the X rotation in radians. */
+  setXRotation(angle: number): void;
+  /** Sets the Y rotation in radians. */
+  setYRotation(angle: number): void;
+  /** Sets the Z rotation in radians. */
+  setZRotation(angle: number): void;
 }
 
-interface ObjectConstructor {
-    new(value?: any): Object;
-    (): any;
-    (value: any): any;
+// ---------------------------------------------------------------------------
+//  Range
+// ---------------------------------------------------------------------------
 
-    /** A reference to the prototype for a class of objects. */
-    readonly prototype: Object;
-
-    /**
-      * Returns the prototype of an object.
-      * @param o The object that references the prototype.
-      */
-    getPrototypeOf(o: any): any;
-
-    /**
-      * Gets the own property descriptor of the specified object.
-      * An own property descriptor is one that is defined directly on the object and is not inherited from the object's prototype.
-      * @param o Object that contains the property.
-      * @param p Name of the property.
-    */
-    getOwnPropertyDescriptor(o: any, p: string): PropertyDescriptor;
-
-    /**
-      * Returns the names of the own properties of an object. The own properties of an object are those that are defined directly
-      * on that object, and are not inherited from the object's prototype. The properties of an object include both fields (objects) and functions.
-      * @param o Object that contains the own properties.
-      */
-    getOwnPropertyNames(o: any): string[];
-
-    /**
-      * Creates an object that has the specified prototype or that has null prototype.
-      * @param o Object to use as a prototype. May be null.
-      */
-    create(o: object | null): any;
-
-    /**
-      * Creates an object that has the specified prototype, and that optionally contains specified properties.
-      * @param o Object to use as a prototype. May be null
-      * @param properties JavaScript object that contains one or more property descriptors.
-      */
-    create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
-
-    /**
-      * Adds a property to an object, or modifies attributes of an existing property.
-      * @param o Object on which to add or modify the property. This can be a native JavaScript object (that is, a user-defined object or a built in object) or a DOM object.
-      * @param p The property name.
-      * @param attributes Descriptor for the property. It can be for a data property or an accessor property.
-      */
-    defineProperty(o: any, p: string, attributes: PropertyDescriptor & ThisType<any>): any;
-
-    /**
-      * Adds one or more properties to an object, and/or modifies attributes of existing properties.
-      * @param o Object on which to add or modify the properties. This can be a native JavaScript object or a DOM object.
-      * @param properties JavaScript object that contains one or more descriptor objects. Each descriptor object describes a data property or an accessor property.
-      */
-    defineProperties(o: any, properties: PropertyDescriptorMap & ThisType<any>): any;
-
-    /**
-      * Prevents the modification of attributes of existing properties, and prevents the addition of new properties.
-      * @param o Object on which to lock the attributes.
-      */
-    seal<T>(o: T): T;
-
-    /**
-      * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
-      * @param o Object on which to lock the attributes.
-      */
-    freeze<T>(a: T[]): ReadonlyArray<T>;
-
-    /**
-      * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
-      * @param o Object on which to lock the attributes.
-      */
-    freeze<T extends Function>(f: T): T;
-
-    /**
-      * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
-      * @param o Object on which to lock the attributes.
-      */
-    freeze<T>(o: T): Readonly<T>;
-
-    /**
-      * Prevents the addition of new properties to an object.
-      * @param o Object to make non-extensible.
-      */
-    preventExtensions<T>(o: T): T;
-
-    /**
-      * Returns true if existing property attributes cannot be modified in an object and new properties cannot be added to the object.
-      * @param o Object to test.
-      */
-    isSealed(o: any): boolean;
-
-    /**
-      * Returns true if existing property attributes and values cannot be modified in an object, and new properties cannot be added to the object.
-      * @param o Object to test.
-      */
-    isFrozen(o: any): boolean;
-
-    /**
-      * Returns a value that indicates whether new properties can be added to an object.
-      * @param o Object to test.
-      */
-    isExtensible(o: any): boolean;
-
-    /**
-      * Returns the names of the enumerable properties and methods of an object.
-      * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
-      */
-    keys(o: {}): string[];
+/** A numeric range with minimum and maximum values. */
+declare class Range {
+  /** The minimum value. */
+  getMinimum(): number;
+  /** The maximum value. */
+  getMaximum(): number;
+  /** Returns true if the range is non-degenerate. */
+  isNonDegenerate(): boolean;
 }
 
-/**
-  * Provides functionality common to all JavaScript objects.
-  */
-declare const Object: ObjectConstructor;
+// ---------------------------------------------------------------------------
+//  BoundingBox
+// ---------------------------------------------------------------------------
 
-/**
-  * Creates a new function.
-  */
-interface Function {
-    /**
-      * Calls the function, substituting the specified object for the this value of the function, and the specified array for the arguments of the function.
-      * @param thisArg The object to be used as the this object.
-      * @param argArray A set of arguments to be passed to the function.
-      */
-    apply(this: Function, thisArg: any, argArray?: any): any;
-
-    /**
-      * Calls a method of an object, substituting another object for the current object.
-      * @param thisArg The object to be used as the current object.
-      * @param argArray A list of arguments to be passed to the method.
-      */
-    call(this: Function, thisArg: any, ...argArray: any[]): any;
-
-    /**
-      * For a given function, creates a bound function that has the same body as the original function.
-      * The this object of the bound function is associated with the specified object, and has the specified initial parameters.
-      * @param thisArg An object to which the this keyword can refer inside the new function.
-      * @param argArray A list of arguments to be passed to the new function.
-      */
-    bind(this: Function, thisArg: any, ...argArray: any[]): any;
-
-    /** Returns a string representation of a function. */
-    toString(): string;
-
-    prototype: any;
-    readonly length: number;
-
-    // Non-standard extensions
-    arguments: any;
-    caller: Function;
+/** An axis-aligned bounding box. */
+declare class BoundingBox {
+  /** Returns the lower-left-bottom corner. */
+  lower: Vector;
+  /** Returns the upper-right-top corner. */
+  upper: Vector;
+  /** Returns the X range. */
+  getXRange(): Range;
+  /** Returns the Y range. */
+  getYRange(): Range;
+  /** Returns the Z range. */
+  getZRange(): Range;
 }
 
-interface FunctionConstructor {
-    /**
-      * Creates a new function.
-      * @param args A list of arguments the function accepts.
-      */
-    new(...args: string[]): Function;
-    (...args: string[]): Function;
-    readonly prototype: Function;
+// ---------------------------------------------------------------------------
+//  FormatNumber
+// ---------------------------------------------------------------------------
+
+/** A number formatter created with `createFormat()`. */
+declare class FormatNumber {
+  /** Formats a value into a string. Returns empty string if unchanged from previous call (modal). */
+  format(value: number): string;
+  /** Returns the result unit scaling factor. */
+  getResultingValue(value: number): number;
+  /** Returns true if the value would produce output (i.e., differs from cached value). */
+  areDifferent(a: number, b: number): boolean;
+  /** Returns the minimum number of decimals. */
+  getMinimumDecimals(): number;
+  /** Returns the number of decimals. */
+  getNumberOfDecimals(): number;
+  /** Returns the error from rounding. */
+  getError(value: number): number;
+  /** Returns true if this format uses a signed representation. */
+  isSignedFormat(): boolean;
 }
 
-declare const Function: FunctionConstructor;
+/** An alias for FormatNumber. */
+declare type Format = FormatNumber;
 
-interface IArguments {
-    [index: number]: any;
-    length: number;
-    callee: Function;
+// ---------------------------------------------------------------------------
+//  OutputVariable / Variable / Modal / IncrementalVariable / ReferenceVariable
+// ---------------------------------------------------------------------------
+
+/** An output variable created with `createOutputVariable()`. Combines a prefix, format, and force logic. */
+declare class OutputVariable {
+  /** Formats the value, prepending the prefix. Returns empty string if not forced and value unchanged. */
+  format(value: number): string;
+  /** Returns the current (cached) value. */
+  getCurrent(): number;
+  /** Resets the variable so the next call forces output. */
+  reset(): void;
+  /** Disables output until reset. */
+  disable(): void;
+  /** Enables output. */
+  enable(): void;
+  /** Returns the prefix string. */
+  getPrefix(): string;
+  /** Sets the prefix string. */
+  setPrefix(prefix: string): void;
 }
 
-interface String {
-    /** Returns a string representation of a string. */
-    toString(): string;
-
-    /**
-      * Returns the character at the specified index.
-      * @param pos The zero-based index of the desired character.
-      */
-    charAt(pos: number): string;
-
-    /**
-      * Returns the Unicode value of the character at the specified location.
-      * @param index The zero-based index of the desired character. If there is no character at the specified index, NaN is returned.
-      */
-    charCodeAt(index: number): number;
-
-    /**
-      * Returns a string that contains the concatenation of two or more strings.
-      * @param strings The strings to append to the end of the string.
-      */
-    concat(...strings: string[]): string;
-
-    /**
-      * Returns the position of the first occurrence of a substring.
-      * @param searchString The substring to search for in the string
-      * @param position The index at which to begin searching the String object. If omitted, search starts at the beginning of the string.
-      */
-    indexOf(searchString: string, position?: number): number;
-
-    /**
-      * Returns the last occurrence of a substring in the string.
-      * @param searchString The substring to search for.
-      * @param position The index at which to begin searching. If omitted, the search begins at the end of the string.
-      */
-    lastIndexOf(searchString: string, position?: number): number;
-
-    /**
-      * Determines whether two strings are equivalent in the current locale.
-      * @param that String to compare to target string
-      */
-    localeCompare(that: string): number;
-
-    /**
-      * Matches a string with a regular expression, and returns an array containing the results of that search.
-      * @param regexp A variable name or string literal containing the regular expression pattern and flags.
-      */
-    match(regexp: string | RegExp): RegExpMatchArray | null;
-
-    /**
-      * Replaces text in a string, using a regular expression or search string.
-      * @param searchValue A string to search for.
-      * @param replaceValue A string containing the text to replace for every successful match of searchValue in this string.
-      */
-    replace(searchValue: string | RegExp, replaceValue: string): string;
-
-    /**
-      * Replaces text in a string, using a regular expression or search string.
-      * @param searchValue A string to search for.
-      * @param replacer A function that returns the replacement text.
-      */
-    replace(searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string;
-
-    /**
-      * Finds the first substring match in a regular expression search.
-      * @param regexp The regular expression pattern and applicable flags.
-      */
-    search(regexp: string | RegExp): number;
-
-    /**
-      * Returns a section of a string.
-      * @param start The index to the beginning of the specified portion of stringObj.
-      * @param end The index to the end of the specified portion of stringObj. The substring includes the characters up to, but not including, the character indicated by end.
-      * If this value is not specified, the substring continues to the end of stringObj.
-      */
-    slice(start?: number, end?: number): string;
-
-    /**
-      * Split a string into substrings using the specified separator and return them as an array.
-      * @param separator A string that identifies character or characters to use in separating the string. If omitted, a single-element array containing the entire string is returned.
-      * @param limit A value used to limit the number of elements returned in the array.
-      */
-    split(separator: string | RegExp, limit?: number): string[];
-
-    /**
-      * Returns the substring at the specified location within a String object.
-      * @param start The zero-based index number indicating the beginning of the substring.
-      * @param end Zero-based index number indicating the end of the substring. The substring includes the characters up to, but not including, the character indicated by end.
-      * If end is omitted, the characters from start through the end of the original string are returned.
-      */
-    substring(start: number, end?: number): string;
-
-    /** Converts all the alphabetic characters in a string to lowercase. */
-    toLowerCase(): string;
-
-    /** Converts all alphabetic characters to lowercase, taking into account the host environment's current locale. */
-    toLocaleLowerCase(): string;
-
-    /** Converts all the alphabetic characters in a string to uppercase. */
-    toUpperCase(): string;
-
-    /** Returns a string where all alphabetic characters have been converted to uppercase, taking into account the host environment's current locale. */
-    toLocaleUpperCase(): string;
-
-    /** Removes the leading and trailing white space and line terminator characters from a string. */
-    trim(): string;
-
-    /** Returns the length of a String object. */
-    readonly length: number;
-
-    // IE extensions
-    /**
-      * Gets a substring beginning at the specified location and having the specified length.
-      * @param from The starting position of the desired substring. The index of the first character in the string is zero.
-      * @param length The number of characters to include in the returned substring.
-      */
-    substr(from: number, length?: number): string;
-
-    /** Returns the primitive value of the specified object. */
-    valueOf(): string;
-
-    readonly [index: number]: string;
+/** A simple modal variable created with `createVariable()`. */
+declare class Variable {
+  /** Formats the value. Returns empty string if unchanged. */
+  format(value: number): string;
+  /** Returns the current value. */
+  getCurrent(): number;
+  /** Resets the variable so the next call forces output. */
+  reset(): void;
 }
 
-interface StringConstructor {
-    new(value?: any): String;
-    (value?: any): string;
-    readonly prototype: String;
-    fromCharCode(...codes: number[]): string;
+/** A modal value with a string prefix, created with `createModal()`. */
+declare class Modal {
+  /** Formats the value, prepending the prefix. Returns empty string if unchanged. */
+  format(value: number): string;
+  /** Returns the current value. */
+  getCurrent(): number;
+  /** Resets the modal. */
+  reset(): void;
+  /** Returns the prefix. */
+  getPrefix(): string;
+  /** Sets the prefix. */
+  setPrefix(prefix: string): void;
 }
 
-/**
-  * Allows manipulation and formatting of text strings and determination and location of substrings within strings.
-  */
-declare const String: StringConstructor;
-
-interface Boolean {
-    /** Returns the primitive value of the specified object. */
-    valueOf(): boolean;
+/** A modal group that enforces mutual exclusivity among multiple modals. */
+declare class ModalGroup {
+  /** Formats a value for the group member at the given index. */
+  format(index: number, value: number): string;
+  /** Resets the group, forcing next output. */
+  reset(): void;
 }
 
-interface BooleanConstructor {
-    new(value?: any): Boolean;
-    (value?: any): boolean;
-    readonly prototype: Boolean;
+/** An incremental variable created with `createIncrementalVariable()`. */
+declare class IncrementalVariable {
+  /** Formats the incremental change. */
+  format(value: number): string;
+  /** Returns the current value. */
+  getCurrent(): number;
+  /** Resets the variable. */
+  reset(): void;
 }
 
-declare const Boolean: BooleanConstructor;
-
-interface Number {
-    /**
-      * Returns a string representation of an object.
-      * @param radix Specifies a radix for converting numeric values to strings. This value is only used for numbers.
-      */
-    toString(radix?: number): string;
-
-    /**
-      * Returns a string representing a number in fixed-point notation.
-      * @param fractionDigits Number of digits after the decimal point. Must be in the range 0 - 20, inclusive.
-      */
-    toFixed(fractionDigits?: number): string;
-
-    /**
-      * Returns a string containing a number represented in exponential notation.
-      * @param fractionDigits Number of digits after the decimal point. Must be in the range 0 - 20, inclusive.
-      */
-    toExponential(fractionDigits?: number): string;
-
-    /**
-      * Returns a string containing a number represented either in exponential or fixed-point notation with a specified number of digits.
-      * @param precision Number of significant digits. Must be in the range 1 - 21, inclusive.
-      */
-    toPrecision(precision?: number): string;
-
-    /** Returns the primitive value of the specified object. */
-    valueOf(): number;
+/** A reference variable created with `createReferenceVariable()`. */
+declare class ReferenceVariable {
+  /** Formats the value with a prefix. */
+  format(value: number): string;
+  /** Returns the current value. */
+  getCurrent(): number;
+  /** Resets the variable. */
+  reset(): void;
 }
 
-interface NumberConstructor {
-    new(value?: any): Number;
-    (value?: any): number;
-    readonly prototype: Number;
+// ---------------------------------------------------------------------------
+//  Tool
+// ---------------------------------------------------------------------------
 
-    /** The largest number that can be represented in JavaScript. Equal to approximately 1.79E+308. */
-    readonly MAX_VALUE: number;
-
-    /** The closest number to zero that can be represented in JavaScript. Equal to approximately 5.00E-324. */
-    readonly MIN_VALUE: number;
-
-    /**
-      * A value that is not a number.
-      * In equality comparisons, NaN does not equal any value, including itself. To test whether a value is equivalent to NaN, use the isNaN function.
-      */
-    readonly NaN: number;
-
-    /**
-      * A value that is less than the largest negative number that can be represented in JavaScript.
-      * JavaScript displays NEGATIVE_INFINITY values as -infinity.
-      */
-    readonly NEGATIVE_INFINITY: number;
-
-    /**
-      * A value greater than the largest number that can be represented in JavaScript.
-      * JavaScript displays POSITIVE_INFINITY values as infinity.
-      */
-    readonly POSITIVE_INFINITY: number;
-}
-
-/** An object that represents a number of any kind. All JavaScript numbers are 64-bit floating-point numbers. */
-declare const Number: NumberConstructor;
-
-interface TemplateStringsArray extends ReadonlyArray<string> {
-    readonly raw: ReadonlyArray<string>;
-}
-
-interface Math {
-    /** The mathematical constant e. This is Euler's number, the base of natural logarithms. */
-    readonly E: number;
-    /** The natural logarithm of 10. */
-    readonly LN10: number;
-    /** The natural logarithm of 2. */
-    readonly LN2: number;
-    /** The base-2 logarithm of e. */
-    readonly LOG2E: number;
-    /** The base-10 logarithm of e. */
-    readonly LOG10E: number;
-    /** Pi. This is the ratio of the circumference of a circle to its diameter. */
-    readonly PI: number;
-    /** The square root of 0.5, or, equivalently, one divided by the square root of 2. */
-    readonly SQRT1_2: number;
-    /** The square root of 2. */
-    readonly SQRT2: number;
-    /**
-      * Returns the absolute value of a number (the value without regard to whether it is positive or negative).
-      * For example, the absolute value of -5 is the same as the absolute value of 5.
-      * @param x A numeric expression for which the absolute value is needed.
-      */
-    abs(x: number): number;
-    /**
-      * Returns the arc cosine (or inverse cosine) of a number.
-      * @param x A numeric expression.
-      */
-    acos(x: number): number;
-    /**
-      * Returns the arcsine of a number.
-      * @param x A numeric expression.
-      */
-    asin(x: number): number;
-    /**
-      * Returns the arctangent of a number.
-      * @param x A numeric expression for which the arctangent is needed.
-      */
-    atan(x: number): number;
-    /**
-      * Returns the angle (in radians) from the X axis to a point.
-      * @param y A numeric expression representing the cartesian y-coordinate.
-      * @param x A numeric expression representing the cartesian x-coordinate.
-      */
-    atan2(y: number, x: number): number;
-    /**
-      * Returns the smallest number greater than or equal to its numeric argument.
-      * @param x A numeric expression.
-      */
-    ceil(x: number): number;
-    /**
-      * Returns the cosine of a number.
-      * @param x A numeric expression that contains an angle measured in radians.
-      */
-    cos(x: number): number;
-    /**
-      * Returns e (the base of natural logarithms) raised to a power.
-      * @param x A numeric expression representing the power of e.
-      */
-    exp(x: number): number;
-    /**
-      * Returns the greatest number less than or equal to its numeric argument.
-      * @param x A numeric expression.
-      */
-    floor(x: number): number;
-    /**
-      * Returns the natural logarithm (base e) of a number.
-      * @param x A numeric expression.
-      */
-    log(x: number): number;
-    /**
-      * Returns the larger of a set of supplied numeric expressions.
-      * @param values Numeric expressions to be evaluated.
-      */
-    max(...values: number[]): number;
-    /**
-      * Returns the smaller of a set of supplied numeric expressions.
-      * @param values Numeric expressions to be evaluated.
-      */
-    min(...values: number[]): number;
-    /**
-      * Returns the value of a base expression taken to a specified power.
-      * @param x The base value of the expression.
-      * @param y The exponent value of the expression.
-      */
-    pow(x: number, y: number): number;
-    /** Returns a pseudorandom number between 0 and 1. */
-    random(): number;
-    /**
-      * Returns a supplied numeric expression rounded to the nearest number.
-      * @param x The value to be rounded to the nearest number.
-      */
-    round(x: number): number;
-    /**
-      * Returns the sine of a number.
-      * @param x A numeric expression that contains an angle measured in radians.
-      */
-    sin(x: number): number;
-    /**
-      * Returns the square root of a number.
-      * @param x A numeric expression.
-      */
-    sqrt(x: number): number;
-    /**
-      * Returns the tangent of a number.
-      * @param x A numeric expression that contains an angle measured in radians.
-      */
-    tan(x: number): number;
-}
-/** An intrinsic object that provides basic mathematics functionality and constants. */
-declare const Math: Math;
-
-interface Color {
-    /** The mathematical constant e. This is Euler's number, the base of natural logarithms. */
-    readonly getRed();
-    /** Returns the red component. */
-    readonly getGreen();
-    /** Returns the green component. */
-    readonly getBlue();
-    /** Returns the blue component. */
-    readonly getAlpha();
-    /** Returns the alpha component. */
-    readonly toString();
-    /** Converts the color to a string (e.g. [0.25, 0.25, 0.75, 1]).*/
-    
-    Color(red: number, green: number, blue: number, alpha: number);
-    /**
-      * Initializes a new color as opaque (i.e. alpha equal to 1). All arguments are clamped to the range [0; 1].
-      */
-    Color(red: number, green: number, blue: number);
-    /**
-      * Initializes a new color as opaque (i.e. alpha equal to 1). All arguments are clamped to the range [0; 1].
-      */
-    Color();
-    /** Initializes a new color as opaque white. */
-}
-/** An intrinsic object that provides basic mathematics functionality and constants. */
-declare const Color: Color;
-
-interface Record {
-  
-}
-
-interface Shaft {
-  /** Returns the diameter of the specified section. The section is a value in the range [0; getNumberOfSections()[.*/ 
-  getDiameter(index: Integer): number;  
-  /** Returns the length of the specified section. The section is a value in the range [0; getNumberOfSections()[. */
-  getLength(index: Integer): number;
-  /** Returns the maximum diameter of the shaft. */
-  getMaximumDiameter(): number;
-  /** Returns the number of sections. */
-  getNumberOfSections(): Integer;
-  /** Returns the length of the shaft. */
-  getTotalLength(): number; 
-  /** Returns true if the shaft has any sections. */
-  hasSections(): boolean;  
-}
-
-interface Holder {
-  /** Returns the diameter of the specified section. The section is a value in the range [0; getNumberOfSections()[.*/ 
-  getDiameter(index: Integer): number;  
-  /** Returns the length of the specified section. The section is a value in the range [0; getNumberOfSections()[. */
-  getLength(index: Integer): number;
-  /** Returns the maximum diameter of the holder. */
-  getMaximumDiameter(): number;
-  /** Returns the number of sections. */
-  getNumberOfSections(): Integer;
-  /** Returns the length of the holder. */
-  getTotalLength(): number; 
-  /** Returns true if the holder has any sections. */
-  hasSections(): boolean;  
-}
-
-interface Tool {
+/** Represents a cutting tool.
+ * @see https://cam.autodesk.com/posts/reference/classTool.html */
+declare class Tool {
   /** The tool number. */
-  readonly number: number;
-  /** The turret. */
-  turret: Integer;
-  /**  The diameter offset (used for milling). */
-  diameterOffset: Integer;
-  /** The length offset (used for milling). */
-  lengthOffset: Integer; 
-  /** The compensation offset (used for turning). */
-  compensationOffset: Integer;
-  /** True if tool must be manually changed. */
-  manualToolChange: boolean;
-  /** True if break control is enabled. */
-  breakControl: boolean;
-  /** True if the tool is live - otherwise it is static. */
-  liveTool: boolean;
-  /** Number identifying the holder. */
-  holderNumber: Integer; 
-  /** The spindle mode. */
-  spindleMode: Integer; 
-  /** The spindle speed in RPM. Positive for clockwise direction. */
-  spindleRPM: number;
-  /** The spindle speed in RPM for ramping. Positive for clockwise direction. */
-  rampingSpindleRPM: number; 
-  /** The surface speed (CSS). */
-  surfaceSpeed: number; 
-  /** The maximum spindle speed (RPM) when using surface speed (CSS). */
-  maximumSpindleSpeed: number;
-  /** The number of flutes. */
-  numberOfFlutes: Integer;
-  /** The number of thread per unit of length. */
-  threadPitch: number;
-  /** The coolant. */
-  coolant: Integer;
-  /** The material. */
-  material: Integer;
-  /** Comment. */
-  comment: String;
-  /** The vendor. */
-  vendor: String; 
-  /** The product id. */
-  productId: String; 
-  /** The unit. */
-  unit: Integer;
-  /** The tool type. */
-  type: Integer;
-  /** The diameter. */
-  diameter: number; 
+  number: number;
+  /** The tool type constant (e.g. TOOL_MILLING_END_FLAT). */
+  type: number;
+  /** The turret number. */
+  turret: number;
+  /** The tool diameter. */
+  diameter: number;
   /** The corner radius. */
   cornerRadius: number;
-  /** The taper angle. */
+  /** The taper angle in radians. */
   taperAngle: number;
   /** The flute length. */
-  fluteLength: number; 
+  fluteLength: number;
   /** The shoulder length. */
   shoulderLength: number;
   /** The shaft diameter. */
   shaftDiameter: number;
   /** The body length. */
   bodyLength: number;
-  /** The tool shaft. */
-  shaft: Shaft;
+  /** The entire length of the tool. */
+  overallLength: number;
+  /** The number of flutes. */
+  numberOfFlutes: number;
+  /** The thread pitch (threads per unit length). */
+  threadPitch: number;
+  /** The coolant mode constant (e.g. COOLANT_FLOOD). */
+  coolant: number;
+  /** The tool material constant (e.g. MATERIAL_CARBIDE). */
+  material: number;
+  /** Tool comment. */
+  comment: string;
+  /** Tool vendor. */
+  vendor: string;
+  /** Tool product ID. */
+  productId: string;
+  /** The unit of the tool (MM or IN). */
+  unit: number;
+  /** The diameter offset (for milling). */
+  diameterOffset: number;
+  /** The length offset (for milling). */
+  lengthOffset: number;
+  /** The compensation offset (for turning). */
+  compensationOffset: number;
+  /** True if break control is enabled. */
+  breakControl: boolean;
+  /** True if tool must be manually changed. */
+  manualToolChange: boolean;
+  /** True if the tool is live (not static). */
+  liveTool: boolean;
+  /** The spindle speed in RPM. Positive for clockwise. */
+  spindleRPM: number;
+  /** The spindle speed in RPM for ramping. */
+  rampingSpindleRPM: number;
+  /** The surface speed (CSS). */
+  surfaceSpeed: number;
+  /** Max spindle speed when using CSS. */
+  maximumSpindleSpeed: number;
+  /** The spindle mode constant. */
+  spindleMode: number;
+  /** The holder number. */
+  holderNumber: number;
   /** The holder tip diameter. */
   holderTipDiameter: number;
   /** The holder diameter. */
   holderDiameter: number;
   /** The holder length. */
   holderLength: number;
-  /** The tool holder. */
-  holder: Holder; 
-  /** The boring bar orientation in radians. */
+  /** Boring bar orientation in radians. */
   boringBarOrientation: number;
-  /** The inscribed circle diameter for turning tool.*/ 
-  inscribedCircleDiameter: number;
-  /** The edge length for turning tool. */
-  edgeLength: number;
-  /** The nose radius for turning tools. */
+  /** Nose radius for turning tools. */
   noseRadius: number;
-  /** The relief angle in degrees. */
-  reliefAngle:  number; 
-  /** The turning tool thickness;. */
-  thickness:  number;
-  /** The groove tool width. */
-  grooveWidth:  number;
-  /** The cross section type for turning tools. */
-  crossSection: String;
-  /** The tolerance for turning tools. */
-  tolerance:  String;
-  /** The thread pitch for turning tools. */
-  pitch:  number;
-  /** The holder hand. Left, Right, or Neutral. */
-  hand: String; 
-  /** Clamping for turning tools.  */
-  clamping: String;
+  /** Inscribed circle diameter for turning tools. */
+  inscribedCircleDiameter: number;
+  /** Edge length for turning tools. */
+  edgeLength: number;
+  /** Relief angle in degrees. */
+  reliefAngle: number;
+  /** Groove width. */
+  grooveWidth: number;
+  /** Cross section type for turning tools. */
+  crossSection: string;
+  /** Holder hand: "Left", "Right", or "Neutral". */
+  hand: string;
+  /** Tip diameter. */
+  getTipDiameter(): number;
+  /** Jet distance. */
+  jetDistance: number;
+  /** Jet diameter. */
+  jetDiameter: number;
+  /** Kerf width. */
+  kerfWidth: number;
+
+  /** Returns the tool number. */
+  getNumber(): number;
+  /** Returns the tool type constant. */
+  getType(): number;
+  /** Returns the tool diameter. */
+  getDiameter(): number;
+  /** Returns the corner radius. */
+  getCornerRadius(): number;
+  /** Returns the flute length. */
+  getFluteLength(): number;
+  /** Returns the shoulder length. */
+  getShoulderLength(): number;
+  /** Returns the shaft diameter. */
+  getShaftDiameter(): number;
+  /** Returns the body length. */
+  getBodyLength(): number;
+  /** Returns the overall length. */
+  getOverallLength(): number;
+  /** Returns the taper angle. */
+  getTaperAngle(): number;
+  /** Returns the number of flutes. */
+  getNumberOfFlutes(): number;
+  /** Returns the tapping feedrate. */
+  getTappingFeedrate(): number;
+  /** Returns the coolant constant. */
+  getCoolant(): number;
+  /** Returns the material constant. */
+  getMaterial(): number;
+  /** Returns the tool description. */
+  getDescription(): string;
+  /** Returns the comment. */
+  getComment(): string;
+  /** Returns the vendor. */
+  getVendor(): string;
+  /** Returns the product ID. */
+  getProductId(): string;
+  /** Returns true if this is a turning tool. */
+  isTurningTool(): boolean;
+  /** Returns true if this is a jet tool (waterjet/laser/plasma). */
+  isJetTool(): boolean;
+  /** Returns true if this is a drill type. */
+  isDrill(): boolean;
+  /** Returns true if spindle direction is clockwise. */
+  isClockwise(): boolean;
+  /** Returns true if this is a live tool. */
+  isLiveTool(): boolean;
+  /** Returns the spindle RPM. */
+  getSpindleRPM(): number;
+  /** Returns the ramping spindle RPM. */
+  getRampingSpindleRPM(): number;
+  /** Returns the surface speed. */
+  getSurfaceSpeed(): number;
+  /** Returns the maximum spindle speed. */
+  getMaximumSpindleSpeed(): number;
+  /** Returns the diameter offset. */
+  getDiameterOffset(): number;
+  /** Returns the length offset. */
+  getLengthOffset(): number;
+  /** Returns the unit. */
+  getUnit(): number;
+  /** Returns the holder number. */
+  getHolderNumber(): number;
+  /** Returns the boring bar orientation. */
+  getBoringBarOrientation(): number;
+  /** Returns the thread pitch. */
+  getThreadPitch(): number;
+  /** Returns the tool ID string. */
+  getToolId(): string;
+  /** Returns the holder description. */
+  getHolderDescription(): string;
+  /** Returns the holder comment. */
+  getHolderComment(): string;
+  /** Returns the holder vendor. */
+  getHolderVendor(): string;
+  /** Returns the holder product ID. */
+  getHolderProductId(): string;
+  /** Returns the compensation mode. */
+  getCompensationMode(): number;
+  /** Returns the insert type. */
+  getInsertType(): number;
+  /** Returns the holder type. */
+  getHolderType(): number;
+  /** Returns the turret number. */
+  getTurret(): number;
+  /** Returns the assembly gauge length. */
+  getAssemblyGaugeLength(): number;
 }
 
-interface Matrix {
-  readonly Matrix();
-  readonly Matrix(scale: Number);
-  readonly Matrix(right: Vector, up: Vector, forward: Vector);
-  readonly Matrix(m: Number);
-  readonly Matrix(axis: Vector, angle: Number);
-  readonly rotateX(angle: Number);
-  readonly rotateY(angle: Number);
-  readonly rotateZ(angle: Number);
-  readonly getElement(row: Integer, column: Integer): Number ;
-  readonly setElement(row: Integer, column: Integer, value: Number);
-  readonly getRow(row: Integer): Vector ;
-  readonly setRow(row: Integer, value: Vector);
-  readonly getColumn(column: Integer): Vector ;
-  readonly setColumn(column: Integer, value: Vector);
-  readonly getForward(): Vector ;
-  readonly setForward(value: Vector);
-  readonly getUp(): Vector ;
-  readonly setUp(value: Vector);
-  readonly getRight(): Vector ;
-  readonly setRight(value: Vector);
-  readonly getTiltAndTilt(primary: Integer, secondary: Integer): Vector ;
-  readonly getTurnAndTilt(primary: Integer, secondary: Integer): Vector ;
-  readonly getEuler(convention: Integer): Vector ;
-  readonly getEuler2(convention: Integer): Vector ;
-  readonly getEulerZXZ(): Vector ;
-  readonly getEulerZYZ(): Vector ;
-  readonly getEulerXYZ(): Vector ;
-  readonly getEulerZYX(): Vector ;
-  readonly clamp(epsilon: Number);
-  readonly isZero(): Boolean ;
-  readonly isIdentity(): Boolean ;
-  readonly getN1(): Number ;
-  readonly getN2(): Number ;
-  readonly normalize();
-  readonly add(right: Matrix);
-  readonly subtract(right: Matrix);
-  readonly negate();
-  readonly getNegated(): Matrix ;
-  readonly transpose();
-  readonly getTransposed(): Matrix ;
-  readonly multiply(right: Number): Matrix ;
-  readonly multiply(right: Matrix): Matrix ;
-  readonly multiply(right: Vector): Vector ;
-  readonly toString(): String ;
+// ---------------------------------------------------------------------------
+//  Section
+// ---------------------------------------------------------------------------
+
+/** An NC section — a group of NC data sharing the same work plane, tool, and related data.
+ * @see https://cam.autodesk.com/posts/reference/classSection.html */
+declare class Section {
+  /** The original unit of the section (may differ from output unit). */
+  unit: number;
+  /** The work origin in the WCS. */
+  workOrigin: Vector;
+  /** The work plane in the WCS. */
+  workPlane: Matrix;
+  /** The WCS origin. */
+  wcsOrigin: Vector;
+  /** The WCS plane. */
+  wcsPlane: Matrix;
+  /** The work offset corresponding to the WCS. */
+  workOffset: number;
+  /** The probe work offset. */
+  probeWorkOffset: number;
+  /** The WCS index. */
+  wcsIndex: number;
+  /** The WCS string. */
+  wcs: string;
+  /** The dynamic work offset. */
+  dynamicWorkOffset: number;
+  /** True if axis substitution is used. */
+  axisSubstitution: boolean;
+  /** Nominal axis substitution radius. */
+  axisSubstitutionRadius: number;
+  /** Section type: TYPE_MILLING, TYPE_TURNING, or TYPE_JET. */
+  type: number;
+  /** Associated quality. */
+  quality: number;
+  /** True if tailstock is used. */
+  tailstock: boolean;
+  /** True if part catcher should be activated. */
+  partCatcher: boolean;
+  /** Active spindle number. */
+  spindle: number;
+  /** The operation properties map. */
+  properties: any;
+  /** Strategy type of the section. */
+  strategy: string;
+  /** Machining type (3-axis, 5-axis, polar, etc.). */
+  machiningType: number;
+  /** User-specified polar direction. */
+  polarDirection: Vector;
+
+  /** Returns the section ID. */
+  getId(): number;
+  /** Returns the tool for this section. */
+  getTool(): Tool;
+  /** Returns the unit. */
+  getUnit(): number;
+  /** Returns the section type (TYPE_MILLING, TYPE_TURNING, TYPE_JET). */
+  getType(): number;
+  /** Returns true if the section contains multi-axis (5-axis) motion. */
+  isMultiAxis(): boolean;
+  /** Returns the content flags. */
+  getContent(): number;
+  /** Returns the work origin. */
+  getWorkOrigin(): Vector;
+  /** Returns the work plane. */
+  getWorkPlane(): Matrix;
+  /** Returns the WCS origin. */
+  getWCSOrigin(): Vector;
+  /** Returns the WCS plane. */
+  getWCSPlane(): Matrix;
+  /** Returns the work offset. */
+  getWorkOffset(): number;
+  /** Returns the WCS string. */
+  getWCS(): string;
+  /** Returns the WCS index. */
+  getWCSIndex(): number;
+  /** Returns the tool axis. */
+  getToolAxis(): number;
+  /** Returns the first position. */
+  getFirstPosition(): Vector;
+  /** Returns the initial position (before any cutting). */
+  getInitialPosition(): Vector;
+  /** Returns the final position. */
+  getFinalPosition(): Vector;
+  /** Returns the initial tool axis direction. */
+  getInitialToolAxis(): Vector;
+  /** Returns the global initial tool axis. */
+  getGlobalInitialToolAxis(): Vector;
+  /** Returns the initial tool axis as ABC angles. */
+  getInitialToolAxisABC(): Vector;
+  /** Returns the final tool axis. */
+  getFinalToolAxis(): Vector;
+  /** Returns the final tool axis as ABC angles. */
+  getFinalToolAxisABC(): Vector;
+  /** Returns true if the initial spindle is on. */
+  getInitialSpindleOn(): boolean;
+  /** Returns the initial spindle speed. */
+  getInitialSpindleSpeed(): number;
+  /** Returns the Z range of the section. */
+  getZRange(): Range;
+  /** Returns the global Z range. */
+  getGlobalZRange(): Range;
+  /** Returns the bounding box. */
+  getBoundingBox(): BoundingBox;
+  /** Returns the global bounding box. */
+  getGlobalBoundingBox(): BoundingBox;
+  /** Returns the maximum feedrate in the section. */
+  getMaximumFeedrate(): number;
+  /** Returns the maximum spindle speed. */
+  getMaximumSpindleSpeed(): number;
+  /** Returns the cutting distance. */
+  getCuttingDistance(): number;
+  /** Returns the rapid distance. */
+  getRapidDistance(): number;
+  /** Returns the cycle time in seconds. */
+  getCycleTime(): number;
+  /** Returns the number of records. */
+  getNumberOfRecords(): number;
+  /** Returns a record by index. */
+  getRecord(id: number): Record;
+  /** Returns the number of cycle points. */
+  getNumberOfCyclePoints(): number;
+  /** Returns the movement flags. */
+  getMovements(): number;
+  /** Returns the maximum tilt angle. */
+  getMaximumTilt(): number;
+  /** Returns true if the section has the named parameter. */
+  hasParameter(name: string): boolean;
+  /** Returns the value of the named parameter. */
+  getParameter(name: string, defaultValue?: any): any;
+  /** Returns true if a specific cycle is used. */
+  hasCycle(uri: string): boolean;
+  /** Returns true if any cycle is used. */
+  hasAnyCycle(): boolean;
+  /** Returns the number of cycles. */
+  getNumberOfCycles(): number;
+  /** Returns true if a tool change is forced for this section. */
+  getForceToolChange(): boolean;
+  /** Returns the job ID. */
+  getJobId(): number;
+  /** Returns the pattern ID. */
+  getPatternId(): number;
+  /** Returns true if the section is patterned. */
+  isPatterned(): boolean;
+  /** Returns the channel. */
+  getChannel(): number;
+  /** Returns true if the section is optional. */
+  isOptional(): boolean;
+  /** Returns the feed mode. */
+  getFeedMode(): number;
+  /** Returns the tool orientation. */
+  getToolOrientation(): number;
+  /** Returns true if this section has a well-defined position. */
+  hasWellDefinedPosition(): boolean;
+  /** Returns the strategy. */
+  getStrategy(): string | undefined;
+  /** Returns the machining type. */
+  getMachiningType(): number;
+  /** Returns a global position from a section-local position. */
+  getGlobalPosition(p: Vector): Vector;
+  /** Returns a WCS position from a section-local position. */
+  getWCSPosition(p: Vector): Vector;
+  /** Returns true if the toolpath belongs to the given strategy group(s). */
+  checkGroup(groups: number): boolean;
+  /** Returns true if the work plane is top (Z-up). */
+  isTopWorkPlane(): boolean;
+  /** Returns true if section is X-oriented. */
+  isXOriented(): boolean;
+  /** Returns true if section is Y-oriented. */
+  isYOriented(): boolean;
+  /** Returns true if section is Z-oriented. */
+  isZOriented(): boolean;
+  /** Returns the global work origin. */
+  getGlobalWorkOrigin(): Vector;
+  /** Returns the global work plane. */
+  getGlobalWorkPlane(): Matrix;
+  /** Returns the FCS origin. */
+  getFCSOrigin(): Vector;
+  /** Returns the FCS plane. */
+  getFCSPlane(): Matrix;
+  /** Returns true if the section has a dynamic work offset. */
+  hasDynamicWorkOffset(): boolean;
+  /** Returns the dynamic work offset. */
+  getDynamicWorkOffset(): number;
+  /** Optimizes machine angles for this section. */
+  optimizeMachineAnglesByMachine(machine: MachineConfiguration, optimizeType: number): void;
+  /** Returns true if the section is optimized for a machine. */
+  isOptimizedForMachine(): boolean;
+  /** Returns the lower tool axis ABC limits. */
+  getLowerToolAxisABC(): Vector;
+  /** Returns the upper tool axis ABC limits. */
+  getUpperToolAxisABC(): Vector;
 }
 
-interface Vector {
-  /** The X coordinate */
-  x: number;
-  /** The Y coordinate */
-  y: number;
-  /** The Z coordinate */
-  z: number;
-  /** The length of the vector */
-  length: number;
-  /** The square of the length of the vector */
-  length2: number;
-  /** The negated vector */
-  negated: Vector;
-  /** The vector with absolute coordinates */
-  abs: Vector;
-  /** The vector normalized to length 1. */
-  normalized: Vector;
-  getX(): number;
-  setX(x: number);
-  getY(): number;
-  setY(y: number);
-  getZ(): number;
-  setZ(z: number);
-  getCoordinate(coordinate: Integer): number;
-  setCoordinate(coordinate: Integer, value: number);
-  add(value: Vector);
-  add(x: number, y: number, z: number);
-  subtract(value: Vector);
-  subtract(x: number, y: number, z: number);
-  multiply(value: number);
-  divide(value: number);
-  isNonZero(): boolean;
-  isZero(): boolean;
-  getXYAngle(): number;
-  getZAngle(): number;
-  getLength2(): number;
-  getLength(): number;
-  normalize();
-  getNormalized(): Vector;
-  negate();
-  getNegated(): Vector;
-  getAbsolute(): Vector;
-  getMinimum(): number;
-  getMaximum(): number;
-  toString(): String;
-  toDeg(): Vector;
-  toRad(): Vector;
+// ---------------------------------------------------------------------------
+//  Record
+// ---------------------------------------------------------------------------
+
+/** A single NC record. */
+declare class Record {
+  /** Returns the type of the record (e.g. RECORD_LINEAR). */
+  getType(): number;
+  /** Returns true if a named parameter is available. */
+  hasParameter(name: string): boolean;
+  /** Returns the parameter value. */
+  getParameter(name: string): any;
+  /** Returns true if this is a motion record. */
+  isMotion(): boolean;
+  /** Returns true if this is a parameter record. */
+  isParameter(): boolean;
 }
 
-interface Integer {
+// ---------------------------------------------------------------------------
+//  MachineConfiguration
+// ---------------------------------------------------------------------------
 
+/** Machine configuration describing the kinematic chain.
+ * @see https://cam.autodesk.com/posts/reference/classMachineConfiguration.html */
+declare class MachineConfiguration {
+  /** Returns the number of axes. */
+  getNumberOfAxes(): number;
+  /** Returns an axis by index. */
+  getAxisByCoordinate(coordinate: number): Axis;
+  /** Returns true if the machine is multi-axis. */
+  isMultiAxisConfiguration(): boolean;
+  /** Returns true if the machine has a head axis. */
+  isHeadConfiguration(): boolean;
+  /** Returns true if the machine has a table axis. */
+  isTableConfiguration(): boolean;
+  /** Returns the machine ABC from a tool vector. */
+  getABC(orientation: Matrix): Vector;
+  /** Returns the preferred ABC given a current ABC. */
+  getPreferredABC(abc: Vector): Vector;
+  /** Returns the ABC as remapped through the machine. */
+  remapABC(abc: Vector): Vector;
+  /** Returns the retract plane. */
+  getRetractPlane(): number;
+  /** Sets the retract plane. */
+  setRetractPlane(value: number): void;
+  /** Returns true if a retract plane is defined. */
+  hasRetractPlane(): boolean;
+  /** Returns the home position. */
+  getHomePositionX(): number;
+  getHomePositionY(): number;
+  getHomePositionZ(): number;
+  /** Sets the model. */
+  setModel(model: string): void;
+  /** Sets the description. */
+  setDescription(description: string): void;
+  /** Sets the vendor. */
+  setVendor(vendor: string): void;
+  /** Sets the number of axes. */
+  setNumberOfAxes(n: number): void;
+  /** Returns the spindle axis (as Vector). */
+  getSpindleAxis(): Vector;
+  /** Sets the spindle axis. */
+  setSpindleAxis(axis: Vector): void;
 }
 
-interface Range {
-  
+// ---------------------------------------------------------------------------
+//  Axis
+// ---------------------------------------------------------------------------
+
+/** A machine axis definition. */
+declare class Axis {
+  /** Returns true if the axis is enabled. */
+  isEnabled(): boolean;
+  /** Returns the axis coordinate index. */
+  getCoordinate(): number;
+  /** Returns the range of the axis. */
+  getRange(): Range;
+  /** Returns true if the axis is cyclic. */
+  isCyclic(): boolean;
+  /** Returns true if the axis is a table axis. */
+  isTable(): boolean;
+  /** Returns true if the axis is a head axis. */
+  isHead(): boolean;
+  /** Returns true if the axis supports TCP. */
+  isTCPEnabled(): boolean;
+  /** Returns the effective axis direction vector. */
+  getAxis(): Vector;
+  /** Returns the axis offset. */
+  getOffset(): Vector;
 }
 
-interface BoundingBox {
-  /** The lower corner. */
-  lower: Vector;
-  /** The upper corner */
-  upper: Vector;
+// ---------------------------------------------------------------------------
+//  MachineParameters
+// ---------------------------------------------------------------------------
+
+/** Machine-specific parameters set via `machineParameters`. */
+declare class MachineParameters {
+  /** The chip breaking distance (for drilling cycles). */
+  chipBreakingDistance: number;
+  /** The drilling safe distance. */
+  drillingSafeDistance: number;
+  /** The spindle orientation angle in radians. */
+  spindleOrientation: number;
 }
 
-interface Value {
-  
+// ---------------------------------------------------------------------------
+//  ToolTable
+// ---------------------------------------------------------------------------
+
+/** A table of tools used in the program. */
+declare class ToolTable {
+  /** Returns the number of tools. */
+  getNumberOfTools(): number;
+  /** Returns the tool at the given index. */
+  getTool(index: number): Tool;
 }
 
-interface Axis {
-  readonly Axis();
-  readonly Axis(_table: Boolean, _axis: Vector, _offset: Vector, _coordinate: Integer);
-  readonly Axis(_table: Boolean, _axis: Vector, _offset: Vector, _coordinate: Integer, _range: Range);
-  readonly getName(): String ;
-  readonly setName(name: String);
-  readonly getActuator(): Integer ;
-  readonly setActuator(actuator: Integer);
-  readonly isLinear(): Boolean ;
-  readonly isRotational(): Boolean ;
-  readonly isAggregate(): Boolean ;
-  readonly getResolution(): Number ;
-  readonly setResolution(resolution: Number);
-  readonly clampToResolution(_value: Number): Number ;
-  readonly getResolutionError(_value: Number): Number ;
-  readonly getMaximumFeed(): Number ;
-  readonly setMaximumFeed(_maximumFeed: Number);
-  readonly getPreference(): Integer ;
-  readonly setPreference(preference: Integer);
-  readonly isEnabled(): Boolean ;
-  readonly isHead(): Boolean ;
-  readonly isTable(): Boolean ;
-  readonly getEffectiveAxis(): Vector ;
-  readonly getAxis(): Vector ;
-  readonly getOffset(): Vector ;
-  readonly getDisplacement(): Number ;
-  readonly isCyclic(): Boolean ;
-  readonly getRange(): Range ;
-  readonly getCoordinate(): Integer ;
-  readonly isSupported(value: Number): Boolean ;
-  readonly clamp(value: Number): Number ;
-  readonly reduce(value: Number): Number ;
-  readonly remapToRange(angle: Number): Number ;
-  readonly remapToRange2(angle: Number, current: Number): Number ;
-  readonly getAxisRotation(position: Number): Matrix ;
+// ---------------------------------------------------------------------------
+//  MoveLength
+// ---------------------------------------------------------------------------
+
+/** Provides segment lengths for multi-axis moves. */
+declare class MoveLength {
+  /** The total move length. */
+  getRadialLength(): number;
+  /** The XYZ linear distance. */
+  getLinearLength(): number;
+  /** Returns the ABC angular lengths. */
+  getABCLength(): Vector;
 }
 
-interface Base64 {
-readonly btoa(text: String): String ;
-readonly atob(text: String): String ;
+// ---------------------------------------------------------------------------
+//  CircularMotion
+// ---------------------------------------------------------------------------
 
+/** Full description of a circular motion segment. */
+declare class CircularMotion {
+  center: Vector;
+  normal: Vector;
+  plane: number;
+  radius: number;
+  sweep: number;
+  clockwise: boolean;
 }
 
-interface BinaryFile {
-  readonly loadBinary(path: String): String ;
-  readonly saveBinary(path: String, data: String) ;
+// ---------------------------------------------------------------------------
+//  Simulation
+// ---------------------------------------------------------------------------
+
+/** Machine simulation interface. */
+declare class Simulation {
+  /** Writes a simulation record. */
+  write(command: string): void;
 }
 
-interface Array {
-  readonly indexOf(): Integer ;
-  readonly lastIndexOf(): Integer ;
+// ---------------------------------------------------------------------------
+//  TextFile
+// ---------------------------------------------------------------------------
+
+/** File I/O for text files. */
+declare class TextFile {
+  constructor(path: string, write: boolean, encoding?: string);
+  /** Reads a line. */
+  readln(): string;
+  /** Writes text. */
+  write(text: string): void;
+  /** Writes a line. */
+  writeln(text: string): void;
+  /** Closes the file. */
+  close(): void;
+  /** Returns true if at end-of-file. */
+  isOpen(): boolean;
 }
 
-interface Canvas {
-  readonly getWidth(): Integer ;
-  readonly getHeight(): Integer ;
-  readonly clear(rgba: Integer);
-  readonly getColor(x: Integer, y: Integer): Color ;
-  readonly setColor(x: Integer, y: Integer, color: Color);
-  readonly getPixel(x: Integer, y: Integer): Integer ;
-  readonly setPixel(x: Integer, y: Integer, rgba: Integer);
-  readonly saveImage(path: String, mimetype: String);
+// ---------------------------------------------------------------------------
+//  FileSystem
+// ---------------------------------------------------------------------------
+
+/** Static file system utilities. */
+declare class FileSystem {
+  static isFolder(path: string): boolean;
+  static isFile(path: string): boolean;
+  static getCombinedPath(a: string, b: string): string;
+  static getFolderPath(path: string): string;
+  static getFilename(path: string): string;
+  static replaceExtension(path: string, ext: string): string;
+  static getTemporaryFolder(): string;
+  static getTemporaryFile(prefix: string): string;
+  static remove(path: string): void;
+  static copyFile(src: string, dest: string): void;
 }
 
-interface CircularMotion {
-  readonly getPositionU(u: Number): Vector ;
-  readonly getOffset(): Number ;
+// ---------------------------------------------------------------------------
+//  StringSubstitution
+// ---------------------------------------------------------------------------
+
+/** String substitution/template engine. */
+declare class StringSubstitution {
+  constructor();
+  setValue(key: string, value: any): void;
+  substitute(template: string): string;
 }
 
-interface Curve {
-  readonly getNumberOfEntities(): Integer ;
-  readonly getEntity(index: Integer): CurveEntity ;
-  readonly isClosed(): Boolean ;
-  readonly hasArcs(): Boolean ;
-  readonly getLength(): Number ;
-  readonly getExtent(): BoundingBox ;
-  readonly getLinearize(tolerance: Number): Curve ;
+// ---------------------------------------------------------------------------
+//  Cycle parameters (available via the `cycle` global)
+// ---------------------------------------------------------------------------
+
+/** Cycle parameters available through the `cycle` global variable during onCycle/onCyclePoint. */
+interface CycleParameters {
+  /** The clearance plane (absolute coordinate). */
+  clearance: number;
+  /** The retract plane (absolute coordinate). */
+  retract: number;
+  /** The stock plane (absolute coordinate). */
+  stock: number;
+  /** The depth below the stock plane (positive = below stock). */
+  depth: number;
+  /** The bottom plane (stock - depth). Calculated by the post processor. */
+  bottom: number;
+  /** The primary feedrate. For drilling cycles this is the plunging feedrate. */
+  feedrate: number;
+  /** The plunge feedrate. Defaults to `feedrate` if not specified. */
+  plungeFeedrate?: number;
+  /** The retraction feedrate. Defaults to `feedrate` if not specified. */
+  retractFeedrate?: number;
+  /** The incremental/pecking depth. */
+  incrementalDepth?: number;
+  /** The incremental depth reduction per plunge. */
+  incrementalDepthReduction?: number;
+  /** The minimum incremental depth per plunge. */
+  minimumIncrementalDepth?: number;
+  /** Total plunging depth before full retract. */
+  accumulatedDepth?: number;
+  /** The dwell time in seconds. */
+  dwell?: number;
+  /** The dwell depth. */
+  dwellDepth?: number;
+  /** Distance to retract to break chips. */
+  chipBreakDistance?: number;
+  /** The number of plunges per retract. */
+  plungesPerRetract?: number;
+  /** The thread pitch (incremental depth per turn). */
+  pitch?: number;
+  /** The hole diameter. */
+  diameter?: number;
+  /** The shifting distance. */
+  shift?: number;
+  /** The shift orientation in radians. */
+  shiftOrientation?: number;
+  /** The compensated shift orientation. */
+  compensatedShiftOrientation?: number;
+  /** The shift direction in radians. */
+  shiftDirection?: number;
+  /** Back boring distance. */
+  backBoreDistance?: number;
+  /** Compensation type: "computer", "control", "wear", "inverseWear". */
+  compensation?: string;
+  /** Specifies climb/conventional milling direction. */
+  direction?: string;
+  /** Specifies left/right handed thread. */
+  threading?: string;
+  /** Number of passes/steps. */
+  numberOfSteps?: number;
+  /** Maximum stepover between passes. */
+  stepover?: number;
+  /** Stop spindle during positioning. */
+  stopSpindle?: boolean;
+  /** Repeat the final pass. */
+  repeatPass?: boolean;
+  /** Positioning spindle speed. */
+  positioningSpindleSpeed?: number;
+  /** Positioning feedrate. */
+  positioningFeedrate?: number;
+  /** Incremental distance along Z. */
+  incrementalZ?: number;
+  /** Incremental distance along X. */
+  incrementalX?: number;
+  /** Allow arbitrary additional cycle properties. */
+  [key: string]: any;
 }
 
-interface CurveEntity {
-  readonly CurveEntity();
-  readonly getLength(): Number ;
-  readonly getRadius(): Number ;
-  readonly isBigArc(): Boolean ;
-  readonly getSweep(): Number ;
-  readonly reverse();
-  readonly translate(offset: Vector);
-}
-
-interface FileSystem {
-  readonly getCombinedPath(rootPath: String, relativePath: String): String ;
-  readonly getFolderPath(path: String): String ;
-  readonly getFilename(path: String): String ;
-  readonly replaceExtension(path: String, extension: String): String ;
-  readonly makeFolder(path: String);
-  readonly isFolder(path: String): Boolean ;
-  readonly isFile(path: String): Boolean ;
-  readonly copyFile(src: String, dest: String) ;
-  readonly moveFile(src: String, dest: String) ;
-  readonly remove(path: String) ;
-  readonly removeFolder(path: String) ;
-  readonly removeFolderRecursive(path: String) ;
-  readonly getFileSize(path: String): Integer ;
-  readonly getTemporaryFolder(): String ;
-  readonly getTemporaryFile(prefix: String): String ;
-}
-
-interface Format {
-  readonly Format(specifiers: Map);
-  readonly format(value: Number): String ;
-  readonly getResultingValue(value: Number): Number ;
-  readonly getError(value: Number): Number ;
-  readonly isSignificant(value: Number): Boolean ;
-  readonly areDifferent(a: Number, b: Number): Boolean ;
-  readonly getMinimumValue(): Number ;
-}
-
-interface FormatNumber {
-  readonly FormatNumber();
-  readonly getDecimalSymbol(): Integer ;
-  readonly setDecimalSymbol(decimalSymbol: Integer);
-  readonly getZeroPad(): Boolean ;
-  readonly setZeroPad(zeroPad: Boolean);
-  readonly getForceSign(): Boolean ;
-  readonly setForceSign(forceSign: Boolean);
-  readonly getForceDecimal(): Boolean ;
-  readonly setForceDecimal(forceDecimal: Boolean);
-  readonly getWidth(): Integer ;
-  readonly setWidth(width: Integer);
-  readonly getNumberOfDecimals(): Integer ;
-  readonly setNumberOfDecimals(numberOfDecimals: Integer);
-  readonly getTrimZeroDecimals(): Boolean ;
-  readonly setTrimZeroDecimals(trimZeroDecimals: Boolean);
-  readonly getTrimLeadZero(): Boolean ;
-  readonly setTrimLeadZero(trimLeadZero: Boolean);
-  readonly remap(value: Number): Number ;
-  readonly getCyclicLimit(): Number ;
-  readonly getCyclicSign(): Integer ;
-  readonly setCyclicMapping(limit: Number, sign: Integer);
-  readonly getScale(): Number ;
-  readonly setScale(scale: Number);
-  readonly getOffset(): Number ;
-  readonly setOffset(offset: Number);
-  readonly getPrefix(): String ;
-  readonly setPrefix(prefix: String);
-  readonly getSuffix(): String ;
-  readonly setSuffix(suffix: String);
-  readonly format(value: Number): String ;
-  readonly isSignificant(value: Number): Boolean ;
-  readonly areDifferent(a: Number, b: Number): Boolean ;
-  readonly getMinimumValue(): Number ;
-  readonly getResultingValue(value: Number): Number ;
-  readonly getError(value: Number): Number ;
-}
-
-interface FormData {
-  readonly FormData();
-  readonly append(name: String, value: String, filename: String);
-  readonly has(name: String): Boolean ;
-  readonly get(name: String): String ;
-}
-
-interface Holder {
-  readonly hasSections(): Boolean ;
-  readonly getNumberOfSections(): Integer ;
-  readonly getMaximumDiameter(): Number ;
-  readonly getTotalLength(): Number ;
-  readonly getDiameter(index: Integer): Number ;
-  readonly getLength(index: Integer): Number ;
-}
-
-interface IncrementalVariable {
-  readonly IncrementalVariable(specifiers: Map, format: Format);
-  readonly format(value: Number): String ;
-  readonly getPrefix(): Value ;
-  readonly setPrefix(prefix: Value);
-  readonly disable();
-  readonly reset();
-  readonly getCurrent(): Value ;
-}
-
-interface MachineConfiguration {
-  readonly getXML(): String ;
-  readonly MachineConfiguration();
-  readonly MachineConfiguration(u: Axis);
-  readonly MachineConfiguration(u: Axis, v: Axis);
-  readonly MachineConfiguration(u: Axis, v: Axis, w: Axis);
-  readonly getMilling(): Boolean ;
-  readonly setMilling(milling: Boolean);
-  readonly getTurning(): Boolean ;
-  readonly setTurning(turning: Boolean);
-  readonly getWire(): Boolean ;
-  readonly setWire(wire: Boolean);
-  readonly getJet(): Boolean ;
-  readonly setJet(jet: Boolean);
-  readonly getToolChanger(): Boolean ;
-  readonly setToolChanger(toolChanger: Boolean);
-  readonly getToolPreload(): Boolean ;
-  readonly setToolPreload(toolPreload: Boolean);
-  readonly getNumberOfTools(): Integer ;
-  readonly setNumberOfTools(numberOfTools: Integer);
-  readonly getMaximumToolLength(): Number ;
-  readonly setMaximumToolLength(maximumToolLength: Number);
-  readonly getMaximumToolDiameter(): Number ;
-  readonly setMaximumToolDiameter(maximumToolDiameter: Number);
-  readonly getMaximumToolWeight(): Number ;
-  readonly setMaximumToolWeight(maximumToolWeight: Number);
-  readonly getMaximumFeedrate(): Number ;
-  readonly setMaximumFeedrate(maximumFeedrate: Number);
-  readonly getMaximumCuttingFeedrate(): Number ;
-  readonly setMaximumCuttingFeedrate(maximumCuttingFeedrate: Number);
-  readonly getMaximumBlockProcessingSpeed(): Integer ;
-  readonly setMaximumBlockProcessingSpeed(maximumBlockProcessingSpeed: Integer);
-  readonly getNumberOfWorkOffsets(): Integer ;
-  readonly setNumberOfWorkOffsets(numberOfWorkOffsets: Integer);
-  readonly getFeedrateRatio(): Number ;
-  readonly setFeedrateRatio(feedrateRatio: Number);
-  readonly getToolChangeTime(): Number ;
-  readonly setToolChangeTime(toolChangeTime: Number);
-  readonly getDimensions(): Vector ;
-  readonly setDimensions(dimensions: Vector);
-  readonly getWidth(): Number ;
-  readonly setWidth(width: Number);
-  readonly getDepth(): Number ;
-  readonly setDepth(depth: Number);
-  readonly getHeight(): Number ;
-  readonly setHeight(height: Number);
-  readonly getWeight(): Number ;
-  readonly setWeight(weight: Number);
-  readonly getPartDimensions(): Vector ;
-  readonly setPartDimensions(partDimensions: Vector);
-  readonly getPartMaximumX(): Number ;
-  readonly setPartMaximumX(width: Number);
-  readonly getPartMaximumY(): Number ;
-  readonly setPartMaximumY(depth: Number);
-  readonly getPartMaximumZ(): Number ;
-  readonly setPartMaximumZ(height: Number);
-  readonly getWeightCapacity(): Number ;
-  readonly setWeightCapacity(weightCapacity: Number);
-  readonly getSpindleAxis(): Vector ;
-  readonly setSpindleAxis(spindleAxis: Vector);
-  readonly getSpindleDescription(): String ;
-  readonly setSpindleDescription(spindleDescription: String);
-  readonly getMaximumSpindlePower(): Number ;
-  readonly setMaximumSpindlePower(maximumSpindlePower: Number);
-  readonly getMaximumSpindleSpeed(): Number ;
-  readonly setMaximumSpindleSpeed(maximumSpindleSpeed: Number);
-  readonly getCollectChuck(): String ;
-  readonly setCollectChuck(collectChuck: String);
-  readonly getAxisByName(name: String): Axis ;
-  readonly getAxisX(): Axis ;
-  readonly getAxisY(): Axis ;
-  readonly getAxisZ(): Axis ;
-  readonly isSupportedPosition(position: Vector): Boolean ;
-  readonly getValidityStatus(): Integer ;
-  readonly isSupported(): Boolean ;
-  readonly setSingularity(adjust: Boolean, method: Integer, cone: Number, angle: Number, tolerance: Number, linearizationTolerance: Number);
-  readonly getSingularityAdjust(): Boolean ;
-  readonly getSingularityMethod(): Integer ;
-  readonly getSingularityCone(): Number ;
-  readonly getSingularityAngle(): Number ;
-  readonly getSingularityTolerance(): Number ;
-  readonly getSingularityLinearizationTolerance(): Number ;
-  readonly isMachineAxisRotation(abc: Vector): Boolean ;
-  readonly is3DConfiguration(): Boolean ;
-  readonly isMultiAxisConfiguration(): Boolean ;
-  readonly getNumberOfAxes(): Integer ;
-  readonly isHeadConfiguration(): Boolean ;
-  readonly isTableConfiguration(): Boolean ;
-  readonly getAxisU(): Axis ;
-  readonly getAxisV(): Axis ;
-  readonly getAxisW(): Axis ;
-  readonly isMachineCoordinate(coordinate: Integer): Boolean ;
-  readonly getAxisByCoordinate(coordinate: Integer): Axis ;
-  readonly clamp(_abc: Vector): Vector ;
-  readonly isXYZSupported(_xyz: Vector): Boolean ;
-  readonly isABCSupported(_abc: Vector): Boolean ;
-  readonly isDirectionSupported(direction: Vector): Boolean ;
-  readonly getABC(orientation: Matrix): Vector ;
-  readonly getABCByDirectionBoth(direction: Vector): VectorPair ;
-  readonly getABCByDirection(direction: Vector): Vector ;
-  readonly getABCByDirection2(direction: Vector): Vector ;
-  readonly getOtherABCByDirection(abc: Vector): Vector ;
-  readonly getPreferredABC(abc: Vector): Vector ;
-  readonly remapABC(abc: Vector): Vector ;
-  readonly remapToABC(abc: Vector, current: Vector): Vector ;
-  readonly getCoordinates(): Integer ;
-  readonly getPosition(p: Vector, abc: Vector): Vector ;
-  readonly getDirection(abc: Vector): Vector ;
-  readonly getHeadABC(abc: Vector): Vector ;
-  readonly getTableABC(abc: Vector): Vector ;
-  readonly getHeadOrientation(abc: Vector): Matrix ;
-  readonly getTableOrientation(abc: Vector): Matrix ;
-  readonly getOrientation(abc: Vector): Matrix ;
-  readonly getSpindleAxisABC(abc: Vector): Vector ;
-  readonly getRemainingOrientation(abc: Vector, desired: Matrix): Matrix ;
-  readonly getRetractPlane(): Number ;
-  readonly setRetractPlane(retractPlane: Number);
-  readonly hasHomePositionX(): Boolean ;
-  readonly getHomePositionX(): Number ;
-  readonly setHomePositionX(x: Number);
-  readonly hasHomePositionY(): Boolean ;
-  readonly getHomePositionY(): Number ;
-  readonly setHomePositionY(y: Number);
-  readonly getModel(): String ;
-  readonly setModel(model: String);
-  readonly getDescription(): String ;
-  readonly setDescription(description: String);
-  readonly getVendor(): String ;
-  readonly setVendor(vendor: String);
-  readonly getVendorUrl(): String ;
-  readonly setVendorUrl(vendorUrl: String);
-  readonly getControl(): String ;
-  readonly setControl(control: String);
-  readonly isCoolantSupported(coolant: Integer): Boolean ;
-  readonly setCoolantSupported(coolant: Integer, available: Boolean);
-  readonly getRetractOnIndexing(): Boolean ;
-  readonly setRetractOnIndexing(retractOnIndexing: Boolean);
-  readonly getShortestAngularRotation(): Boolean ;
-  readonly setShortestAngularRotation(shortestAngularRotation: Boolean);
-}
-
-interface MachineParameters {
-  readonly spindleOrientation: Number ;
-  readonly chipBreakingDistance: Number ;
-  readonly drillingSafeDistance: Number ;
-}
-
-interface Mail {
-  readonly Mail();
-  readonly addRecipient(email: String);
-  readonly addRecipient2(email: String, name: String);
-  readonly addCCRecipient(email: String);
-  readonly addCCRecipient2(email: String, name: String);
-  readonly addBCCRecipient(email: String);
-  readonly addBCCRecipient2(email: String, name: String);
-  readonly getBody(): String ;
-  readonly setBody(body: String);
-  readonly getSubject(): String ;
-  readonly setSubject(subject: String);
-  readonly getSenderName(): String ;
-  readonly setSenderName(senderName: String);
-  readonly getSenderEmail(): String ;
-  readonly setSenderEmail(senderEmail: String);
-  readonly getReplyTo(): String ;
-  readonly setReplyTo(replyTo: String);
-}
-
-interface Modal {
-  readonly Modal(specifiers: Map, format: Format);
-  readonly format(value: Value): String ;
-  readonly getPrefix(): Value ;
-  readonly setPrefix(prefix: Value);
-  readonly getSuffix(): Value ;
-  readonly setSuffix(suffix: Value);
-  readonly reset();
-  readonly getCurrent(): Value ;
-}
-
-interface ModalGroup {
-  readonly ModalGroup();
-  readonly setStrict(strict: Boolean);
-  readonly setAutoReset(autoreset: Boolean);
-  readonly setLogUndefined(logundefined: Boolean);
-  readonly getNumberOfGroups(): Integer ;
-  readonly getNumberOfCodes(): Integer ;
-  readonly getNumberOfCodesInGroup(group: Integer): Integer ;
-  readonly isCodeDefined(code: Integer): Boolean ;
-  readonly isActiveCode(code: Integer): Boolean ;
-  readonly makeActiveCode(code: Integer);
-  readonly getActiveCode(group: Integer): Integer ;
-  readonly hasActiveCode(group: Integer): Boolean ;
-  readonly reset();
-  readonly resetGroup(group: Integer): Integer ;
-  readonly createGroup(): Integer ;
-  readonly removeCode(code: Integer);
-  readonly addCode(group: Integer, code: Integer);
-  readonly isGroup(group: Integer): Boolean ;
-  readonly getGroup(code: Integer): Integer ;
-  readonly inSameGroup(a: Integer, b: Integer): Boolean ;
-  readonly isEnabled(): Boolean ;
-  readonly enable();
-  readonly disable();
-  readonly setForce(force: Boolean);
-  readonly setFormatNumber(formatNumber: FormatNumber);
-  readonly setPrefix(prefix: String);
-  readonly setSuffix(suffix: String);
-  readonly format(code: Integer): String ;
-}
-  declare function getMachineConfiguration(): MachineConfiguration ;
-  declare function setMachineConfiguration(machine: MachineConfiguration);
-  declare function optimizeMachineAngles();
-  declare function optimizeMachineAngles2(tcp: Integer);
-  declare function optimizeMachineAnglesByMachine(machine: MachineConfiguration, tcp: Integer);
-  declare function isSectionSpecialCycle(uri: String): Boolean ;
-  declare function setSectionSpecialCycle(uri: String, specialCycle: Boolean);
-  declare function getProduct(): String ;
-  declare function getProductUri(): String ;
-  declare function getProductUrl(): String ;
-  declare function getVendor(): String ;
-  declare function getVendorUrl(): String ;
-  declare function getVersion(): String ;
-  declare function openUrl(url: String);
-  declare function printDocument(path: String): Boolean ;
-  declare function printDocumentTo(path: String, printerName: String): Boolean ;
-  declare function createToolRenderer(): ToolRenderer ;
-  declare function setExitCode(code: Integer);
-  declare function error(message: String);
-  declare function warning(message: String);
-  declare function warningOnce(message: String, id: Integer);
-  declare function log(message: String);
-  declare function getCurrentNCLocation(): String ;
-  declare function getSystemUnit(): Integer ;
-  declare function getPlatform(): String ;
-  declare function hasSymbol(symbol: Integer): Boolean ;
-  declare function isTextSupported(text: String): Boolean ;
-  declare function getCodePage(): Integer ;
-  declare function setCodePage(name: String);
-  declare function write(message: String);
-  declare function writeln(message: String);
-  declare function getWordSeparator(): String ;
-  declare function setWordSeparator(message: String);
-  declare function formatWords(message: String): String ;
-  declare function getLangId(): String ;
-  declare function isSupportedText(message: String): Boolean ;
-  declare function localize(message: String): String ;
-  declare function localize2(section: String, message: String): String ;
-  declare function loadLocale(langId: String): Boolean ;
-  declare function include(path: String);
-  declare function findFile(path: String): String ;
-  declare function getHeader(): String ;
-  declare function getHeaderVersion(): String ;
-  declare function getHeaderCommit(): String ;
-  declare function getHeaderDate(): String ;
-  declare function getHeaderDate2(): Date ;
-  declare function getHeaderSnippet(keyword: String): String ;
-  declare function getIntermediatePath(): String ;
-  declare function getOutputPath(): String ;
-  declare function getConfigurationFolder(): String ;
-  declare function getConfigurationPath(): String ;
-  declare function getPostProcessorFolder(): String ;
-  declare function getPostProcessorPath(): String ;
-  declare function getCascadingPath(): String ;
-  declare function getSecurityLevel(): Integer ;
-  declare function exportNCAs(path: String, format: String);
-  declare function execute(path: String, arguments: String, hide: Boolean, workingFolder: String): Integer ;
-  declare function executeNoWait(path: String, arguments: String, hide: Boolean, workingFolder: String);
-  declare function setEOL(eol: String);
-  declare function isRedirecting(): Boolean ;
-  declare function closeRedirection();
-  declare function redirectToFile(path: String);
-  declare function redirectToBuffer();
-  declare function getRedirectionBuffer(): String ;
-  declare function getRedirectionBuffer2(clear: Boolean): String ;
-  declare function registerPostProcessing(path: String);
-  declare function getWorkpiece(): BoundingBox ;
-  declare function getFixture(): BoundingBox ;
-  declare function getMachineConfigurations(): String ;
-  declare function getMachineConfigurationByName(name: String): MachineConfiguration ;
-  declare function loadMachineConfiguration(path: String): MachineConfiguration ;
-  declare function isInteractionAllowed(): Boolean ;
-  declare function alert(title: String, description: String);
-  declare function promptKey(title: String, description: String): String ;
-  declare function promptKey2(title: String, description: String, accept: String): String ;
-  declare function promptKey3(title: String, description: String, accept: String, keys: String): String ;
-  declare function promptText(title: String, description: String): String ;
-  declare function getAsInt(text: String): Integer ;
-  declare function getAsFloat(text: String): Number ;
-  declare function isSafeText(text: String, permitted: String): Boolean ;
-  declare function filterText(text: String, keep: String): String ;
-  declare function translateText(text: String, src: String, dest: String): String ;
-  declare function loadText(url: String, encoding: String): String ;
-  declare function getOutputUnit(): Integer ;
-  declare function setOutputUnit(unit: Integer);
-  declare function getDogLeg(): Boolean ;
-  declare function setDogLeg(dogLeg: Boolean);
-  declare function getRotation(): Matrix ;
-  declare function setRotation(rotation: Matrix);
-  declare function getTranslation(): Vector ;
-  declare function cancelTransformation();
-  declare function setTranslation(translation: Vector);
-  declare function getFramePosition(position: Vector): Vector ;
-  declare function getFrameDirection(direction: Vector): Vector ;
-  declare function getSectionFramePosition(framePosition: Vector): Vector ;
-  declare function getSectionFrameDirection(frameDirection: Vector): Vector ;
-  declare function getHighFeedMapping(): Integer ;
-  declare function setHighFeedMapping(mode: Integer);
-  declare function getHighFeedrate(): Number ;
-  declare function setHighFeedrate(feedrate: Number);
-  declare function getGlobalPosition(p: Vector): Vector ;
-  declare function getWCSPosition(p: Vector): Vector ;
-  declare function getSectionPosition(p: Vector): Vector ;
-  declare function getCurrentGlobalPosition(): Vector ;
-  declare function getCurrentPosition(): Vector ;
-  declare function setCurrentPosition(currentPosition: Vector);
-  declare function setCurrentPositionX(x: Number);
-  declare function setCurrentPositionY(y: Number);
-  declare function setCurrentPositionZ(z: Number);
-  declare function getCurrentDirection(): Vector ;
-  declare function setCurrentDirection(currentDirection: Vector);
-  declare function skipRemainingSection();
-  declare function isClockwiseSpindleDirection(): Boolean ;
-  declare function isSpindleActive(): Boolean ;
-  declare function isCoolantActive(): Boolean ;
-  declare function isSpeedFeedSynchronizationActive(): Boolean ;
-  declare function is3D(): Boolean ;
-  declare function isMultiAxis(): Boolean ;
-  declare function isMultiChannelProgram(): Boolean ;
-  declare function getNumberOfChannels(): Integer ;
-  declare function getNumberOfRecords(): Integer ;
-  declare function getRecord(id: Integer): Record ;
-  declare function getCurrentSectionId(): Integer ;
-  declare function getNumberOfSections(): Integer ;
-  declare function getSection(index: Integer): Section ;
-  declare function getPreviousSection(): Section ;
-  declare function hasNextSection(): Boolean ;
-  declare function getNextSection(): Section ;
-  declare function getToolTable(): ToolTable ;
-  declare function getCurrentRecordId(): Integer ;
-  declare function getMachiningDistance(tool: Integer): Number ;
-  declare function isExpanding(): Boolean ;
-  declare function getEnd(): Vector ;
-  declare function getDirection(): Vector ;
-  declare function getLength(): Number ;
-  declare function getCircularCenter(): Vector ;
-  declare function getCircularStartRadius(): Number ;
-  declare function getCircularRadius(): Number ;
-  declare function getCircularSweep(): Number ;
-  declare function getCircularChordLength(): Number ;
-  declare function isClockwise(): Boolean ;
-  declare function isFullCircle(): Boolean ;
-  declare function isHelical(): Boolean ;
-  declare function isSpiral(): Boolean ;
-  declare function getCircularNormal(): Vector ;
-  declare function getCircularPlane(): Integer ;
-  declare function getHelicalOffset(): Vector ;
-  declare function getHelicalDistance(): Number ;
-  declare function getHelicalPitch(): Number ;
-  declare function canLinearize(): Boolean ;
-  declare function linearize(tolerance: Number);
-  declare function getNumberOfSegments(tolerance: Number): Integer ;
-  declare function getPositionU(u: Number): Vector ;
-  declare function getCircularMotion(): CircularMotion ;
-  declare function getFeedrate(): Number ;
-  declare function getMovement(): Integer ;
-  declare function getPower(): Boolean ;
-  declare function getSpindleSpeed(): Number ;
-  declare function getRadiusCompensation(): Integer ;
-  declare function getCompensationOffset(): Integer ;
-  declare function hasPreviousRecord(): Boolean ;
-  declare function getPreviousRecord(): Record ;
-  declare function hasNextRecord(): Boolean ;
-  declare function getNextRecord(): Record ;
-  declare function getNextTool(number: Integer): Tool ;
-  declare function setWriteInvocations(writeInvocations: Boolean);
-  declare function setWriteStack(writeStack: Boolean);
-  declare function isFirstCyclePoint(): Boolean ;
-  declare function isLastCyclePoint(): Boolean ;
-  declare function getCyclePointId(): Integer ;
-  declare function getNumberOfCyclePoints(): Integer ;
-  declare function getCyclePoint(index: Integer): Vector ;
-  declare function onImpliedCommand(command: Integer);
-  declare function hasGlobalParameter(name: String): Boolean ;
-  declare function getGlobalParameter(name: String): Value ;
-  declare function hasParameter(name: String): Boolean ;
-  declare function getParameter(name: String): Value ;
-  declare function registerTerminationHandler(func: Function);
-  declare function toDeg(radians: Number): Number ;
-  declare function toRad(degrees: Number): Number ;
-  declare function parseSpatial(value: String): Number ;
-  declare function getPlane(direction: Vector): Integer ;
-  declare function getISOPlane(plane: Integer): Integer ;
-  declare function range(first: Number, end: Number, step: Number): Array ;
-  declare function interval(from: Number, to: Number): Array ;
-  declare function flatten(array: Array): Array ;
-  declare function getQuadrant(angle: Number): Integer ;
-  declare function validate(expression: Value);
-  declare function debug(message: String);
-  declare function spatial(value: Number, unit: Integer): Number ;
-  declare function getInverseTime(distance: Number, speed: Number): Number ;
-  declare function cycleNotSupported();
-  declare function isWorkpieceDefined(): Boolean ;
-  declare function isTurning(): Boolean ;
-  declare function isMilling(): Boolean ;
-  declare function isJet(): Boolean ;
-  declare function isFirstSection(): Boolean ;
-  declare function isLastSection(): Boolean ;
-  declare function onExpandedRapid(x: Number, y: Number, z: Number): Boolean ;
-  declare function onExpandedLinear(x: Number, y: Number, z: Number, feed: Number): Boolean ;
-  declare function createMachineConfiguration(specifiers: Map): MachineConfiguration ;
-  declare function getMachineConfigurationAsText(machine: MachineConfiguration): String ;
-  declare function createAxis(specifiers: Map): Axis ;
-  declare function createFormat(specifiers: Map): FormatNumber ;
-  declare function createVariable(specifiers: Map, format: Format): Variable ;
-  declare function createIncrementalVariable(specifiers: Map, format: Format): IncrementalVariable ;
-  declare function createReferenceVariable(specifiers: Map, format: Format): ReferenceVariable ;
-  declare function createModal(specifiers: Map, format: Format): Modal ;
-  declare function createModalGroup(specifiers: Map, groups: Array, format: Format): ModalGroup ;
-  declare function repositionToCycleClearance(cycle: Map, x: Number, y: Number, z: Number);
-  declare function expandCyclePoint(x: Number, y: Number, z: Number);
-  declare function isWellKnownCycle(): Boolean ;
-  declare function isProbingCycle(uri: String): Booelan ;
-  declare function isSubSpindleCycle(uri: String): Booelan ;
-  declare function isWellKnownCommand(command: Integer): Boolean ;
-  declare function getCommandStringId(command: Integer): String ;
-  declare function canIgnoreCommand(command: Integer): Boolean ;
-  declare function onUnsupportedCommand(command: Integer);
-  declare function onUnsupportedCoolant(coolant: Integer);
-  declare function getCoolantName(coolant: Integer): String ;
-  declare function getMaterialName(material: Integer): String ;
-  declare function onMachine();
-  declare function onOpen();
-  declare function onCycle();
-  declare function onCyclePoint(x: Number, y: Number, z: Number);
-  declare function onCycleEnd();
-  declare function onParameter(name: String, value: Value);
-  declare function onPassThrough(value: Value);
-  declare function onComment(comment: String);
-  declare function onRapid(x: Number, y: Number, z: Number);
-  declare function onLinear(x: Number, y: Number, z: Number, feed: Number);
-  declare function onCircular(clockwise: Boolean, cx: Number, cy: Number, cz: Number, x: Number, y: Number, z: Number, feed: Number);
-  declare function onRapid5D(x: Number, y: Number, z: Number, dx: Number, dy: Number, dz: Number);
-  declare function onLinear5D(x: Number, y: Number, z: Number, dx: Number, dy: Number, dz: Number, feed: Number);
-  declare function onRewindMachine(a: Number, b: Number, c: Number);
-  declare function onMovement(movement: Integer);
-  declare function onPower(power: Boolean);
-  declare function onRadiusCompensation();
-  declare function onToolCompensation(compensation: Integer);
-  declare function onDwell(time: Number);
-  declare function onSpindleSpeed(spindleSpeed: Number);
-  declare function onCommand(command: Integer);
-  declare function onOrientateSpindle(angle: Number);
-  declare function onSectionEnd();
-  declare function onClose(); 
-
-
-interface Range {
-  readonly Range();
-  readonly Range(a: Number, b: Number);
-  readonly isNonRange(): Boolean ;
-  readonly getMinimum(): Number ;
-  readonly getMaximum(): Number ;
-  readonly getSpan(): Number ;
-  readonly getMiddle(): Number ;
-  readonly grow(offset: Number);
-  readonly reduce(offset: Number);
-  readonly translate(offset: Number);
-  readonly expandTo(value: Number);
-  readonly expandToRange(value: Range);
-  readonly getU(value: Number): Number ;
-  readonly isWithin(value: Number): Boolean ;
-  readonly clamp(value: Number): Number ;
-  readonly toString(): String ;
-}
-
-interface Record {
-  readonly Record();
-  readonly isValid(): Boolean ;
-  readonly getId(): Integer ;
-  readonly getType(): Integer ;
-  readonly getCategories(): Integer ;
-  readonly isMotion(): Boolean ;
-  readonly isCycle(): Boolean ;
-  readonly getCycleType(): String ;
-  readonly isParameter(): Boolean ;
-  readonly getParameterName(): String ;
-  readonly getParameterValue(): Value ;
-}
-
-interface ReferenceVariable {
-  readonly ReferenceVariable(specifiers: Map, format: Format);
-  readonly format(value: Number, reference: Number): String ;
-  readonly getPrefix(): Value ;
-  readonly setPrefix(prefix: Value);
-  readonly disable();  
-}
-
-interface Section {
-    /** Returns the zero-based id of the section.*/
-    readonly getId(): Integer;
-    /** Returns the number of records in the section.*/
-    readonly getNumberOfRecords(): Integer;
-    /** Returns the specified record within the section. */
-    getRecord(id: Integer): Record;
-    /** Returns the job id of the section. */
-    readonly getJobId(): Integer;
-    /** Returns the pattern id of the section. You can use this to tell which sections are pattern instances of the same original section. The motion coordinates will be identical for patterned sections but the work plane can be different. Note that, the pattern ids can be different for some types of patterns when the actual motion coordinates are mapped. 
-    *By default the work origins are mapped to the WCS origin to simplify the post customization. This results in a displacement between the pattern instances. You can get the displacement by subtracting the initial section positions.
-    *0 means that the section is not patterned. */
-    readonly getPatternId(): Integer;
-    /** Returns the number of pattern instances for the section.  */
-    readonly getNumberOfPatternInstances(): Integer;
-    /** Returns true if the section is patterned. Ie. at least one other section shares the same pattern id. */
-    readonly isPatterned(): boolean;
-    /** Returns true if the section uses axis substitution. In axis substitution mode the coordinates are the following meaning: "X: The offset along the substitution axis. Y: The rotation angle in radians. Z: Radius (always positive)" */
-    readonly getChannel(): Integer;
-    /** Returns true if tool change should be forced. */
-    readonly getForceToolChange(): boolean;
-    /** Returns true if the section is optional. */
-    readonly isOptional(): boolean;
-    /** Returns the first active compensation for the section. */
-    readonly getFirstCompensationOffset(): Integer;
-    /** Returns the tool. */
-    readonly getTool(): Tool;
-    /** Returns the content flags. */
-    readonly getContent(): Integer;
-    /** Returns true is the section contains multi-axis toolpath. */
-    readonly isMultiAxis(): boolean;
-    /** Returns the original unit of the section. 
-    *This may be different from the output unit. 
-    *The available values are: 
-    *•IN - Inches 
-    *•MM - Millimeters 
-    */
-    readonly getUnit(): Integer;
-    /** Returns the type of the section.
-    * The available types are:
-    * •TYPE_MILLING
-    * •TYPE_TURNING
-    * •TYPE_WIRE
-    * •TYPE_JET 
-    */
-    readonly getType(): Integer;
-    /** Returns the associated quality. Used for waterjet, laser, and plasma cutting. */
-    readonly getQuality(): Integer;
-    /** Returns the type of waterjet, laser, and plasma cutting of the section.
-    * The available modes are:
-    * •JET_MODE_THROUGH
-    * •JET_MODE_ETCHING
-    * •JET_MODE_VAPORIZE 
-     */
-    readonly getJetMode(): Integer;
-    /** Returns true if tailstock is active for turning. */
-    readonly getTailstock(): boolean;
-    /** Returns true if part catcher should be activated if available for turning. */
-    readonly getPartCatcher(): boolean;
-    /** Returns the active spindle.
-    * The available values are:
-    * •SPINDLE_PRIMARY - The main/primary spindle.
-    * •SPINDLE_SECONDARY - The sub-spindle/secondary spindle. 
-     */
-    readonly getSpindle(): Integer;
-    /** Returns the feed mode.
-    * The available modes are:
-    * •FEED_PER_MINUTE
-    * •FEED_PER_REVOLUTION
-    */
-    readonly getFeedMode(): Integer;
-    /** Returns the turning tool orientation (radians). */
-    readonly getToolOrientation(): number;
-    /** Returns the work origin in the WCS. */
-    readonly getWorkOrigin(): Vector;
-
-    readonly getWorkPlane(): Matrix;
-
-    readonly isXOriented(): boolean;
-
-    readonly isYOriented(): boolean;
-
-    readonly isZOriented(): boolean;
-
-    readonly isTopWorkPlane(): boolean;
-
-    readonly getGlobalWorkOrigin(): Vector;
-    /** */
-    readonly getGlobalWorkPlane(): Matrix;
-    /** */
-    readonly getToolAxis(): integer;
-    /** */
-    readonly getWCSOrigin(): Vector;
-    /** */
-    readonly getWCSPlane(): Matrix;
-    /** */
-    readonly getDynamicWCSOrigin(): Vector;
-    readonly getDynamicWCSPlane(): Matrix;
-    readonly getFCSOrigin(): Vector;
-    readonly getFCSPlane(): Matrix;
-    readonly getWorkOffset(): Integer;
-    readonly hasDynamicWorkOffset(): boolean;
-    readonly getDynamicWorkOffset(): Integer;
-    readonly getAxisSubstitution(): boolean;
-    readonly getAxisSubstitutionRadius(): number;
-    readonly getGlobalPosition(p: Vector): Vector;
-    readonly getWCSPosition(p: Vector): Vector;
-    readonly getSectionPosition(p: Vector): Vector;
-    readonly getMaximumSpindleSpeed(): number;
-    readonly getMaximumFeedrate(): number;
-    readonly getCuttingDistance(): number;
-    readonly getRapidDistance(): number;
-    readonly getMovements(): Integer;
-    readonly getCycleTime(): number;
-    readonly getNumberOfCyclePoints(): Integer;
-    readonly getZRange(): Range ;
-    readonly getGlobalZRange(): Range;
-    readonly getGlobalRange(direction: Vector): Range;
-    readonly getBoundingBox(): BoundingBox;
-    readonly getGlobalBoundingBox(): BoundingBox;
-    readonly isCuttingMotionAwayFromRotary(distance: number, tolerance: number): boolean;
-    readonly hasWellDefinedPosition(): boolean;
-    readonly getFirstPosition(): Vector;
-    readonly getInitialPosition(): Vector;
-    readonly getFinalPosition(): Vector;
-    readonly getInitialToolAxis(): Vector;
-    readonly getGlobalInitialToolAxis(): Vector;
-    readonly getInitialToolAxisABC(): Vector;
-    readonly getFinalToolAxis(): Vector;
-    readonly getFinalToolAxisABC(): Vector;
-    readonly getGlobalFinalToolAxis(): Vector;
-    readonly getInitialSpindleOn(): boolean;
-    readonly getInitialSpindleSpeed(): number;
-    readonly getMaximumTilt(): number;
-    readonly getLowerToolAxisABC(): Vector;
-    readonly getUpperToolAxisABC(): Vector;
-    readonly isOptimizedForMachine(): boolean;
-    readonly getOptimizedTCPMode(): Integer;
-    readonly hasParameter(name: String): boolean;
-    readonly getParameter(name: String): Value;
-    readonly hasCycle(uri: String): boolean;
-    readonly hasAnyCycle(): boolean;
-    readonly getNumberOfCyclesWithId(uri: String): Integer;
-    readonly getNumberOfCycles(): Integer;
-    readonly getCycleId(index: Integer): String;
-    readonly getFirstCycle(): String;
-    readonly doesStartWithCycle(uri: String): boolean;
-    readonly doesStartWithCycleIgnoringPositioning(uri: String): boolean;
-    readonly doesStrictCycle(uri: String): boolean;
-    readonly hasCycleParameter(index: Integer, name: String): boolean;
-    readonly getCycleParameter(index: Integer, name: String): value;
-    readonly optimizeMachineAnglesByMachine(machine: MachineConfiguration, tcp: Integer);   
-}
-/** An intrinsic object that provides basic mathematics functionality and constants. */
-
-interface SMTP {
-  readonly SMTP(_hostname: String, _port: short);
-  readonly send(mail: Mail);
-}
-
-
-interface StringBuffer {
-  readonly StringBuffer();
-  readonly clear();
-  readonly isEmpty(): Boolean ;
-  readonly append(text: String);
-  readonly assign(text: String);
-  readonly toString(): String ;  
-}
-
-interface StringSubstitution {
-  readonly StringSubstitution();
-  readonly setValue(name: String, value: String);
-  readonly substitute(text: String): String ;  
-}
-
-interface Table {
-  readonly Table(values: Array, specifiers: Map);
-  readonly lookup(index: Integer): Value ;
-  readonly reset();  
-}
-
-interface Template {
-  readonly Template(text: String);
-  readonly substitute(map: Map): String ;
-}
-
-interface TextFile {
-  readonly TextFile(path: String, write: Boolean, encoding: String);
-  readonly isOpen(): Boolean ;
-  readonly readln(): String ;
-  readonly write(text: String);
-  readonly writeln(text: String);
-  readonly close();
-}
-
-interface ToolRenderer {
-  readonly ToolRenderer();
-  readonly setSegment(segment: Integer);
-  readonly setBackgroundColor(color: Color);
-  readonly setFluteColor(color: Color);
-  readonly setShoulderColor(color: Color);
-  readonly setShaftColor(color: Color);
-  readonly setHolderColor(color: Color);
-  readonly exportAs(path: String, mimetype: String, tool: Tool, width: Number, height: Number);
-  readonly getAsBinary(mimetype: String, tool: Tool, width: Number, height: Number): String ;
-}
-
-interface ToolTable {
-  readonly getNumberOfTools(): Integer ;
-  readonly getTool(index: Integer): Tool ;
-}
-
-interface VectorPair {
-  readonly first: Vector ;
-  readonly second: Vector ;
-}
-
-interface XMLHttpRequest {
-  readonly XMLHttpRequest();
-  readonly open(method: String, url: String, async: Boolean, user: String, password: String);
-  readonly abort();
-  readonly setRequestHeader(name: String, value: String);
-  readonly send(data: String);
-  readonly getResponseHeader(name: String): String ;
-}
-
-interface ZipFile {
-  readonly unzipTo(src: String, dest: String): static ;
-  readonly zipTo(src: String, dest: String): static ;  
-}
-
-/** returns the spindle axis */
-declare const spindleAxis: Integer;
-declare const feedrate: Number;
-declare const spindleSpeed: Number;
-declare const machineConfiguration: MachineConfiguration;
-declare const cycleType: String;
-declare const cycleExpanded: Boolean;
-declare const tool: Tool;
-declare const currentSection: Section;
-declare const SMTP:SMTP;
-
-declare const outputUnit
-declare const currentSection
-declare const highFeedMapping
-declare const highFeedrate
-declare const lineNumber
-declare const initialCyclePosition
-declare const abortOnDeprecation
-declare const end
-declare const length
-declare const center
-declare const normal
-declare const plane
-declare const radius
-declare const sweep
-declare const clockwise
-declare const chordLength
-declare const fullCircle
-declare const helical
-/*The helical offset for the current circular motion.*/
-declare const helicalOffset
-declare const helicalDistance
-declare const movement
-declare const radiusCompensation
-declare const description
-declare const vendor
-declare const vendorUrl
-declare const legal
-declare const unit
-declare const programName
-declare const programNameIsInteger
-declare const debugMode
-declare const preventPost
-declare const filename
-declare const extension
-declare const version
-declare const certificationLevel
-declare const revision
-declare const minimumRevision
-declare const deprecated
-declare const capabilities
-declare const tolerance
-declare const mapWorkOrigin
-declare const mapToWCS
-declare const allowMachineChangeOnSection
-declare const minimumChordLength
-declare const minimumCircularRadius
-declare const maximumCircularRadius
-declare const minimumCircularSweep
-declare const maximumCircularSweep
-declare const allowHelicalMoves
-declare const allowSpiralMoves
-declare const allowedCircularPlanes
-declare const machineParameters
-declare const properties
-declare const NUL
-/*SOH ASCII control code.*/
-declare const SOH
-/*STX ASCII control code.*/
-declare const STX
-/*ETX ASCII control code.*/
-declare const ETX
-/*EOT ASCII control code.*/
-declare const EOT
-
-/*ENQ ASCII control code.*/
-declare const ENQ
-
-/*ACK ASCII control code.*/
-declare const ACK
-
-/*BEL ASCII control code.*/
-declare const BEL
-
-/*BS ASCII control code.*/
-declare const BS
-
-/*TAB ASCII control code.*/
-declare const TAB
-
-/*LF ASCII control code.*/
-declare const LF
-
-/*VT ASCII control code.*/
-declare const VT
-
-/*FF ASCII control code.*/
-declare const FF
-
-/*CR ASCII control code.*/
-declare const CR
-
-/*SO ASCII control code.*/
-declare const SO
-
-/*SI ASCII control code.*/
-declare const SI
-
-/*DLE ASCII control code.*/
-declare const DLE
-
-/*DC1 ASCII control code.*/
-declare const DC1
-
-/*DC2 ASCII control code.*/
-declare const DC2
-
-/*DC3 ASCII control code.*/
-declare const DC3
-
-/*DC4 ASCII control code.*/
-declare const DC4
-
-/*NAK ASCII control code.*/
-declare const NAK
-
-/*SYN ASCII control code.*/
-declare const SYN
-
-/*ETB ASCII control code.*/
-declare const ETB
-
-/*CAN ASCII control code.*/
-declare const CAN
-
-/*EM ASCII control code.*/
-declare const EM
-
-/*SUB ASCII control code.*/
-declare const SUB
-
-/*ESC ASCII control code.*/
-declare const ESC
-
-/*FS ASCII control code.*/
-declare const FS
-
-/*GS ASCII control code.*/
-declare const GS
-
-/*RS ASCII control code.*/
-declare const RS
-
-/*US ASCII control code.*/
-declare const US
-
-/*The default end-of-line marker.*/
-declare const EOL
-
-/*Space string.*/
-declare const SP
-
-/*File path separator.*/
-declare const PATH_SEPARATOR
-
-/*Inch unit.*/
-declare const IN
-
-/*Millimeters unit.*/
-declare const MM
-
-/*Circular XY plane.*/
-declare const PLANE_XY
-
-/*Circular XZ plane. Deprecated use PLANE_ZX instead.*/
-declare const PLANE_XZ
-
-/*Circular ZX plane.*/
-declare const PLANE_ZX
-
-/*Circular YZ plane.*/
-declare const PLANE_YZ
-
-/*X coordinate index.*/
-declare const X
-
-/*Y coordinate index.*/
-declare const Y
-
-/*Z coordinate index.*/
-declare const Z
-
-/*YZ-plane.*/
-declare const TOOL_AXIS_X
-
-/*ZX-plane.*/
-declare const TOOL_AXIS_Y
-
-/*XY-plane.*/
-declare const TOOL_AXIS_Z
-
-/*Center radius compensation.*/
-declare const RADIUS_COMPENSATION_OFF
-
-/*Left radius compensation.*/
-declare const RADIUS_COMPENSATION_LEFT
-
-/*Right radius compensation.*/
-declare const RADIUS_COMPENSATION_RIGHT
-
-/*Don't linearize moves around multi-axis singularities. More...*/
-declare const SINGULARITY_LINEARIZE_OFF
-
-/*Keep top of tool in line with tool axis during multi-axis singularity linearization. More...*/
-declare const SINGULARITY_LINEARIZE_LINEAR
-
-/*Keep rotary axes in line during multi-axis singularity linearization. More...*/
-declare const SINGULARITY_LINEARIZE_ROTARY
-
-/*Coolant disabled.*/
-declare const COOLANT_DISABLED
-
-/*Flood coolant mode.*/
-declare const COOLANT_FLOOD
-
-/*Mist coolant mode.*/
-declare const COOLANT_MIST
-
-/*Coolant through tool mode. Deprecated use COOLANT_THROUGH_TOOL instead.*/
-declare const COOLANT_TOOL
-
-/*Coolant through tool mode.*/
-declare const COOLANT_THROUGH_TOOL
-
-/*Air mode.*/
-declare const COOLANT_AIR
-
-/*Air through tool mode.*/
-declare const COOLANT_AIR_THROUGH_TOOL
-
-/*Suction mode.*/
-declare const COOLANT_SUCTION
-
-/*Flood and mist coolant mode.*/
-declare const COOLANT_FLOOD_MIST
-
-/*Flood and through tool coolant mode.*/
-declare const COOLANT_FLOOD_THROUGH_TOOL
-
-/*Unspecified material.*/
-declare const MATERIAL_UNSPECIFIED
-
-/*High-speed steel material.*/
-declare const MATERIAL_HSS
-
-/*TI coated material.*/
-declare const MATERIAL_TI_COATED
-
-/*Carbide material.*/
-declare const MATERIAL_CARBIDE
-
-/*Ceramics material.*/
-declare const MATERIAL_CERAMICS
-
-/*Unspecified tool.*/
-declare const TOOL_UNSPECIFIED
-
-/*Drill.*/
-declare const TOOL_DRILL
-
-/*Center drill.*/
-declare const TOOL_DRILL_CENTER
-
-/*Spot drill.*/
-declare const TOOL_DRILL_SPOT
-
-/*Block drill.*/
-declare const TOOL_DRILL_BLOCK
-
-/*Flat end-mill.*/
-declare const TOOL_MILLING_END_FLAT
-
-/*Ball end-mill.*/
-declare const TOOL_MILLING_END_BALL
-
-/*Bullnose mill.*/
-declare const TOOL_MILLING_END_BULLNOSE
-
-/*Chamfer mill.*/
-declare const TOOL_MILLING_CHAMFER
-
-/*Face mill.*/
-declare const TOOL_MILLING_FACE
-
-/*Slot mill.*/
-declare const TOOL_MILLING_SLOT
-
-/*Radius mill.*/
-declare const TOOL_MILLING_RADIUS
-
-/*Dovetail mill.*/
-declare const TOOL_MILLING_DOVETAIL
-
-/*Tapered mill.*/
-declare const TOOL_MILLING_TAPERED
-
-/*Lollipop mill.*/
-declare const TOOL_MILLING_LOLLIPOP
-
-/*Right tap tool.*/
-declare const TOOL_TAP_RIGHT_HAND
-
-/*Left tap tool.*/
-declare const TOOL_TAP_LEFT_HAND
-
-/*Reamer tool.*/
-declare const TOOL_REAMER
-
-/*Boring bar tool.*/
-declare const TOOL_BORING_BAR
-
-/*Counterbore tool.*/
-declare const TOOL_COUNTER_BORE
-
-/*Countersink tool.*/
-declare const TOOL_COUNTER_SINK
-
-/*Holder.*/
-declare const TOOL_HOLDER_ONLY
-
-/*General turning tool.*/
-declare const TOOL_TURNING_GENERAL
-
-/*Thread turning tool.*/
-declare const TOOL_TURNING_THREADING
-
-/*Groove turning tool.*/
-declare const TOOL_TURNING_GROOVING
-
-/*Boring turning tool.*/
-declare const TOOL_TURNING_BORING
-
-/*Custom turning tool.*/
-declare const TOOL_TURNING_CUSTOM
-
-/*Probe.*/
-declare const TOOL_PROBE
-
-/*Wire.*/
-declare const TOOL_WIRE
-
-/*Water jet.*/
-declare const TOOL_WATER_JET
-
-/*Laser cutter.*/
-declare const TOOL_LASER_CUTTER
-
-/*Welder.*/
-declare const TOOL_WELDER
-
-/*Grinder.*/
-declare const TOOL_GRINDER
-
-/*Form mill.*/
-declare const TOOL_MILLING_FORM
-
-/*Plasma cutter.*/
-declare const TOOL_PLASMA_CUTTER
-
-/*Marker tool.*/
-declare const TOOL_MARKER
-
-/*Thread mill.*/
-declare const TOOL_MILLING_THREAD
-
-/*Turning tool compensation.*/
-declare const TOOL_COMPENSATION_INSERT_CENTER
-
-/*Turning tool compensation.*/
-declare const TOOL_COMPENSATION_TIP
-
-/*Turning tool compensation.*/
-declare const TOOL_COMPENSATION_TIP_CENTER
-
-/*Turning tool compensation.*/
-declare const TOOL_COMPENSATION_TIP_TANGENT
-
-/*Has parameter flag.*/
-declare const HAS_PARAMETER
-
-/*Has rapid flag.*/
-declare const HAS_RAPID
-
-/*Has linear flag.*/
-declare const HAS_LINEAR
-
-/*Has dwell flag.*/
-declare const HAS_DWELL
-
-/*Has circular flag.*/
-declare const HAS_CIRCULAR
-
-/*Has cycle flag.*/
-declare const HAS_CYCLE
-
-/*Has well-known command flag.*/
-declare const HAS_WELL_KNOWN_COMMAND
-
-/*Has comment flag.*/
-declare const HAS_COMMENT
-
-/*Invalid record type.*/
-declare const RECORD_INVALID
-
-/*Well-known command.*/
-declare const RECORD_WELL_KNOWN_COMMAND
-
-/*Parameter.*/
-declare const RECORD_PARAMETER
-
-/*Linear motion.*/
-declare const RECORD_LINEAR
-
-/*Linear 5-axis motion.*/
-declare const RECORD_LINEAR_5D
-
-/*Linear 5-axis motion.*/
-declare const RECORD_LINEAR_ZXN
-
-/*Circular motion.*/
-declare const RECORD_CIRCULAR
-
-/*Dwell.*/
-declare const RECORD_DWELL
-
-/*Cycle.*/
-declare const RECORD_CYCLE
-
-/*End of cycle.*/
-declare const RECORD_CYCLE_OFF
-
-/*Comment.*/
-declare const RECORD_COMMENT
-
-/*Comment.*/
-declare const RECORD_WIDE_COMMENT
-
-/*Invalid (well-known command).*/
-declare const COMMAND_INVALID
-
-/*Program stop (well-known command M00).*/
-declare const COMMAND_STOP
-
-/*Optional program stop (well-known command M01).*/
-declare const COMMAND_OPTIONAL_STOP
-
-/*Program end (well-known command M02).*/
-declare const COMMAND_END
-
-/*Clockwise spindle direction (well-known command M03).*/
-declare const COMMAND_SPINDLE_CLOCKWISE
-
-/*Counterclockwise spidle direction (well-known command M04).*/
-declare const COMMAND_SPINDLE_COUNTERCLOCKWISE
-
-/*Spindle start (well-known command M03 or M04). This is a virtual command which maps to either COMMAND_SPINDLE_CLOCKWISE or COMMAND_SPINDLE_COUNTERCLOCKWISE dependent on the current spindle direction.*/
-declare const COMMAND_START_SPINDLE
-
-/*Spindle stop (well-known command M05).*/
-declare const COMMAND_STOP_SPINDLE
-
-/*Orientate spindle direction (well-known command M19). The property 'machineParameters.spindleOrientation' must be set to the machine spindle orientation.*/
-declare const COMMAND_ORIENTATE_SPINDLE
-
-/*Tool change (M06).*/
-declare const COMMAND_LOAD_TOOL
-
-/*Coolant on (M08).*/
-declare const COMMAND_COOLANT_ON
-
-/*Coolant off (M09).*/
-declare const COMMAND_COOLANT_OFF
-
-/*Activate speed-feed synchronization (well-known command).*/
-declare const COMMAND_ACTIVATE_SPEED_FEED_SYNCHRONIZATION
-
-/*Deactivate speed-feed synchronization (well-known command).*/
-declare const COMMAND_DEACTIVATE_SPEED_FEED_SYNCHRONIZATION
-
-/*Locks the 4th and 5th axes. This command is optional.*/
-declare const COMMAND_LOCK_MULTI_AXIS
-
-/*Unlocks the 4th and 5th axes. This command is optional.*/
-declare const COMMAND_UNLOCK_MULTI_AXIS
-
-/*Exact stop. This command is optional.*/
-declare const COMMAND_EXACT_STOP
-
-/*Close chip transport.*/
-declare const COMMAND_START_CHIP_TRANSPORT
-
-/*Stop chip transport.*/
-declare const COMMAND_STOP_CHIP_TRANSPORT
-
-/*Open primary door.*/
-declare const COMMAND_OPEN_DOOR
-
-/*Close primary door.*/
-declare const COMMAND_CLOSE_DOOR
-
-/*Break control.*/
-declare const COMMAND_BREAK_CONTROL
-
-/*Measure tool.*/
-declare const COMMAND_TOOL_MEASURE
-
-/*Run calibration cycle.*/
-declare const COMMAND_CALIBRATE
-
-/*Verify part/tool/machine integrity.*/
-declare const COMMAND_VERIFY
-
-/*Run cleaning cycle.*/
-declare const COMMAND_CLEAN
-
-/*Alarm.*/
-declare const COMMAND_ALARM
-
-/*Alert.*/
-declare const COMMAND_ALERT
-
-/*Change pallet.*/
-declare const COMMAND_CHANGE_PALLET
-
-/*Power on.*/
-declare const COMMAND_POWER_ON
-
-/*Power off.*/
-declare const COMMAND_POWER_OFF
-
-/*Open main chuck. More...*/
-declare const COMMAND_MAIN_CHUCK_OPEN
-
-/*Close main chuck. More...*/
-declare const COMMAND_MAIN_CHUCK_CLOSE
-
-/*Open secondary chuck. More...*/
-declare const COMMAND_SECONDARY_CHUCK_OPEN
-
-/*Close secondary chuck. More...*/
-declare const COMMAND_SECONDARY_CHUCK_CLOSE
-
-/*Activate spindle synchronization. More...*/
-declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_ACTIVATE
-
-/*Deactivate spindle synchronization. More...*/
-declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_DEACTIVATE
-
-/*Sync channels.*/
-declare const COMMAND_SYNC_CHANNELS
-
-/*Probe on.*/
-declare const COMMAND_PROBE_ON
-
-/*Probe off.*/
-declare const COMMAND_PROBE_OFF
-
-/*Rapid movement type.*/
-declare const MOVEMENT_RAPID
-
-/*Lead-in movement type.*/
-declare const MOVEMENT_LEAD_IN
-
-/*Cutting movement type.*/
-declare const MOVEMENT_CUTTING
-
-/*Lead-out movement type.*/
-declare const MOVEMENT_LEAD_OUT
-
-/*Transition linking movement type.*/
-declare const MOVEMENT_LINK_TRANSITION
-
-/*Direction linking movement type.*/
-declare const MOVEMENT_LINK_DIRECT
-
-/*Helical ramp movement type.*/
-declare const MOVEMENT_RAMP_HELIX
-
-/*Profile ramp movement type.*/
-declare const MOVEMENT_RAMP_PROFILE
-
-/*Zig-zag ramp movement type.*/
-declare const MOVEMENT_RAMP_ZIG_ZAG
-
-/*Ramp movement type.*/
-declare const MOVEMENT_RAMP
-
-/*Plunge movement type.*/
-declare const MOVEMENT_PLUNGE
-
-/*Predrill movement type.*/
-declare const MOVEMENT_PREDRILL
-
-/*Extended movement type.*/
-declare const MOVEMENT_EXTENDED
-
-/*Reduced cutting feed movement type.*/
-declare const MOVEMENT_REDUCED
-
-/*Finish cutting movement type.*/
-declare const MOVEMENT_FINISH_CUTTING
-
-/*High feed movement type.*/
-declare const MOVEMENT_HIGH_FEED
-
-/*Do not map rapid travesal to high feed.*/
-declare const HIGH_FEED_NO_MAPPING
-
-/*Map rapid travesal along more than one axis to high feed.*/
-declare const HIGH_FEED_MAP_MULTI
-
-/*Map rapid travesal not in the X-Y plane or along the Z-axis to high feed.*/
-declare const HIGH_FEED_MAP_XY_Z
-
-/*Map all rapid travesals to high feed.*/
-declare const HIGH_FEED_MAP_ANY
+// ===========================================================================
+//  GLOBAL CONFIGURATION VARIABLES
+//  Set at the top level of a .cps file to configure the post processor.
+// ===========================================================================
 
+/** A short description of the post processor shown in the post library.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a76d2b0133d83c43dfd8a19286ac55325 */
+declare var description: string;
+
+/** A longer description of the post processor. */
+declare var longDescription: string;
+
+/** The vendor name (e.g. "Fanuc", "Heidenhain"). */
+declare var vendor: string;
+
+/** The vendor URL. */
+declare var vendorUrl: string;
+
+/** The legal/copyright text. */
+declare var legal: string;
+
+/** The certification level (0-2). */
+declare var certificationLevel: number;
+
+/** The minimum post engine revision required. */
+declare var minimumRevision: number;
+
+/** The NC file extension (e.g. "nc", "gcode", "h"). */
+declare var extension: string;
+
+/** The file name for the output (without extension). */
+declare var filename: string;
+
+/** The post processor version string. */
+declare var version: string;
+
+/** Capability flags. Combine with bitwise OR: CAPABILITY_MILLING | CAPABILITY_TURNING.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a201e06654b2b8875b11c419093b607b2 */
+declare var capabilities: number;
+
+/** The linearization tolerance in output units. Use `spatial()` to set unit-aware values.
+ * @example
+ * tolerance = spatial(0.002, MM);
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a40f244d9f6d9ededaacd92c57c78a318 */
+declare var tolerance: number;
+
+/** The minimum chord length for circular output. Use `spatial()`.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a391ac41ffa378246cc556ff9a481c7ef */
+declare var minimumChordLength: number;
+
+/** The minimum allowed circular radius. Use `spatial()`.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac26721edd5466a7953a79f04f50461ac */
+declare var minimumCircularRadius: number;
+
+/** The maximum allowed circular radius. Use `spatial()`.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ace7d1f00e4410e1f4baf57b8c29c8c02 */
+declare var maximumCircularRadius: number;
+
+/** The minimum circular sweep angle in radians. Use `toRad()`.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8b0a3da10984e4aa76b26dfa25a757a1 */
+declare var minimumCircularSweep: number;
+
+/** The maximum circular sweep angle in radians. Use `toRad()`.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac3cde96c729ef76f069a1a2ebfcf5d0d */
+declare var maximumCircularSweep: number;
+
+/** Set to `true` to allow helical moves.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adea8014cc3c4028a10b12ca27a224698 */
+declare var allowHelicalMoves: boolean;
+
+/** Set to `true` to allow spiral moves.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9d4c62f202e89bd94d79d5ce89b27e9a */
+declare var allowSpiralMoves: boolean;
+
+/** Bitmask of allowed circular planes (PLANE_XY, PLANE_ZX, PLANE_YZ). Set to `undefined` for any plane.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8862ca499e5a7a3cfc4ece721f91b4b0 */
+declare var allowedCircularPlanes: number | undefined;
+
+/** The high feedrate value used for rapid substitution. Set per unit system.
+ * @example
+ * highFeedrate = (unit == MM) ? 9999 : 999;
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abeabefafe235ec1a3b842eb1e28e9e92 */
+declare var highFeedrate: number;
+
+/** Controls how rapids are mapped to high-feed moves. Use HIGH_FEED_* constants.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aac46c23bdff2208b8f8120a9fb14e3f6 */
+declare var highFeedMapping: number;
+
+/** The output unit (MM or IN).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aa63cd118027e6af31ecb0a9a45085e43 */
+declare var unit: number;
+
+/** Allow mapping of work origin.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a243007459395443b0a118597f18a824e */
+declare var mapWorkOrigin: boolean;
+
+/** Map coordinates to WCS.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a98351569a835994527b95d62194f279c */
+declare var mapToWCS: boolean;
+
+/** Allow machine change on section (multi-machine programs).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abec0571054956f7e2f6b1fa8fa04f62e */
+declare var allowMachineChangeOnSection: boolean;
+
+/** The program name. */
+declare var programName: string;
+
+/** True if the program name is an integer. */
+declare var programNameIsInteger: boolean;
+
+/** True if running in debug mode. */
+declare var debugMode: boolean;
+
+/** The post processor revision number (set by the engine). */
+declare var revision: number;
+
+/** Set to true to mark this post as deprecated. */
+declare var deprecated: boolean;
+
+/** Set to true to prevent the post from running. */
+declare var preventPost: boolean;
+
+/** Abort on deprecated function calls. */
+declare var abortOnDeprecation: boolean;
+
+/** Set to true to allow probing with multiple features. */
+declare var probeMultipleFeatures: boolean;
+
+/** The circular input tolerance. */
+declare var circularInputTolerance: number;
+
+/** The circular merge tolerance. */
+declare var circularMergeTolerance: number;
+
+/** Controls whether the post supports TWP (tilted work planes). */
+declare var controlSupportsTWP: boolean;
+
+/** The Euler convention for rotary output. */
+declare var eulerConvention: number;
+
+/** The work plane calculation method. */
+declare var workPlaneCalculationMethod: number;
+
+/** Allow feed-per-revolution for drilling. */
+declare var allowFeedPerRevolutionDrilling: number;
+
+/** Whether to buffer rotary moves. */
+declare var bufferRotaryMoves: boolean;
+
+/** Supported features bitmask. */
+declare var supportedFeatures: number;
+
+/** Keywords string (space-separated, e.g. "MODEL_IMAGE PREVIEW_IMAGE"). */
+declare var keywords: string;
+
+// ===========================================================================
+//  GLOBAL RUNTIME STATE
+//  Available during post processing (read-only unless noted).
+// ===========================================================================
+
+/** The current section being processed.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3f363483663847152552a6c19897c842 */
+declare var currentSection: Section;
+
+/** The current tool.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a95ceb07ef37166fe2eb4a49196ec22d2 */
+declare var tool: Tool;
+
+/** The current feedrate.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a33ca84fc3441ef9e94208a59659de8e2 */
+declare var feedrate: number;
+
+/** The current spindle speed.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acf8176fc3ff71d9cec8246689c6551a8 */
+declare var spindleSpeed: number;
+
+/** The current movement type constant (MOVEMENT_*).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a797d5b9f2e1a2c5fabbe4707d5beb5f7 */
+declare var movement: number;
+
+/** The current radius compensation mode (RADIUS_COMPENSATION_*).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af956c33b96a391f96de8b64ae7ce58a4 */
+declare var radiusCompensation: number;
+
+/** The current active feed mode. */
+declare var activeFeedMode: number;
+
+/** The spindle axis index. */
+declare var spindleAxis: number;
+
+/** The current cycle type string (e.g. "drilling", "tapping").
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8fae97ae25950a6f22a9abb097b06c23 */
+declare var cycleType: string;
+
+/** The current cycle parameters. Available during onCycle() and onCyclePoint().
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acc223e94c02031add0ecad7bda263ab4 */
+declare var cycle: CycleParameters;
+
+/** True if the current cycle has been expanded.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aff308c18e5596197b74a5228552b512c */
+declare var cycleExpanded: boolean;
+
+/** The initial cycle position.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8c30a2b6f665bd561e959cc8a4e85bd2 */
+declare var initialCyclePosition: Vector;
+
+/** The machine configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a754d1d3ad5f53d86f01e30c37444ec7e */
+declare var machineConfiguration: MachineConfiguration;
+
+/** Machine-specific parameters (chip breaking distance, etc.).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3278d7f9975131c82562c7b467cb8a0d */
+declare var machineParameters: MachineParameters;
+
+/** The simulation interface.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9959b171e9934828d26b506a04b34dfb */
+declare var simulation: Simulation;
+
+/** The output unit for the current session. */
+declare var outputUnit: number;
+
+/** User-defined properties map. Define at top level; the engine populates values from the UI.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a1e996849c5d6bd0559736d2f8c8ffa1f */
+declare var properties: any;
+
+/** The current line number counter (writable). */
+declare var lineNumber: number;
+
+// Circular motion state (available during onCircular)
+/** The end point of the current motion. */
+declare var end: Vector;
+/** The arc/segment length. */
+declare var length: number;
+/** The center of the current circular motion. */
+declare var circularCenter: Vector;
+/** The offset from the start to the center of the circular motion. */
+declare var circularOffset: Vector;
+/** The normal of the current circular plane. */
+declare var circularNormal: Vector;
+/** The circular plane (PLANE_XY, PLANE_ZX, PLANE_YZ, or -1). */
+declare var circularPlane: number;
+/** The radius of the current circular motion. */
+declare var circularRadius: number;
+/** The starting radius of the current circular motion. */
+declare var circularStarttRadius: number;
+/** The sweep angle (radians) of the current circular motion. */
+declare var circularSweep: number;
+/** True if the current circular motion is clockwise. */
+declare var circularClockwise: boolean;
+/** The chord length of the current circular motion. */
+declare var circularChordLength: number;
+/** The arc length of the current circular motion. */
+declare var circularArcLength: number;
+/** True if the current circular motion is a full circle. */
+declare var circularFullCircle: boolean;
+/** True if the current circular motion is helical. */
+declare var circularHelical: boolean;
+/** True if the current circular motion is a spiral. */
+declare var circularSpiral: boolean;
+/** The helical offset for the current circular motion. */
+declare var circularHelicalOffset: Vector;
+/** The helical distance for the current circular motion. */
+declare var circularHelicalDistance: number;
+
+// ===========================================================================
+//  UNIT CONSTANTS
+// ===========================================================================
+
+/** Millimeters unit constant. */
+declare const MM: number;
+/** Inches unit constant. */
+declare const IN: number;
+
+// ===========================================================================
+//  PLANE CONSTANTS
+// ===========================================================================
+
+/** XY circular plane constant. */
+declare const PLANE_XY: number;
+/** ZX circular plane constant. */
+declare const PLANE_ZX: number;
+/** YZ circular plane constant. */
+declare const PLANE_YZ: number;
+/** @deprecated Use PLANE_ZX. */
+declare const PLANE_XZ: number;
+
+// ===========================================================================
+//  AXIS INDEX CONSTANTS
+// ===========================================================================
+
+/** X coordinate index (0). */
+declare const X: number;
+/** Y coordinate index (1). */
+declare const Y: number;
+/** Z coordinate index (2). */
+declare const Z: number;
+/** A rotary index. */
+declare const A: number;
+/** B rotary index. */
+declare const B: number;
+/** C rotary index. */
+declare const C: number;
+/** All rotaries flag. */
+declare const ABC: number;
+
+// ===========================================================================
+//  TOOL AXIS CONSTANTS
+// ===========================================================================
+
+/** Tool axis along X (YZ-plane). */
+declare const TOOL_AXIS_X: number;
+/** Tool axis along Y (ZX-plane). */
+declare const TOOL_AXIS_Y: number;
+/** Tool axis along Z (XY-plane). */
+declare const TOOL_AXIS_Z: number;
+
+// ===========================================================================
+//  CAPABILITY CONSTANTS
+// ===========================================================================
+
+declare const CAPABILITY_MILLING: number;
+declare const CAPABILITY_TURNING: number;
+declare const CAPABILITY_JET: number;
+declare const CAPABILITY_SETUP_SHEET: number;
+declare const CAPABILITY_INTERMEDIATE: number;
+declare const CAPABILITY_MACHINE_SIMULATION: number;
+
+// ===========================================================================
+//  FEATURE CONSTANTS
+// ===========================================================================
+
+declare const FEATURE_MACHINE_ROTARY_ANGLES: number;
+
+// ===========================================================================
+//  RADIUS COMPENSATION CONSTANTS
+// ===========================================================================
+
+/** Radius compensation off (center). */
+declare const RADIUS_COMPENSATION_OFF: number;
+/** Left radius compensation. */
+declare const RADIUS_COMPENSATION_LEFT: number;
+/** Right radius compensation. */
+declare const RADIUS_COMPENSATION_RIGHT: number;
+
+// ===========================================================================
+//  COOLANT CONSTANTS
+// ===========================================================================
+
+/** Coolant disabled. */
+declare const COOLANT_DISABLED: number;
+/** Flood coolant. */
+declare const COOLANT_FLOOD: number;
+/** Mist coolant. */
+declare const COOLANT_MIST: number;
+/** @deprecated Use COOLANT_THROUGH_TOOL. */
+declare const COOLANT_TOOL: number;
+/** Through-tool coolant. */
+declare const COOLANT_THROUGH_TOOL: number;
+/** Air coolant. */
+declare const COOLANT_AIR: number;
+/** Air through tool. */
+declare const COOLANT_AIR_THROUGH_TOOL: number;
+/** Suction. */
+declare const COOLANT_SUCTION: number;
+/** Flood and mist. */
+declare const COOLANT_FLOOD_MIST: number;
+/** Flood and through-tool. */
+declare const COOLANT_FLOOD_THROUGH_TOOL: number;
+
+// ===========================================================================
+//  MATERIAL CONSTANTS
+// ===========================================================================
+
+declare const MATERIAL_UNSPECIFIED: number;
+declare const MATERIAL_HSS: number;
+declare const MATERIAL_TI_COATED: number;
+declare const MATERIAL_CARBIDE: number;
+declare const MATERIAL_CERAMICS: number;
+
+// ===========================================================================
+//  TOOL TYPE CONSTANTS
+// ===========================================================================
+
+declare const TOOL_UNSPECIFIED: number;
+declare const TOOL_DRILL: number;
+declare const TOOL_DRILL_CENTER: number;
+declare const TOOL_DRILL_SPOT: number;
+declare const TOOL_DRILL_BLOCK: number;
+declare const TOOL_MILLING_END_FLAT: number;
+declare const TOOL_MILLING_END_BALL: number;
+declare const TOOL_MILLING_END_BULLNOSE: number;
+declare const TOOL_MILLING_CHAMFER: number;
+declare const TOOL_MILLING_FACE: number;
+declare const TOOL_MILLING_SLOT: number;
+declare const TOOL_MILLING_RADIUS: number;
+declare const TOOL_MILLING_DOVETAIL: number;
+declare const TOOL_MILLING_TAPERED: number;
+declare const TOOL_MILLING_LOLLIPOP: number;
+declare const TOOL_MILLING_FORM: number;
+declare const TOOL_MILLING_THREAD: number;
+declare const TOOL_TAP_RIGHT_HAND: number;
+declare const TOOL_TAP_LEFT_HAND: number;
+declare const TOOL_REAMER: number;
+declare const TOOL_BORING_BAR: number;
+declare const TOOL_COUNTER_BORE: number;
+declare const TOOL_COUNTER_SINK: number;
+declare const TOOL_HOLDER_ONLY: number;
+declare const TOOL_TURNING_GENERAL: number;
+declare const TOOL_TURNING_THREADING: number;
+declare const TOOL_TURNING_GROOVING: number;
+declare const TOOL_TURNING_BORING: number;
+declare const TOOL_TURNING_CUSTOM: number;
+declare const TOOL_PROBE: number;
+declare const TOOL_WIRE: number;
+declare const TOOL_WATER_JET: number;
+declare const TOOL_LASER_CUTTER: number;
+declare const TOOL_PLASMA_CUTTER: number;
+declare const TOOL_WELDER: number;
+declare const TOOL_GRINDER: number;
+declare const TOOL_MARKER: number;
+
+// ===========================================================================
+//  TOOL COMPENSATION CONSTANTS
+// ===========================================================================
+
+declare const TOOL_COMPENSATION_INSERT_CENTER: number;
+declare const TOOL_COMPENSATION_TIP: number;
+declare const TOOL_COMPENSATION_TIP_CENTER: number;
+declare const TOOL_COMPENSATION_TIP_TANGENT: number;
+
+// ===========================================================================
+//  MOVEMENT CONSTANTS
+// ===========================================================================
+
+/** Rapid movement. */
+declare const MOVEMENT_RAPID: number;
+/** Lead-in movement. */
+declare const MOVEMENT_LEAD_IN: number;
+/** Cutting movement. */
+declare const MOVEMENT_CUTTING: number;
+/** Lead-out movement. */
+declare const MOVEMENT_LEAD_OUT: number;
+/** Transition linking movement. */
+declare const MOVEMENT_LINK_TRANSITION: number;
+/** Direct linking movement. */
+declare const MOVEMENT_LINK_DIRECT: number;
+/** Helical ramp. */
+declare const MOVEMENT_RAMP_HELIX: number;
+/** Profile ramp. */
+declare const MOVEMENT_RAMP_PROFILE: number;
+/** Zig-zag ramp. */
+declare const MOVEMENT_RAMP_ZIG_ZAG: number;
+/** General ramp. */
+declare const MOVEMENT_RAMP: number;
+/** Plunge movement. */
+declare const MOVEMENT_PLUNGE: number;
+/** Predrill movement. */
+declare const MOVEMENT_PREDRILL: number;
+/** Extended movement. */
+declare const MOVEMENT_EXTENDED: number;
+/** Reduced cutting feed. */
+declare const MOVEMENT_REDUCED: number;
+/** Finish cutting. */
+declare const MOVEMENT_FINISH_CUTTING: number;
+/** High-feed movement. */
+declare const MOVEMENT_HIGH_FEED: number;
+/** Depositing (additive). */
+declare const MOVEMENT_DEPOSITING: number;
+/** Bridging (additive). */
+declare const MOVEMENT_BRIDGING: number;
+/** Connection between toolpaths. */
+declare const MOVEMENT_CONNECTION: number;
+/** Drill breakthrough. */
+declare const MOVEMENT_DRILL_BREAKTHROUGH: number;
+/** Gun drill positioning. */
+declare const MOVEMENT_GUN_DRILL_POSITIONING: number;
+/** Circular pierce (jet). */
+declare const MOVEMENT_PIERCE_CIRCULAR: number;
+/** Profile pierce (jet). */
+declare const MOVEMENT_PIERCE_PROFILE: number;
+/** Linear pierce (jet). */
+declare const MOVEMENT_PIERCE_LINEAR: number;
+/** Plunge pierce (jet). */
+declare const MOVEMENT_PIERCE: number;
+
+// ===========================================================================
+//  COMMAND CONSTANTS (for onCommand)
+// ===========================================================================
+
+declare const COMMAND_STOP: number;
+declare const COMMAND_OPTIONAL_STOP: number;
+declare const COMMAND_END: number;
+declare const COMMAND_SPINDLE_CLOCKWISE: number;
+declare const COMMAND_SPINDLE_COUNTERCLOCKWISE: number;
+declare const COMMAND_START_SPINDLE: number;
+declare const COMMAND_STOP_SPINDLE: number;
+declare const COMMAND_ORIENTATE_SPINDLE: number;
+declare const COMMAND_LOAD_TOOL: number;
+declare const COMMAND_COOLANT_ON: number;
+declare const COMMAND_COOLANT_OFF: number;
+declare const COMMAND_ACTIVATE_SPEED_FEED_SYNCHRONIZATION: number;
+declare const COMMAND_DEACTIVATE_SPEED_FEED_SYNCHRONIZATION: number;
+declare const COMMAND_LOCK_MULTI_AXIS: number;
+declare const COMMAND_UNLOCK_MULTI_AXIS: number;
+declare const COMMAND_EXACT_STOP: number;
+declare const COMMAND_START_CHIP_TRANSPORT: number;
+declare const COMMAND_STOP_CHIP_TRANSPORT: number;
+declare const COMMAND_OPEN_DOOR: number;
+declare const COMMAND_CLOSE_DOOR: number;
+declare const COMMAND_BREAK_CONTROL: number;
+declare const COMMAND_TOOL_MEASURE: number;
+declare const COMMAND_CALIBRATE: number;
+declare const COMMAND_VERIFY: number;
+declare const COMMAND_CLEAN: number;
+declare const COMMAND_ALARM: number;
+declare const COMMAND_ALERT: number;
+declare const COMMAND_CHANGE_PALLET: number;
+declare const COMMAND_POWER_ON: number;
+declare const COMMAND_POWER_OFF: number;
+declare const COMMAND_MAIN_CHUCK_OPEN: number;
+declare const COMMAND_MAIN_CHUCK_CLOSE: number;
+declare const COMMAND_SECONDARY_CHUCK_OPEN: number;
+declare const COMMAND_SECONDARY_CHUCK_CLOSE: number;
+declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_ACTIVATE: number;
+declare const COMMAND_SECONDARY_SPINDLE_SYNCHRONIZATION_DEACTIVATE: number;
+declare const COMMAND_SYNC_CHANNELS: number;
+declare const COMMAND_PROBE_ON: number;
+declare const COMMAND_PROBE_OFF: number;
+
+// ===========================================================================
+//  HIGH FEED MAPPING CONSTANTS
+// ===========================================================================
+
+/** Do not map rapids to high feed. */
+declare const HIGH_FEED_NO_MAPPING: number;
+/** Map multi-axis rapids to high feed. */
+declare const HIGH_FEED_MAP_MULTI: number;
+/** Map rapids along XY or Z to high feed. */
+declare const HIGH_FEED_MAP_XY_Z: number;
+/** Map all rapids to high feed. */
+declare const HIGH_FEED_MAP_ANY: number;
+
+// ===========================================================================
+//  SECTION TYPE CONSTANTS
+// ===========================================================================
+
+declare const TYPE_MILLING: number;
+declare const TYPE_TURNING: number;
+declare const TYPE_JET: number;
+
+// ===========================================================================
+//  OPTIMIZE CONSTANTS
+// ===========================================================================
+
+declare const OPTIMIZE_NONE: number;
+declare const OPTIMIZE_TABLES: number;
+declare const OPTIMIZE_BOTH: number;
+declare const OPTIMIZE_AXIS: number;
+
+// ===========================================================================
+//  SINGULARITY LINEARIZE CONSTANTS
+// ===========================================================================
+
+declare const SINGULARITY_LINEARIZE_OFF: number;
+declare const SINGULARITY_LINEARIZE_LINEAR: number;
+declare const SINGULARITY_LINEARIZE_ROTARY: number;
+
+// ===========================================================================
+//  STRATEGY GROUP CONSTANTS
+// ===========================================================================
+
+declare const STRATEGY_MULTIAXIS: number;
+declare const STRATEGY_2D: number;
+declare const STRATEGY_3D: number;
+declare const STRATEGY_DRILLING: number;
+declare const STRATEGY_TURNING: number;
+declare const STRATEGY_JET: number;
+declare const STRATEGY_PROBING: number;
+declare const STRATEGY_INSPECTION: number;
+declare const STRATEGY_ADDITIVE: number;
+
+// ===========================================================================
+//  FEED MODE CONSTANTS
+// ===========================================================================
+
+declare const FEED_PER_MINUTE: number;
+declare const FEED_PER_REVOLUTION: number;
+declare const FEED_INVERSE_TIME: number;
+
+// ===========================================================================
+//  CONTENT FLAG CONSTANTS
+// ===========================================================================
+
+declare const HAS_PARAMETER: number;
+declare const HAS_RAPID: number;
+declare const HAS_LINEAR: number;
+declare const HAS_DWELL: number;
+declare const HAS_CIRCULAR: number;
+declare const HAS_CYCLE: number;
+declare const HAS_WELL_KNOWN_COMMAND: number;
+declare const HAS_COMMENT: number;
+
+// ===========================================================================
+//  RECORD TYPE CONSTANTS
+// ===========================================================================
+
+declare const RECORD_INVALID: number;
+declare const RECORD_WELL_KNOWN_COMMAND: number;
+declare const RECORD_MACHINE_COMMAND: number;
+declare const RECORD_SPINDLE_SPEED: number;
+declare const RECORD_PARAMETER: number;
+declare const RECORD_LINEAR: number;
+declare const RECORD_LINEAR_5D: number;
+declare const RECORD_LINEAR_ZXN: number;
+declare const RECORD_LINEAR_EXTRUDE: number;
+declare const RECORD_CIRCULAR: number;
+declare const RECORD_DWELL: number;
+declare const RECORD_CYCLE: number;
+declare const RECORD_CYCLE_OFF: number;
+declare const RECORD_COMMENT: number;
+declare const RECORD_WIDE_COMMENT: number;
+declare const RECORD_PASS_THROUGH: number;
+declare const RECORD_WIDE_PASS_THROUGH: number;
+declare const RECORD_OPERATION: number;
+declare const RECORD_OPERATION_END: number;
+declare const RECORD_CIRCULAR_EXTRUDE: number;
+
+// ===========================================================================
+//  ASCII CONTROL CODES & SPECIAL STRINGS
+// ===========================================================================
+
+declare const EOL: string;
+declare const SP: string;
+declare const PATH_SEPARATOR: string;
+declare const NUL: string;
+declare const SOH: string;
+declare const STX: string;
+declare const ETX: string;
+declare const EOT: string;
+declare const CR: string;
+declare const LF: string;
+declare const TAB: string;
+
+// ===========================================================================
+//  GLOBAL FUNCTIONS
+// ===========================================================================
+
+// ---- Output Functions ----
+
+/** Writes text to the output file without a newline.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a32071fff63a93a3494979e835aaacc9a */
+declare function write(message: string): void;
+
+/** Writes text to the output file followed by a newline.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aeb90bf455982d43746741f6dce58279c */
+declare function writeln(message: string): void;
+
+/** Writes non-empty arguments separated by the word separator, followed by a newline.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a2e458cd4cdf20806ac7afaf13232a779 */
+declare function writeWords(...words: string[]): void;
+
+/** Like writeWords but uses a secondary word separator.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a26a51e1eef93cfd3f7dcf66da436583b */
+declare function writeWords2(...words: string[]): void;
+
+/** Formats words and returns the concatenated string (without writing).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a891175b41f166fce83100d6cbd6d4504 */
+declare function formatWords(...words: string[]): string;
+
+/** Returns the word separator.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ada0c57582300da66213635ccc64c8e7f */
+declare function getWordSeparator(): string;
+
+/** Sets the word separator.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aea95987c6248d8d46db8e7481609fe4d */
+declare function setWordSeparator(separator: string): void;
+
+/** Writes the tool table to the output. */
+declare function writeToolTable(orderBy?: number): void;
+
+/** Writes section notes. */
+declare function writeSectionNotes(): void;
+
+/** Writes setup notes. */
+declare function writeSetupNotes(): void;
+
+// ---- Error / Logging Functions ----
+
+/** Outputs an error and stops post processing.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a41de7e97313422e0fa1ff6265901b0e8 */
+declare function error(message: string): void;
+
+/** Outputs a warning.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a142480b11a33b89259a93b16d67b35b9 */
+declare function warning(message: string): void;
+
+/** Outputs a warning only once (by ID).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7c84675981a0f7e9672c2653298b344d */
+declare function warningOnce(message: string, id: number): void;
+
+/** Outputs a debug/log message.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5d7d1f99129bbc3846054e8d5b70cb48 */
+declare function log(message: string): void;
+
+/** Outputs a debug message. */
+declare function debug(message: string): void;
+
+/** Validates that expression is truthy; throws error with message if not.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a37d7c88322479cc4b8775219c7104161 */
+declare function validate(expression: any, message: string): void;
+
+// ---- Unit / Conversion Functions ----
+
+/** Converts a value from the specified unit to the output unit.
+ * @example
+ * tolerance = spatial(0.002, MM);
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a237487f4656f95641ef1d26ca62b7b01 */
+declare function spatial(value: number, unit: number): number;
+
+/** Converts a value from the input unit to the specified output unit.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7de682c8593fcacc60e146467563e52d */
+declare function toUnit(value: number, unit: number): number;
+
+/** Converts a value to the specified unit with full precision (no rounding).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a2f33c593779c135e774347331310dd14 */
+declare function toPreciseUnit(value: number, unit: number): number;
+
+/** Converts radians to degrees.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a27965dc305215f673efcea4330d2431a */
+declare function toDeg(radians: number): number;
+
+/** Converts degrees to radians.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a40562fe347c39025af57410c92c2c373 */
+declare function toRad(degrees: number): number;
+
+/** Parses a spatial value string. */
+declare function parseSpatial(value: string): number;
+
+// ---- Section / Navigation Functions ----
+
+/** Returns the total number of sections.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a057dfc309ce401ba7b500c9f02932400 */
+declare function getNumberOfSections(): number;
+
+/** Returns the section at the given index.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af315a19e0323fb203e0722c78cd8489e */
+declare function getSection(index: number): Section;
+
+/** Returns the ID of the current section. */
+declare function getCurrentSectionId(): number;
+
+/** Returns the previous section. */
+declare function getPreviousSection(): Section;
+
+/** Returns true if there is a next section. */
+declare function hasNextSection(): boolean;
+
+/** Returns the next section. */
+declare function getNextSection(): Section;
+
+/** Returns true if this is the first section. */
+declare function isFirstSection(): boolean;
+
+/** Returns true if this is the last section. */
+declare function isLastSection(): boolean;
+
+/** Returns true if the current section is a milling section. */
+declare function isMilling(): boolean;
+
+/** Returns true if the current section is a turning section. */
+declare function isTurning(): boolean;
+
+/** Returns true if the current section is a jet section (waterjet/laser/plasma). */
+declare function isJet(): boolean;
+
+/** Returns true if the program is 3-axis only. */
+declare function is3D(): boolean;
+
+/** Returns true if the program contains multi-axis (5-axis) operations. */
+declare function isMultiAxis(): boolean;
+
+// ---- Position / Transformation Functions ----
+
+/** Returns the current position.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a067bc8148cdc35daadb8afb07ec3f63a */
+declare function getCurrentPosition(): Vector;
+
+/** Sets the current position (use after expanded cycles or manual motion).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a4f55914630113a4e4d015f425385156a */
+declare function setCurrentPosition(position: Vector): void;
+
+/** Transforms a section-local position through the active frame rotation/translation.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a16fc4a2c23c1cc1514ff7c58a4c9bce0 */
+declare function getFramePosition(position: Vector): Vector;
+
+/** Transforms a direction through the active frame rotation.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5f40fc8085854d4890cc4c9c685c58cc */
+declare function getFrameDirection(direction: Vector): Vector;
+
+/** Returns the global position from a section-local position. */
+declare function getGlobalPosition(p: Vector): Vector;
+
+/** Returns the WCS position from a section-local position. */
+declare function getWCSPosition(p: Vector): Vector;
+
+/** Returns the current global position. */
+declare function getCurrentGlobalPosition(): Vector;
+
+/** Returns the current direction. */
+declare function getCurrentDirection(): Vector;
+
+/** Sets the current direction. */
+declare function setCurrentDirection(direction: Vector): void;
+
+/** Returns the current ABC angles. */
+declare function getCurrentABC(): Vector;
+
+/** Sets the current ABC angles. */
+declare function setCurrentABC(abc: Vector): void;
+
+/** Returns the current tool axis. */
+declare function getCurrentToolAxis(): Vector;
+
+/** Returns the current spindle speed. */
+declare function getCurrentSpindleSpeed(): number;
+
+/** Sets the output rotation matrix.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a41162be7196b5b671c195807c9bbb7fc */
+declare function setRotation(rotation: Matrix): void;
+
+/** Cancels any active rotation. */
+declare function cancelRotation(): void;
+
+/** Sets the output translation.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3d7f8b45d5022e52d44b05540674c17c */
+declare function setTranslation(translation: Vector): void;
+
+/** Cancels any active translation. */
+declare function cancelTranslation(): void;
+
+/** Cancels both rotation and translation. */
+declare function cancelTransformation(): void;
+
+/** Returns the current rotation matrix. */
+declare function getRotation(): Matrix;
+
+/** Returns the current translation vector. */
+declare function getTranslation(): Vector;
+
+// ---- Machine Configuration Functions ----
+
+/** Returns the machine configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a50d1979cdb845a2b7c34301136930623 */
+declare function getMachineConfiguration(): MachineConfiguration;
+
+/** Sets the machine configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad38400d98dcd5a7ac881ba38ee096187 */
+declare function setMachineConfiguration(machine: MachineConfiguration): void;
+
+/** Creates a new machine configuration from specifiers. */
+declare function createMachineConfiguration(specifiers: object): MachineConfiguration;
+
+/** Creates a machine axis from specifiers (coordinate, axis, table, range, etc.).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8803b36be6893a81991049766abe0794 */
+declare function createAxis(specifiers: object): Axis;
+
+/** Optimizes multi-axis machine angles. */
+declare function optimizeMachineAngles(): void;
+
+/** Optimizes machine angles with type control. */
+declare function optimizeMachineAngles2(optimizeType: number): void;
+
+/** Optimizes machine angles for a specific machine. */
+declare function optimizeMachineAnglesByMachine(machine: MachineConfiguration, optimizeType: number): void;
+
+/** Returns multi-axis move lengths. */
+declare function getMultiAxisMoveLength(x: number, y: number, z: number, a: number, b: number, c: number): MoveLength;
+
+// ---- Format / Variable Creation Functions ----
+
+/** Creates a number format.
+ *
+ * Supported specifiers: `decimals`, `forceDecimal`, `forceSign`, `width`,
+ * `zeropad`, `separator`, `scale`, `cyclicLimit`, `cyclicSign`, `prefix`, `suffix`, `inherit`, `trim`, `trimLeadZero`.
+ * @example
+ * var xyzFormat = createFormat({decimals: 3, forceDecimal: true});
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0595eae6f27f88872305a126a5db119b */
+declare function createFormat(specifiers: object): FormatNumber;
+
+/** Creates an output variable (prefix + format + modal/force behavior).
+ *
+ * Supported specifiers: `prefix`, `suffix`, `force`, `onchange`, `type`.
+ * @example
+ * var xOutput = createOutputVariable({prefix: "X"}, xyzFormat);
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8058a96192a419464ec439ad745a3f97 */
+declare function createOutputVariable(specifiers: object, format: FormatNumber): OutputVariable;
+
+/** Creates a simple modal variable.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aacf9c27543d7dbec4d66d7e37a259ad3 */
+declare function createVariable(specifiers: object, format: FormatNumber): Variable;
+
+/** Creates an incremental variable. */
+declare function createIncrementalVariable(specifiers: object, format: FormatNumber): IncrementalVariable;
+
+/** Creates a reference variable. */
+declare function createReferenceVariable(specifiers: object, format: FormatNumber): ReferenceVariable;
+
+/** Creates a modal (prefix + format, outputs only on change).
+ * @example
+ * var gMotionModal = createModal({force: true}, gFormat);
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a171d6ddae8c04c1ad624561972ad86fd */
+declare function createModal(specifiers: object, format: FormatNumber): Modal;
+
+/** Creates a modal group. */
+declare function createModalGroup(specifiers: object, groups: any[], format: FormatNumber): ModalGroup;
+
+// ---- Cycle Functions ----
+
+/** Expands the current cycle point into linear moves (calls onRapid/onLinear).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adcaaa09d41e9c6b4434cbc54fa5260e1 */
+declare function expandCyclePoint(x: number, y: number, z: number): void;
+
+/** Repositions to the cycle clearance plane. */
+declare function repositionToCycleClearance(cycle: CycleParameters, x: number, y: number, z: number): void;
+
+/** Raises an error indicating the cycle is not supported. */
+declare function cycleNotSupported(): void;
+
+/** Returns true if this is the first cycle point. */
+declare function isFirstCyclePoint(): boolean;
+
+/** Returns true if this is the last cycle point. */
+declare function isLastCyclePoint(): boolean;
+
+/** Returns the ID of the current cycle point. */
+declare function getCyclePointId(): number;
+
+/** Returns the total number of cycle points. */
+declare function getNumberOfCyclePoints(): number;
+
+/** Returns the cycle point at the given index. */
+declare function getCyclePoint(index: number): Vector;
+
+/** Returns true if the given cycle URI is a probing cycle. */
+declare function isProbingCycle(uri: string): boolean;
+
+/** Returns true if the cycle is a sub-spindle cycle. */
+declare function isSubSpindleCycle(uri: string): boolean;
+
+/** Returns true if the current cycle is a well-known cycle type. */
+declare function isWellKnownCycle(): boolean;
+
+// ---- Tool Functions ----
+
+/** Returns the tool table for the program. */
+declare function getToolTable(): ToolTable;
+
+/** Returns the first tool. */
+declare function getFirstTool(): Tool;
+
+/** Returns the next tool after the given tool number. */
+declare function getNextTool(number: number): Tool;
+
+/** Returns the tool list. */
+declare function getToolList(arguments_: string, flag: number): Tool[];
+
+/** Returns the tool type name string. */
+declare function getToolTypeName(tool: Tool | number): string;
+
+/** Returns true if a tool change is needed for the given section. */
+declare function isToolChangeNeeded(section: Section, arguments_?: string): boolean;
+
+/** Returns the machining distance for a tool. */
+declare function getMachiningDistance(tool: number): number;
+
+// ---- Parameter Functions ----
+
+/** Returns true if a global parameter exists. */
+declare function hasGlobalParameter(name: string): boolean;
+
+/** Returns the value of a global parameter. */
+declare function getGlobalParameter(name: string, defaultValue?: any): any;
+
+/** Returns true if the current record has the named parameter. */
+declare function hasParameter(name: string): boolean;
+
+/** Returns the value of a parameter for the current record. */
+declare function getParameter(name: string, defaultValue?: any): any;
+
+/** Returns a property value. */
+declare function getProperty(property: any, defaultValue?: any): any;
+
+/** Sets a property value. */
+declare function setProperty(property: any, value: any): void;
+
+/** Validates property definitions. */
+declare function validatePropertyDefinitions(): boolean;
+
+/** Validates property values. */
+declare function validateProperties(): boolean;
+
+// ---- Work Plane / Offset Functions ----
+
+/** Returns true if the work plane has changed from the previous section. */
+declare function isNewWorkPlane(section: Section): boolean;
+
+/** Returns true if the work offset has changed from the previous section. */
+declare function isNewWorkOffset(section: Section): boolean;
+
+// ---- Circular Motion Query Functions (available during onCircular) ----
+
+/** Returns the circular center. */
+declare function getCircularCenter(): Vector;
+/** Returns the circular offset (from start to center). */
+declare function getCircularOffset(): Vector;
+/** Returns the circular start radius. */
+declare function getCircularStartRadius(): number;
+/** Returns the circular radius. */
+declare function getCircularRadius(): number;
+/** Returns the circular sweep angle in radians. */
+declare function getCircularSweep(): number;
+/** Returns the circular chord length. */
+declare function getCircularChordLength(): number;
+/** Returns the circular arc length. */
+declare function getCircularArcLength(): number;
+/** Returns true if the current arc is clockwise. */
+declare function isClockwise(): boolean;
+/** Returns true if the current arc is a full circle. */
+declare function isFullCircle(): boolean;
+/** Returns true if the current arc is helical. */
+declare function isHelical(): boolean;
+/** Returns true if the current arc is a spiral. */
+declare function isSpiral(): boolean;
+/** Returns the circular normal. */
+declare function getCircularNormal(): Vector;
+/** Returns the circular plane. */
+declare function getCircularPlane(): number;
+/** Returns the helical offset. */
+declare function getHelicalOffset(): Vector;
+/** Returns the helical distance. */
+declare function getHelicalDistance(): number;
+/** Returns the helical pitch. */
+declare function getHelicalPitch(): number;
+/** Returns true if the circular motion can be linearized. */
+declare function canLinearize(): boolean;
+/** Linearizes the current circular motion. */
+declare function linearize(tolerance: number): void;
+/** Returns the number of linearization segments needed. */
+declare function getNumberOfSegments(tolerance: number): number;
+/** Returns the interpolated position at parameter u (0..1). */
+declare function getPositionU(u: number): Vector;
+/** Returns the end point of the current motion. */
+declare function getEnd(): Vector;
+/** Returns the length of the current motion. */
+declare function getLength(): number;
+/** Returns the feedrate of the current motion. */
+declare function getFeedrate(): number;
+/** Returns the current movement type. */
+declare function getMovement(): number;
+/** Returns the current power state. */
+declare function getPower(): boolean;
+/** Returns the current spindle speed. */
+declare function getSpindleSpeed(): number;
+/** Returns the current radius compensation mode. */
+declare function getRadiusCompensation(): number;
+
+// ---- Redirection Functions ----
+
+/** Returns true if output is being redirected. */
+declare function isRedirecting(): boolean;
+/** Redirects output to a file. */
+declare function redirectToFile(path: string): void;
+/** Redirects output to a buffer. */
+declare function redirectToBuffer(): void;
+/** Returns the redirection buffer contents. */
+declare function getRedirectionBuffer(): string;
+/** Returns the redirection buffer contents and optionally clears it. */
+declare function getRedirectionBuffer2(clear: boolean): string;
+/** Closes the redirection. */
+declare function closeRedirection(): void;
+
+// ---- Path / File Functions ----
+
+/** Returns the intermediate CNC file path. */
+declare function getIntermediatePath(): string;
+/** Returns the output file path. */
+declare function getOutputPath(): string;
+/** Returns the configuration folder. */
+declare function getConfigurationFolder(): string;
+/** Returns the configuration script path. */
+declare function getConfigurationPath(): string;
+/** Returns the post processor folder. */
+declare function getPostProcessorFolder(): string;
+/** Returns the post processor path. */
+declare function getPostProcessorPath(): string;
+/** Includes another script file.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a92ca78e202ec522d37d4773ec3a37541 */
+declare function include(path: string): void;
+/** Finds a file by path (checks multiple locations). */
+declare function findFile(path: string): string;
+
+// ---- Localization Functions ----
+
+/** Translates a message using locale files.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a336174d3ff096f7bcb809c6fb3893e23 */
+declare function localize(message: string): string;
+
+/** Translates a message with a section qualifier. */
+declare function localize2(section: string, message: string): string;
+
+/** Returns the language ID. */
+declare function getLangId(): string;
+
+/** Loads a locale. */
+declare function loadLocale(langId: string): boolean;
+
+// ---- Code Page Functions ----
+
+/** Returns the code page. */
+declare function getCodePage(): number;
+
+/** Sets the code page (e.g. "ascii", "ansi", "utf-8"). */
+declare function setCodePage(name: string): void;
+
+// ---- Text Utility Functions ----
+
+/** Returns the value if condition is true, otherwise empty string. */
+declare function conditional(condition: any, value: string): string;
+
+/** Returns true if the text contains only safe characters. */
+declare function isSafeText(text: string, permitted: string): boolean;
+
+/** Filters text to keep only specified characters. */
+declare function filterText(text: string, keep: string): string;
+
+/** Translates characters in text (maps src chars to dest chars). */
+declare function translateText(text: string, src: string, dest: string): string;
+
+/** Substitutes placeholders in a format string. */
+declare function subst(message: string, ...args: any[]): string;
+
+/** Loads text from a URL or file. */
+declare function loadText(url: string, encoding?: string): string;
+
+/** Parses a string as a float. */
+declare function getAsFloat(text: string): number;
+
+/** Parses a string as an integer. */
+declare function getAsInt(text: string): number;
+
+// ---- Misc Functions ----
+
+/** Returns the output unit. */
+declare function getOutputUnit(): number;
+/** Sets the output unit (MM or IN). */
+declare function setOutputUnit(unit: number): void;
+/** Returns true if dog-leg motion is active. */
+declare function getDogLeg(): boolean;
+/** Sets dog-leg motion mode. */
+declare function setDogLeg(dogLeg: boolean): void;
+/** Sets the end-of-line marker. */
+declare function setEOL(eol: string): void;
+/** Sets the exit code for the post engine. */
+declare function setExitCode(code: number): void;
+/** Skips the rest of the current section. */
+declare function skipRemainingSection(): void;
+/** Returns true if speed-feed synchronization is active. */
+declare function isSpindleSpeedDifferent(section: Section): boolean;
+/** Returns the inverse time feedrate. */
+declare function getInverseTime(distance: number, speed: number): number;
+/** Returns the plane for a given direction vector. */
+declare function getPlane(direction: Vector): number;
+/** Converts a plane constant to an ISO plane constant. */
+declare function getISOPlane(plane: number): number;
+/** Returns true if two directions are the same. */
+declare function isSameDirection(a: any, b: any): boolean;
+/** Returns the quadrant for an angle. */
+declare function getQuadrant(angle: number): number;
+/** Returns the workpiece bounding box. */
+declare function getWorkpiece(): BoundingBox;
+/** Returns the fixture bounding box. */
+declare function getFixture(): BoundingBox;
+/** Returns true if a workpiece is defined. */
+declare function isWorkpieceDefined(): boolean;
+/** Gets program name as an integer within range. */
+declare function getProgramNameAsInt(min: number, max: number): number;
+/** Gets program name as a string within character limit. */
+declare function getProgramNameAsString(charLimit: number): string;
+/** Gets the Z range across the whole toolpath. */
+declare function toolZRange(): Range;
+/** Gets the system unit. */
+declare function getSystemUnit(): number;
+/** Gets the platform string. */
+declare function getPlatform(): string;
+/** Gets the product name. */
+declare function getProduct(): string;
+/** Gets the product version. */
+declare function getVersion(): string;
+/** Returns a coolant name string. */
+declare function getCoolantName(coolant: number): string;
+/** Returns a material name string. */
+declare function getMaterialName(material: number): string;
+/** Returns a command string identifier. */
+declare function getCommandStringId(command: number): string;
+/** Returns true if the command is well-known. */
+declare function isWellKnownCommand(command: number): boolean;
+/** Returns true if the command can be safely ignored. */
+declare function canIgnoreCommand(command: number): boolean;
+/** Handles an unsupported command. */
+declare function onUnsupportedCommand(command: number): void;
+/** Handles an unsupported coolant. */
+declare function onUnsupportedCoolant(coolant: number): void;
+/** Registers a termination handler function. */
+declare function registerTerminationHandler(fn: Function): void;
+/** Registers a post-processing step. */
+declare function registerPostProcessing(path: string): void;
+/** Loads a machine configuration from file. */
+declare function loadMachineConfiguration(path: string): MachineConfiguration;
+/** Returns true if user interaction is allowed. */
+declare function isInteractionAllowed(): boolean;
+/** Returns the security level. */
+declare function getSecurityLevel(): number;
+/** Returns the number of records. */
+declare function getNumberOfRecords(): number;
+/** Returns a record by ID. */
+declare function getRecord(id: number): Record;
+/** Returns the current record ID. */
+declare function getCurrentRecordId(): number;
+/** Returns true if the current cycle point is being expanded. */
+declare function isExpanding(): boolean;
+/** Checks whether a section is a probe operation. */
+declare function isProbeOperation(section: Section): boolean;
+/** Checks whether a section is an inspection operation. */
+declare function isInspectionOperation(section: Section): boolean;
+/** Checks whether a section is a deposition operation. */
+declare function isDepositionOperation(section: Section): boolean;
+/** Checks whether a section is a drilling cycle. */
+declare function isDrillingCycle(section: Section, checkBoringCycles?: boolean): boolean;
+/** Checks whether a section is a tapping cycle. */
+declare function isTappingCycle(section: Section): boolean;
+/** Checks whether a section is an axial center drilling. */
+declare function isAxialCenterDrilling(section: Section, checkLiveTool?: boolean): boolean;
+/** Checks whether a section is a milling cycle. */
+declare function isMillingCycle(section: Section, checkBoringCycles?: boolean): boolean;
+/** Generates an array of numbers. */
+declare function range(first: number, end: number, step?: number): number[];
+/** Generates a two-element interval array. */
+declare function interval(from: number, to: number): number[];
+/** Flattens a nested array. */
+declare function flatten(array: any[]): any[];
+
+// ---- Invoke Functions (re-dispatch motion) ----
+
+/** Re-invokes onRapid with the given coordinates. */
+declare function invokeOnRapid(x: number, y: number, z: number): boolean;
+/** Re-invokes onLinear with the given coordinates. */
+declare function invokeOnLinear(x: number, y: number, z: number, feedrate: number): boolean;
+/** Re-invokes onRapid5D. */
+declare function invokeOnRapid5D(x: number, y: number, z: number, dx: number, dy: number, dz: number): boolean;
+/** Re-invokes onLinear5D. */
+declare function invokeOnLinear5D(x: number, y: number, z: number, dx: number, dy: number, dz: number, feedrate: number): boolean;
+/** Re-invokes onCircular. */
+declare function invokeOnCircular(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, nx: number, ny: number, nz: number, feedrate: number): boolean;
+/** Re-invokes onSpindleSpeed. */
+declare function invokeOnSpindleSpeed(spindleSpeed: number): boolean;
+/** Called for implied commands. */
+declare function onImpliedCommand(command: number): void;
+
+// ---- Polar Mode Functions ----
+
+/** Activates polar interpolation mode. */
+declare function activatePolarMode(tolerance: number, currentAngle: number, polarDirection: Vector, interpolateRapidMoves: boolean, optimizeType: number): VectorPair;
+/** Deactivates polar mode. */
+declare function deactivatePolarMode(): void;
+/** Returns true if polar mode is active. */
+declare function isPolarModeActive(): boolean;
+/** Returns the polar position. */
+declare function getPolarPosition(x: number, y: number, z: number): VectorPair;
+/** Activates automatic polar mode handling. */
+declare function activateAutoPolarMode(options: object): void;
+
+// ---- Expanded motion callbacks (called by expandCyclePoint) ----
+
+/** Called for expanded rapid motion. */
+declare function onExpandedRapid(x: number, y: number, z: number): void;
+/** Called for expanded linear motion. */
+declare function onExpandedLinear(x: number, y: number, z: number, feed: number): void;
+/** Called for expanded spindle speed changes. */
+declare function onExpandedSpindleSpeed(spindleSpeed: number): void;
+
+// ---- Record navigation ----
+
+/** Returns true if a previous record exists. */
+declare function hasPreviousRecord(): boolean;
+/** Returns the previous record. */
+declare function getPreviousRecord(): Record;
+/** Returns true if a next record exists. */
+declare function hasNextRecord(): boolean;
+/** Returns the next record. */
+declare function getNextRecord(): Record;
+
+// ===========================================================================
+//  ENTRY FUNCTIONS (implement in your .cps file)
+// ===========================================================================
+
+/** Called when the machine configuration changes. */
+declare function onMachine(): void;
+
+/** Called once at post processing initialization. Output the program header here.
+ * @see https://cam.autodesk.com/posts/reference/entry_functions.html */
+declare function onOpen(): void;
+
+/** Called for each name-value parameter pair in the CLD data. */
+declare function onParameter(name: string, value: any): void;
+
+/** Called for pass-through text. */
+declare function onPassThrough(value: any): void;
+
+/** Called for each comment. */
+declare function onComment(comment: string): void;
+
+/** Called at the start of each section (operation). */
+declare function onSection(): void;
+
+/** Called for special cycle sections. */
+declare function onSectionSpecialCycle(): void;
+
+/** Called for dwell commands. */
+declare function onDwell(seconds: number): void;
+
+/** Called when spindle speed changes. */
+declare function onSpindleSpeed(spindleSpeed: number): void;
+
+/** Called for each linear rapid motion.
+ * Prevent dog-leg movement in the generated program. */
+declare function onRapid(x: number, y: number, z: number): void;
+
+/** Called for each linear feed motion. */
+declare function onLinear(x: number, y: number, z: number, feedrate: number): void;
+
+/** Called for each circular motion. */
+declare function onCircular(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, feedrate: number): void;
+
+/** Called for each 5-axis rapid motion. */
+declare function onRapid5D(x: number, y: number, z: number, dx: number, dy: number, dz: number): void;
+
+/** Called for each 5-axis linear feed motion. */
+declare function onLinear5D(x: number, y: number, z: number, dx: number, dy: number, dz: number, feedrate: number): void;
+
+/** @deprecated Use onRewindMachineEntry. Called when machine axis rewind is required. */
+declare function onRewindMachine(a: number, b: number, c: number): void;
+
+/** Called before a machine rewind procedure. */
+declare function onRewindMachineEntry(a: number, b: number, c: number): void;
+
+/** Required for rewinds. Retract to safe position before indexing. */
+declare function onMoveToSafeRetractPosition(): void;
+
+/** Required for rewinds. Return from safe position after indexing. */
+declare function onReturnFromSafeRetractPosition(x: number, y: number, z: number): void;
+
+/** Required for rewinds. Rotate axes to new position. */
+declare function onRotateAxes(x: number, y: number, z: number, a: number, b: number, c: number): void;
+
+/** Called when the movement type changes. */
+declare function onMovement(movement: number): void;
+
+/** Called when power mode changes (for waterjet/laser/plasma). */
+declare function onPower(power: boolean): void;
+
+/** Called when radius compensation mode changes. */
+declare function onRadiusCompensation(): void;
+
+/** Called when feed mode changes. */
+declare function onFeedMode(mode: number): void;
+
+/** Called when tool compensation mode changes. */
+declare function onToolCompensation(compensation: number): void;
+
+/** Called at the beginning of each cycle. */
+declare function onCycle(): void;
+
+/** Called for each point in the active cycle. */
+declare function onCyclePoint(x: number, y: number, z: number): void;
+
+/** Called at the beginning of a cycle with toolpath. */
+declare function onCyclePath(): void;
+
+/** Called at the end of a cycle with toolpath. */
+declare function onCyclePathEnd(): void;
+
+/** Called on cycle completion. */
+declare function onCycleEnd(): void;
+
+/** Called for well-known commands (e.g. stop spindle). */
+declare function onCommand(command: number): void;
+
+/** Called for Manual NC commands. */
+declare function onManualNC(command: number, value: string): void;
+
+/** Called for machine commands. */
+declare function onMachineCommand(command: number): void;
+
+/** Called when spindle orientation is required. */
+declare function onOrientateSpindle(angle: number): void;
+
+/** Called after the last posted operation of a Part Alignment. */
+declare function onLiveAlignment(): void;
+
+/** Called for additive FFF linear extrusion motion. */
+declare function onLinearExtrude(x: number, y: number, z: number, feedrate: number, extrusionLength: number): void;
+
+/** Called for additive FFF circular extrusion motion. */
+declare function onCircularExtrude(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, feedrate: number, extrusionLength: number): void;
+
+/** Called at the start of an additive layer. */
+declare function onLayer(layerNumber: number): void;
+
+/** Called at the end of an additive DED layer. */
+declare function onLayerEnd(layerNumber: number): void;
+
+/** Called when FFF extrusion length resets. */
+declare function onExtrusionReset(length: number): void;
+
+/** Called when the FFF extruder changes. */
+declare function onExtruderChange(extruderId: number): void;
+
+/** Called when FFF extruder temperature changes. */
+declare function onExtruderTemp(temp: number, wait: boolean, extruderId: number): void;
+
+/** Called when FFF bed temperature changes. */
+declare function onBedTemp(temp: number, wait: boolean): void;
+
+/** Called when FFF fan speed changes. */
+declare function onFanSpeed(speed: number, fanId: number): void;
+
+/** Called when FFF max acceleration changes. */
+declare function onMaxAcceleration(xAxis: number, yAxis: number, zAxis: number, eAxis: number): void;
+
+/** Called when FFF acceleration changes. */
+declare function onAcceleration(travel: number, printing: number, retract: number): void;
+
+/** Called when FFF jerk changes. */
+declare function onJerk(xAxis: number, yAxis: number, zAxis: number, eAxis: number): void;
+
+/** Called at the end of each section (operation). */
+declare function onSectionEnd(): void;
+
+/** Called at the end of special cycle sections. */
+declare function onSectionEndSpecialCycle(): void;
+
+/** Called at post processing completion. Output the program footer here. */
+declare function onClose(): void;
+
+/** Called after post processing has completed. The output file is unlocked. */
+declare function onTerminate(): void;

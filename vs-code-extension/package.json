@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility.",
-	"version": "4.1.7",
+	"version": "4.1.8",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -75,16 +75,6 @@
 			{
 				"command": "hsm.disableLineSelection",
 				"title": "Disable auto line selection",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.enableAutoComplete",
-				"title": "Enable auto complete for the current document",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.disableAutoComplete",
-				"title": "Disable auto complete in the current document",
 				"category": "Autodesk HSM Post Utility"
 			},
 			{

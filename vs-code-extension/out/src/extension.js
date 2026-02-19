@@ -101,20 +101,20 @@ function activate(context) {
 
   // registering the appropriate event handlers
   vscode.workspace.onDidSaveTextDocument(savedoc);
-  vscode.window.onDidChangeActiveTextEditor(checkForAutoComplete);
   vscode.window.onDidChangeActiveTextEditor(setEmbeddedEslintRules);
   vscode.window.onDidChangeTextEditorSelection(handleSelectionChange);
   cleanupProperties();
 
-  // Ensure autocomplete uses the correct path (if active)
-  checkForAutoComplete();
   // Backup cnc and machine files
   backupCustomData();
   // Restore any custom data that might have been lost
   restoreCustomData();
 
-  // update the configuration to include the CPS extension
+  // update the configuration to include the CPS/CPI extension
   addCPSToJSLanguage();
+
+  // install type declarations for IntelliSense
+  installTypeDeclarations();
 
   // add sidebars
   cncTree = new CNCList.cncDataProvider(context);
@@ -150,8 +150,6 @@ function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('hsm.encryptPost', () => { postEncryption(true); }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.decryptPost', () => { postEncryption(false); }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.downloadCNCExtractor', () => { downloadCNCExtractor() }));
-  context.subscriptions.push(vscode.commands.registerCommand('hsm.enableAutoComplete', () => { setAutoComplete(true) }));
-  context.subscriptions.push(vscode.commands.registerCommand('hsm.disableAutoComplete', () => { setAutoComplete(false) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.selectCNCFile', () => { checkDirSize(cncFilesLocation) }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.showDebuggedCode', () => { showDebuggedCode() }));
   context.subscriptions.push(vscode.commands.registerCommand('hsm.disableLineSelection', () => { disableLineSelection() }));
@@ -175,31 +173,6 @@ exports.activate = activate;
 
 function deactivate() { }
 exports.deactivate = deactivate;
-
-/** Enables auto-complete for the active document */
-function setAutoComplete(active) {
-  if ((vscode.window.visibleTextEditors.length <= 0) ||
-    (vscode.window.activeTextEditor == undefined) ||
-    !checkActiveDocumentForPost()) {
-    return;
-  }
-  let firstLine = vscode.window.activeTextEditor.document.lineAt(0).text;
-  if (active == "onLoad") {
-    active = firstLine.toLowerCase().includes("globals.d.ts");
-  }
-  if (active) {
-    var languageFileLocation = path.join(resLocation, "language files", "globals.d.ts");
-    const fullIncludeString = "/// <reference path=\"" + languageFileLocation + "\" />" + "\n";
-    // first line already contains auto complete
-    if (firstLine.toLowerCase().includes("globals.d.ts")) {
-      vscode.window.activeTextEditor.edit(editBuilder => { editBuilder.replace(new vscode.Range(0, 0, 1, 0), fullIncludeString) });
-    } else {
-      vscode.window.activeTextEditor.edit(editBuilder => { editBuilder.insert(new vscode.Position(0, 0), fullIncludeString); });
-    }
-  } else if (firstLine.toLowerCase().includes("globals.d.ts")) {
-    vscode.window.activeTextEditor.edit(editBuilder => { editBuilder.delete(new vscode.Range(0, 0, 1, 0)); });
-  }
-}
 
 /** Sets an option to show the debugged code in the output */
 function showDebuggedCode() {
@@ -509,10 +482,6 @@ function handleSelectionChange(event) {
     lastSelectedLine = selectedLine;
   }
   times += 1;
-}
-
-function checkForAutoComplete() {
-  setAutoComplete("onLoad");
 }
 
 function onPickedItem(picked) {
@@ -1455,10 +1424,30 @@ function restoreCustomData() {
     copyCustomFiles("machine", customMachines, path.join(resLocation, "Machines", "Custom"), false);
   }
 }
-/** Updates users langague file to ensure CPS is detected as a JS file */
+/** Copies globals.d.ts into node_modules/@types/post-processor so the TS language service picks it up automatically. */
+function installTypeDeclarations() {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) return;
+  const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  const nmDir = path.join(workspaceRoot, "node_modules");
+  if (!fs.existsSync(nmDir)) return;
+  const targetDir = path.join(nmDir, "@types", "post-processor");
+  const sourceFile = path.join(resLocation, "language files", "globals.d.ts");
+  const targetFile = path.join(targetDir, "index.d.ts");
+  try {
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.copyFileSync(sourceFile, targetFile);
+    var pkg = path.join(targetDir, "package.json");
+    if (!fs.existsSync(pkg)) {
+      fs.writeFileSync(pkg, '{"name":"@types/post-processor","version":"1.0.0","types":"index.d.ts"}');
+    }
+  } catch (_) {}
+}
+
+/** Updates users language file to ensure CPS/CPI are detected as JS files */
 function addCPSToJSLanguage() {
   let currentLanguageConfiguration = vscode.workspace.getConfiguration("files");
-  let newLanguageConfiguration = Object.assign({}, currentLanguageConfiguration.associations, {"*.cps" : "javascript"});
+  let newLanguageConfiguration = Object.assign({}, currentLanguageConfiguration.associations, {"*.cps" : "javascript", "*.cpi" : "javascript"});
   vscode.workspace.getConfiguration("files").update("associations", newLanguageConfiguration, true);
 }
 
