@@ -197,6 +197,8 @@ class PostEngine {
         this.secondaryLogPath = path.join(this.outputDir, 'secondarydebuggedfile.log');
         this.customCNCDir = path.join(this.workDir, 'CustomCNCFiles');
         this.customMachinesDir = path.join(this.workDir, 'CustomMachineFiles');
+        this.cncFilesBackupDir = path.join(this.workDir, 'CNCFilesBackup');
+        this.machinesBackupDir = path.join(this.workDir, 'MachinesBackup');
         this.propertyTempDir = path.join(this.workDir, 'Properties');
         const regressionTestRoot = path.join(this.workDir, 'Regression test');
         this.regressionTestOutputDir = path.join(regressionTestRoot, 'output');
@@ -1627,6 +1629,18 @@ class PostEngine {
     }
     // ── Custom data backup/restore ──────────────────────────────────
     backupCustomData() {
+        const cncResDir = path.join(this.resLocation, 'CNC files');
+        const machResDir = path.join(this.resLocation, 'Machines');
+        if ((0, utils_1.fileExists)(cncResDir)) {
+            (0, utils_1.ensureDir)(this.cncFilesBackupDir);
+            (0, utils_1.removeFilesInFolder)(this.cncFilesBackupDir);
+            (0, utils_1.copyFolderSync)(cncResDir, this.cncFilesBackupDir);
+        }
+        if ((0, utils_1.fileExists)(machResDir)) {
+            (0, utils_1.ensureDir)(this.machinesBackupDir);
+            (0, utils_1.removeFilesInFolder)(this.machinesBackupDir);
+            (0, utils_1.copyFolderSync)(machResDir, this.machinesBackupDir);
+        }
         this.copyCustomFiles(path.join(this.resLocation, 'CNC files', 'Custom'), this.customCNCDir, true);
         this.copyCustomFiles(path.join(this.resLocation, 'Machines', 'Custom'), this.customMachinesDir, true);
         const cncLocations = config.get('customCNCLocations');
@@ -1639,15 +1653,29 @@ class PostEngine {
         }
     }
     restoreCustomData() {
-        const cncCustom = path.join(this.resLocation, 'CNC files', 'Custom');
-        if ((0, utils_1.fileExists)(this.customCNCDir) && !(0, utils_1.fileExists)(cncCustom)) {
-            (0, utils_1.ensureDir)(cncCustom);
-            this.copyCustomFiles(this.customCNCDir, cncCustom, false);
+        const cncResDir = path.join(this.resLocation, 'CNC files');
+        const machResDir = path.join(this.resLocation, 'Machines');
+        if ((0, utils_1.fileExists)(this.cncFilesBackupDir)) {
+            (0, utils_1.ensureDir)(cncResDir);
+            (0, utils_1.copyFolderSync)(this.cncFilesBackupDir, cncResDir);
         }
-        const machCustom = path.join(this.resLocation, 'Machines', 'Custom');
-        if ((0, utils_1.fileExists)(this.customMachinesDir) && !(0, utils_1.fileExists)(machCustom)) {
-            (0, utils_1.ensureDir)(machCustom);
-            this.copyCustomFiles(this.customMachinesDir, machCustom, false);
+        else if ((0, utils_1.fileExists)(this.customCNCDir)) {
+            const cncCustom = path.join(cncResDir, 'Custom');
+            if (!(0, utils_1.fileExists)(cncCustom)) {
+                (0, utils_1.ensureDir)(cncCustom);
+                this.copyCustomFiles(this.customCNCDir, cncCustom, false);
+            }
+        }
+        if ((0, utils_1.fileExists)(this.machinesBackupDir)) {
+            (0, utils_1.ensureDir)(machResDir);
+            (0, utils_1.copyFolderSync)(this.machinesBackupDir, machResDir);
+        }
+        else if ((0, utils_1.fileExists)(this.customMachinesDir)) {
+            const machCustom = path.join(machResDir, 'Custom');
+            if (!(0, utils_1.fileExists)(machCustom)) {
+                (0, utils_1.ensureDir)(machCustom);
+                this.copyCustomFiles(this.customMachinesDir, machCustom, false);
+            }
         }
         const cncBackupPath = path.join(this.workDir, 'CustomCNCLocations.json');
         const machBackupPath = path.join(this.workDir, 'CustomMachineLocations.json');
