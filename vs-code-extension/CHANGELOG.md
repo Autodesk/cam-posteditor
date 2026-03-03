@@ -1,4 +1,43 @@
-# Change Log
+
+## 5.0.0
+# What's New in Autodesk Post Processor Utility 5.0.0
+
+This release is a major update of the **Autodesk Fusion Post Processor Utility**. Below are the main new features, changes, and improvements.
+## New features
+
+### CNC and Machine Selector
+- **Recently used**: last 10 selected CNC files and last 10 selected machine files appear in a **"Recently used"** node at the top of the CNC Selector and Machine Selector. Selecting a file updates the list.
+- **Filter / search**: CNC list and Machine list have **Filter / Search** and **Clear filter** in the view title.
+- **Create folder / Delete folder / Delete file / Remove folder from list** for both CNC and Machine custom folders (context menu on folders).
+
+### Machine Selector
+- **Online machines:** All machines available in the online library are now accessible directly within the extension.
+- **Show machine details on hover** such as kinematic type, rotary axes and their ranges, feedrate method and a thumbnail of the machine
+- **Machines: Filter by axis, purpose, kinematics, vendor, TCP** via **Filter machines...** in the view title.
+
+### IntelliSense support
+- **Automatic API IntelliSense**: hover documentation and auto-completion for the Post Processor API is now provided automatically for .cps files.
+
+### Regression tests
+- **New "Regression test" view** in the Explorer: run the post on multiple CNC files, save output as reference, and compare current output to reference.
+- **Create reference** to (re)create a baseline.
+- **Compare with reference** to diff current output vs reference (built-in diff or external tool).
+- **External diff tool** setting to choose WinMerge, Beyond Compare, KDiff3, Meld, P4Merge, or Custom (with custom path). Used for **Compare with reference** and regression compare. Built-in VS Code diff is used by default.
+
+### Debug: single-line and inline
+- **Debug output modes** Settings: **Off**, **Inline** (entry function and line on each NC line; full call stack on hover), or **Full** (keep !DEBUG lines in output).
+- **Inline debug options**: column-align annotations, max padding, show/hide writeBlock and writeStartBlocks in call stack, padding limit.
+- **Call stack on hover**: hover over a line in the debug NC output to see the post processor call stack that produced that line.
+- **Line highlighting** in the CPS file when navigating through call stack.
+- **Go to Definition** from the NC output to the post.
+- **"Post Utility: Debug selected line(s)"** (editor context menu on .cps): run the post with instrumentation on the selected line(s) and show evaluated expressions (variables, comparisons, call results) in the NC output as `(DEBUG line N: ...)`.
+
+## General changes and improvements
+- **Performance** improvements for eg. postprocessing, property interrogation and updating Function list
+- **Automatic refresh** of CNC/Machine Selector list, no need anymore to refresh the content manually.
+- **Post Processor engine version** is now always shown in the status bar.
+- **Show Properties by group** setting displays properties in the Properties selector organized according to their respective groups.
+---
 ## 4.1.7
 Fixed:
   - The 'Merge post processor' feature does now utilize the include path if specified
