@@ -61,6 +61,23 @@ const ONLINE_PURPOSE_PREFIX = '__online_purpose:';
 const ONLINE_PURPOSE_VENDOR_PREFIX = '__online_pv:';
 const SEARCH_RESULTS = '__search_results__';
 const PURPOSE_SORT_ORDER = ['Milling', 'Turning', 'Mill / Turn', 'Additive', 'Waterjet / Laser / Plasma', 'Inspection', 'Other'];
+const _mchCache = new Map();
+function getCachedMch(filePath) {
+    const cached = _mchCache.get(filePath);
+    try {
+        const mtime = fs.statSync(filePath).mtime.getTime();
+        if (cached && cached.mtime === mtime)
+            return cached.data;
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+        _mchCache.set(filePath, { mtime, data });
+        return data;
+    }
+    catch {
+        _mchCache.delete(filePath);
+        return null;
+    }
+}
 function makeMachineTooltip(name, subtitle, imageUrl, info) {
     const md = new vscode.MarkdownString();
     md.isTrusted = true;
@@ -157,57 +174,45 @@ function buildRotaryRanges(mch) {
 }
 /** Return "vendor model" from .mch general when present, else undefined (caller uses filename). */
 function getMachineDisplayLabel(filePath) {
-    try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
-        const mch = JSON.parse(raw);
-        const vendor = (mch.general?.vendor && String(mch.general.vendor).trim()) || '';
-        const model = (mch.general?.model && String(mch.general.model).trim()) || '';
-        if (vendor && model)
-            return `${vendor} ${model}`.trim();
-        if (vendor)
-            return vendor;
-        if (model)
-            return model;
+    const mch = getCachedMch(filePath);
+    if (!mch)
         return undefined;
-    }
-    catch {
-        return undefined;
-    }
+    const vendor = (mch.general?.vendor && String(mch.general.vendor).trim()) || '';
+    const model = (mch.general?.model && String(mch.general.model).trim()) || '';
+    if (vendor && model)
+        return `${vendor} ${model}`.trim();
+    if (vendor)
+        return vendor;
+    if (model)
+        return model;
+    return undefined;
 }
 function getMachineTooltipInfo(filePath) {
-    try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
-        const mch = JSON.parse(raw);
-        const base = getAxisCountAndPurposeFromMch(filePath);
-        if (!base)
-            return null;
-        let rotaryRanges = buildRotaryRanges(mch);
-        let feedrateMethod = undefined;
-        const feedrateObj = mch.multiaxis?.default?.feedrate;
-        if (feedrateObj && typeof feedrateObj.method === 'string' && feedrateObj.method.trim())
-            feedrateMethod = feedrateObj.method;
-        const description = (mch.general?.description && String(mch.general.description).trim()) || undefined;
-        return {
-            ...base,
-            rotaryRanges: rotaryRanges.length ? rotaryRanges : undefined,
-            feedrateMethod,
-            description,
-        };
-    }
-    catch {
+    const mch = getCachedMch(filePath);
+    if (!mch)
         return null;
-    }
+    const base = getAxisCountAndPurposeFromMch(filePath);
+    if (!base)
+        return null;
+    let rotaryRanges = buildRotaryRanges(mch);
+    let feedrateMethod = undefined;
+    const feedrateObj = mch.multiaxis?.default?.feedrate;
+    if (feedrateObj && typeof feedrateObj.method === 'string' && feedrateObj.method.trim())
+        feedrateMethod = feedrateObj.method;
+    const description = (mch.general?.description && String(mch.general.description).trim()) || undefined;
+    return {
+        ...base,
+        rotaryRanges: rotaryRanges.length ? rotaryRanges : undefined,
+        feedrateMethod,
+        description,
+    };
 }
 function getEmbeddedImageFromMch(filePath) {
-    try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
-        const mch = JSON.parse(raw);
-        const b64 = mch.fusion?.default?.image;
-        return b64 ? `data:image/png;base64,${b64}` : undefined;
-    }
-    catch {
+    const mch = getCachedMch(filePath);
+    if (!mch)
         return undefined;
-    }
+    const b64 = mch.fusion?.default?.image;
+    return b64 ? `data:image/png;base64,${b64}` : undefined;
 }
 /** Exclude .machine files that use default Haas vendors from Online Library. */
 function isExcludedMachineFile(fullPath) {
@@ -222,6 +227,7 @@ function isExcludedMachineFile(fullPath) {
         return false;
     }
 }
+
 const MCH_PURPOSE_MAP = {
     milling: 'Milling',
     additive: 'Additive',
@@ -283,8 +289,9 @@ function getKinematicsFromMch(mch) {
 /** Read axis count, purpose, kinematics, and TCP from a .mch or .machine file. Returns { axisCount, purpose, kinematics, hasTcp } or null. Purely from .mch JSON data. */
 function getAxisCountAndPurposeFromMch(filePath) {
     try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
-        const mch = JSON.parse(raw);
+        const mch = getCachedMch(filePath);
+        if (!mch)
+            return null;
         let purpose = 'Other';
         const caps = mch.general?.capabilities;
         if (Array.isArray(caps) && caps[0]) {
@@ -327,12 +334,14 @@ const RECENT_MAX = 10;
 class FileTreeProvider {
     setFilter(text) {
         this.filterText = (text || '').trim().toLowerCase();
+        this._matchingDescendantCache = null;
         this.refreshTree();
     }
     clearFilter() {
         let changed = false;
         if (this.filterText) {
             this.filterText = '';
+            this._matchingDescendantCache = null;
             changed = true;
         }
         if (this.cfg.includeOnlineLibrary && this.onlineLibraryFilter) {
@@ -423,19 +432,26 @@ class FileTreeProvider {
     hasMatchingDescendant(dirPath) {
         if (!this.filterText || !(0, utils_1.fileExists)(dirPath))
             return false;
+        if (!this._matchingDescendantCache)
+            this._matchingDescendantCache = new Map();
+        const cacheKey = `${this.filterText}\0${dirPath}`;
+        if (this._matchingDescendantCache.has(cacheKey))
+            return this._matchingDescendantCache.get(cacheKey);
+        let result = false;
         try {
             const files = (0, utils_1.getFilesFromDirRecursive)(dirPath, this.cfg.fileExtensions);
             for (const rel of files) {
                 const fullPath = path.join(dirPath, rel);
                 const base = path.basename(rel);
-                if (this.matchesFilter(base, fullPath))
-                    return true;
+                if (this.matchesFilter(base, fullPath)) {
+                    result = true;
+                    break;
+                }
             }
-            return false;
         }
-        catch {
-            return false;
-        }
+        catch { /* ignore */ }
+        this._matchingDescendantCache.set(cacheKey, result);
+        return result;
     }
     constructor(context, cfg) {
         this.context = context;
@@ -459,14 +475,14 @@ class FileTreeProvider {
         for (const dir of this.getWatchedDirs()) {
             this.watchDirectory(dir);
         }
-        // Fallback: poll every 5s in case fs.watch misses something
+        // Fallback: poll every 30s in case fs.watch misses something
         this.pollInterval = setInterval(() => {
             const current = this.computeFileListHash();
             if (current !== this.lastFileListHash) {
                 this.lastFileListHash = current;
                 this.refreshTree();
             }
-        }, 5000);
+        }, 30000);
         if (this.cfg.checkboxMode && this.cfg.selectionStorageKey !== 'regressionTestSelection') {
             this.restoreSelection();
         }
@@ -513,7 +529,7 @@ class FileTreeProvider {
     }
     /** Sorted list of vendor names from all machine files in watched dirs. Cached by file list hash; refetched when machines are added/removed. */
     getVendorListForFilter() {
-        const hash = this.computeFileListHash();
+        const hash = this.lastFileListHash || this.computeFileListHash();
         if (this._cachedVendorListHash === hash && this._cachedVendorList)
             return this._cachedVendorList;
         const vendorSet = new Set();
@@ -699,7 +715,12 @@ class FileTreeProvider {
         return this.buildChildItems(element);
     }
     refreshTree() {
-        this.loadFiles();
+        const newHash = this.computeFileListHash();
+        if (newHash !== this.lastFileListHash) {
+            this.lastFileListHash = newHash;
+            this._matchingDescendantCache = null;
+            this.loadFiles();
+        }
         this._onDidChangeTreeData.fire(undefined);
     }
     /** Refresh only the "Recently used" node so the rest of the tree (e.g. custom folders) is not rescanned. */

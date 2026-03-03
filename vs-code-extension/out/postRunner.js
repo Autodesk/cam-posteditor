@@ -1628,18 +1628,65 @@ class PostEngine {
         vscode.window.showInformationMessage(`${status}, updated postprocessor: ${targetFile}`);
     }
     // ── Custom data backup/restore ──────────────────────────────────
+    /** Returns a hash of current backup-relevant state (dirs + settings) to skip full backup when unchanged. */
+    _computeBackupStateHash() {
+        const parts = [];
+        const collectDir = (dir, excludeSubdir) => {
+            if (!(0, utils_1.fileExists)(dir))
+                return;
+            const entries = [];
+            const walk = (current, relPrefix) => {
+                for (const name of fs.readdirSync(current)) {
+                    const full = path.join(current, name);
+                    const rel = relPrefix ? path.join(relPrefix, name) : name;
+                    try {
+                        const stat = fs.statSync(full);
+                        if (stat.isFile())
+                            entries.push(`F:${rel}:${stat.mtime.getTime()}`);
+                        else if (stat.isDirectory() && name !== excludeSubdir) {
+                            entries.push(`D:${rel}`);
+                            walk(full, rel);
+                        }
+                    }
+                    catch { /* skip */ }
+                }
+            };
+            walk(dir, '');
+            entries.sort();
+            parts.push(entries.join('\n'));
+        };
+        collectDir(path.join(this.resLocation, 'CNC files'), null);
+        collectDir(path.join(this.resLocation, 'Machines'), 'Online Library');
+        const cncLocations = config.get('customCNCLocations');
+        const machLocations = config.get('customMachineLocations');
+        parts.push(JSON.stringify(cncLocations ?? {}));
+        parts.push(JSON.stringify(machLocations ?? {}));
+        return (0, utils_1.getHash)(parts.join('::'));
+    }
     backupCustomData() {
+        const currentHash = this._computeBackupStateHash();
+        const hashPath = path.join(this.workDir, 'BackupStateHash.txt');
+        try {
+            if ((0, utils_1.fileExists)(hashPath) && fs.readFileSync(hashPath, 'utf-8').trim() === currentHash)
+                return;
+        }
+        catch { /* proceed with backup */ }
         const cncResDir = path.join(this.resLocation, 'CNC files');
         const machResDir = path.join(this.resLocation, 'Machines');
         if ((0, utils_1.fileExists)(cncResDir)) {
-            (0, utils_1.ensureDir)(this.cncFilesBackupDir);
-            (0, utils_1.removeFilesInFolder)(this.cncFilesBackupDir);
+            if ((0, utils_1.fileExists)(this.cncFilesBackupDir))
+                fs.rmSync(this.cncFilesBackupDir, { recursive: true, force: true });
+            fs.mkdirSync(this.cncFilesBackupDir, { recursive: true });
             (0, utils_1.copyFolderSync)(cncResDir, this.cncFilesBackupDir);
         }
         if ((0, utils_1.fileExists)(machResDir)) {
-            (0, utils_1.ensureDir)(this.machinesBackupDir);
-            (0, utils_1.removeFilesInFolder)(this.machinesBackupDir);
+            if ((0, utils_1.fileExists)(this.machinesBackupDir))
+                fs.rmSync(this.machinesBackupDir, { recursive: true, force: true });
+            fs.mkdirSync(this.machinesBackupDir, { recursive: true });
             (0, utils_1.copyFolderSync)(machResDir, this.machinesBackupDir);
+            const onlineLibInBackup = path.join(this.machinesBackupDir, 'Online Library');
+            if ((0, utils_1.fileExists)(onlineLibInBackup))
+                fs.rmSync(onlineLibInBackup, { recursive: true, force: true });
         }
         this.copyCustomFiles(path.join(this.resLocation, 'CNC files', 'Custom'), this.customCNCDir, true);
         this.copyCustomFiles(path.join(this.resLocation, 'Machines', 'Custom'), this.customMachinesDir, true);
@@ -1651,6 +1698,10 @@ class PostEngine {
         if (machLocations && typeof machLocations === 'object' && Array.isArray(machLocations.folders) && machLocations.folders.length > 0) {
             fs.writeFileSync(path.join(this.workDir, 'CustomMachineLocations.json'), JSON.stringify(machLocations, null, 0), 'utf-8');
         }
+        try {
+            fs.writeFileSync(hashPath, currentHash, 'utf-8');
+        }
+        catch { /* ignore */ }
     }
     restoreCustomData() {
         const cncResDir = path.join(this.resLocation, 'CNC files');

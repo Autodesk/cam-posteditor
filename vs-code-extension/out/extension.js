@@ -57,9 +57,10 @@ function activate(context) {
     const onlineLibDir = path.join(engine.resLocation, 'Machines', 'Online Library');
     utils_1.ensureDir(onlineLibDir);
     const lineSelection = new lineSelection_1.LineSelection(engine);
-    // Backup and restore custom data
-    engine.backupCustomData();
+    // Restore first (so an update doesn't overwrite the old backup). Backup runs async so startup is not blocked.
     engine.restoreCustomData();
+    setImmediate(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } });
+    const refreshBackup = () => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } };
     // Setup
     addCPSToJSLanguage();
     installTypeDeclarations(context);
@@ -602,6 +603,7 @@ function activate(context) {
                     engine.clearMachineSelection();
                 machineTree.refreshTree();
             }
+            refreshBackup();
         }
     };
     sub.push(vscode.commands.registerCommand('autodesk.post.deleteFile', deleteFileFromTree));
@@ -613,6 +615,7 @@ function activate(context) {
                 if (el.filePath === engine.machineFile)
                     engine.clearMachineSelection();
                 machineTree.refreshTree();
+                refreshBackup();
             }
         }
     }));
@@ -620,8 +623,8 @@ function activate(context) {
         if (el?.filePath)
             openFolder(el.filePath);
     }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.importCNC', (el) => importCustomFile('cncFile', engine, cncTree, el?.filePath)));
-    sub.push(vscode.commands.registerCommand('autodesk.post.importMachine', (el) => importCustomFile('machineFile', engine, machineTree, el?.filePath)));
+    sub.push(vscode.commands.registerCommand('autodesk.post.importCNC', async (el) => { await importCustomFile('cncFile', engine, cncTree, el?.filePath); refreshBackup(); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.importMachine', async (el) => { await importCustomFile('machineFile', engine, machineTree, el?.filePath); refreshBackup(); }));
     sub.push(vscode.commands.registerCommand('autodesk.post.editMachineFile', (el) => {
         if (!el?.filePath)
             return;
@@ -676,22 +679,19 @@ function activate(context) {
                 machineTree.refreshTree();
             });
             vscode.window.showInformationMessage('Online Library updated.');
+            refreshBackup();
         }
         catch (e) {
             const msg = e && typeof e === 'object' && 'message' in e ? e.message : String(e ?? 'Unknown error');
             vscode.window.showErrorMessage(`Online Library update failed: ${msg}`);
         }
     }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.createCNCFolder', (el) => { if (el?.filePath)
-        cncTree.createSubfolder(el.filePath); }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.deleteCNCFolder', (el) => { if (el?.filePath)
-        cncTree.deleteFolder(el.filePath); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.createCNCFolder', async (el) => { if (el?.filePath) { await cncTree.createSubfolder(el.filePath); refreshBackup(); } }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.deleteCNCFolder', async (el) => { if (el?.filePath) { await cncTree.deleteFolder(el.filePath); refreshBackup(); } }));
     sub.push(vscode.commands.registerCommand('autodesk.post.removeCNCFolderRef', (el) => { if (el?.filePath)
         cncTree.removeFolder(el.filePath); }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.createMachineFolder', (el) => { if (el?.filePath)
-        machineTree.createSubfolder(el.filePath); }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.deleteMachineFolder', (el) => { if (el?.filePath)
-        machineTree.deleteFolder(el.filePath); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.createMachineFolder', async (el) => { if (el?.filePath) { await machineTree.createSubfolder(el.filePath); refreshBackup(); } }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.deleteMachineFolder', async (el) => { if (el?.filePath) { await machineTree.deleteFolder(el.filePath); refreshBackup(); } }));
     sub.push(vscode.commands.registerCommand('autodesk.post.removeMachineFolderRef', (el) => { if (el?.filePath)
         machineTree.removeFolder(el.filePath); }));
     // Properties
@@ -1170,7 +1170,13 @@ function openFolder(itemPath) {
     }
 }
 function deactivate() {
-    _engine?.clearRegressionTestFolders();
-    _engine = undefined;
+    if (_engine) {
+        try {
+            _engine.backupCustomData();
+        }
+        catch (_) { /* ignore */ }
+        _engine.clearRegressionTestFolders();
+        _engine = undefined;
+    }
 }
 //# sourceMappingURL=extension.js.map
