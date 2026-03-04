@@ -27,8 +27,10 @@ This release is a major update of the **Autodesk Fusion Post Processor Utility**
 ### Debug: single-line and inline
 - **Debug output modes** Settings: **Off**, **Inline** (entry function and line on each NC line; full call stack on hover), or **Full** (keep !DEBUG lines in output).
 - **Inline debug options**: column-align annotations, max padding, show/hide writeBlock and writeStartBlocks in call stack, padding limit.
+![inlineDebug](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/inlineDebug.gif)
 - **Call stack on hover**: hover over a line in the debug NC output to see the post processor call stack that produced that line.
 - **Line highlighting** in the CPS file when navigating through call stack.
+![callStack](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/callStack.gif)
 - **Go to Definition** from the NC output to the post.
 - **"Post Utility: Debug selected line(s)"** (editor context menu on .cps): run the post with instrumentation on the selected line(s) and show evaluated expressions (variables, comparisons, call results) in the NC output as `(DEBUG line N: ...)`.
 
