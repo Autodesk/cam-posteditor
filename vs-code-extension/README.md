@@ -12,16 +12,12 @@ You can get the installation for Visual Studio Code at:
 https://marketplace.visualstudio.com/items?itemName=Autodesk.hsm-post-processor
 
 
-
 The extension is distributed under the MIT license. See LICENSE.txt.
-
-
 
 # Features
 - Post directly from VS Code.
 - Quick view post processor variables and functions.
 - Jump to code by clicking line in NC output.
-
 
 # Get started
 ![Preview](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/preview.gif)
@@ -35,6 +31,49 @@ http://cam.autodesk.com/posts
 
 The documentation of the postprocessor API can be found here:
 https://cam.autodesk.com/posts/reference/index.html
+
+# What's New in Autodesk Post Processor Utility 5.0.0
+
+### Machine Selector
+- **Online machines:** All machines available in the online library are now accessible directly within the extension.
+- **Show machine details on hover** such as kinematic type, rotary axes and their ranges, feedrate method and a thumbnail of the machine
+- **Machines: Filter by axis, purpose, kinematics, vendor, TCP** via **Filter machines...** in the view title.
+![onlineLibrary](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/onlineMachineLibrary.gif)
+
+### New Debug options:
+- **Debug output modes** Settings: **Off**, **Inline** (entry function and line on each NC line; full call stack on hover), or **Full** (keep !DEBUG lines in output).
+- **Inline debug options**: column-align annotations, max padding, show/hide writeBlock and writeStartBlocks in call stack, padding limit.
+![inlineDebug](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/inlineDebug.gif)
+- **Call stack on hover**: hover over a line in the debug NC output to see the post processor call stack that produced that line.
+- **Line highlighting** in the CPS file when navigating through call stack.
+![callStack](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/callStack.gif)
+- **Go to Definition** from the NC output to the post.
+- **"Post Utility: Debug selected line(s)"** (editor context menu on .cps): run the post with instrumentation on the selected line(s) and show evaluated expressions (variables, comparisons, call results) in the NC output as `(DEBUG line N: ...)`.
+
+### CNC and Machine Selector
+- **Recently used**: last 10 selected CNC files and last 10 selected machine files appear in a **"Recently used"** node at the top of the CNC Selector and Machine Selector. Selecting a file updates the list.
+- **Search**: Added **Search** support for CNC and Machine files
+- **Create folder / Delete folder / Delete file / Remove folder from list** for both CNC and Machine custom folders (context menu on folders).
+![recentAndSearch](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/recentAndSearch.png)
+
+### IntelliSense support
+- **Automatic API IntelliSense**: hover documentation and auto-completion for the Post Processor API is now provided automatically for .cps files.
+![IntelliSense](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/intelliSense.gif)
+
+### Regression test
+- **New "Regression test" view** in the Explorer: run the post on multiple CNC files, save output as reference, and compare current output to reference.
+- **Create reference** to (re)create a baseline.
+- **Compare with reference** to diff current output vs reference (built-in diff or external tool).
+- **External diff tool** setting to choose WinMerge, Beyond Compare, KDiff3, Meld, P4Merge, or Custom (with custom path). Used for **Compare with reference** and regression compare. Built-in VS Code diff is used by default.
+![regressionTest](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/regressionTest.gif)
+
+## General changes and improvements
+- **Performance** improvements for eg. postprocessing, property interrogation and updating Function list
+- **Automatic refresh** of CNC/Machine Selector list, no need anymore to refresh the content manually.
+- **Post Processor engine version** is now always shown in the status bar.
+- **Show Properties by group** setting displays properties in the Properties selector organized according to their respective groups.
+![propertyGroups](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/propertiesByGroup.gif)
+
 
 # About
 Autodesk Fusion Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  

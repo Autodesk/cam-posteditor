@@ -1,36 +1,26 @@
 {
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
-	"description": "Post processor utility.",
-	"version": "4.1.7",
+	"description": "Post processor utility for editing, testing, and debugging Autodesk Fusion post processors.",
+	"version": "5.0.0",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
 		"email": "cam.posts@autodesk.com",
-		"url": "http://cam.autodesk.com"
+		"url": "https://cam.autodesk.com"
 	},
 	"publisher": "Autodesk",
 	"engines": {
-		"vscode": "^1.18.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Programming Languages",
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.startHSMPlugin",
-		"onCommand:hsm.showDebuggedCode",
-		"onCommand:hsm.changePostExe",
-		"onCommand:hsm.changeSecondaryPostExe",
-		"onCommand:hsm.updatePostProperties",
-		"onCommand:disableLineSelection",
-		"*",
-		"onView:functionList",
-		"onView:cncList",
-		"onView:machineList",
-		"onView:propertyList"
+		"onStartupFinished"
 	],
-	"main": "./out/src/extension",
+	"main": "./out/extension",
 	"contributes": {
 		"languages": [
 			{
@@ -60,196 +50,277 @@
 		],
 		"commands": [
 			{
-				"command": "extension.startHSMPlugin",
-				"title": "Post Utility",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "functionList.refreshEntry",
-				"title": "Refresh functions",
+				"command": "autodesk.post.functionList.refresh",
+				"title": "Reload the list of post processor functions from the current file",
+				"shortTitle": "Refresh functions",
 				"icon": {
 					"dark": "res/icons/ref.svg",
 					"light": "res/icons/ref.svg"
 				}
 			},
 			{
-				"command": "hsm.disableLineSelection",
+				"command": "autodesk.post.disableLineSelection",
 				"title": "Disable auto line selection",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.enableAutoComplete",
-				"title": "Enable auto complete for the current document",
-				"category": "Autodesk HSM Post Utility"
+				"command": "autodesk.post.showDebuggedCode",
+				"title": "Show debugged code",
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.disableAutoComplete",
-				"title": "Disable auto complete in the current document",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.showDebuggedCode",
-				"title": "Autodesk HSM Post Utility: Show debugged code"
-			},
-			{
-				"command": "cncList.refreshCNCList",
-				"title": "Refresh CNC List",
-				"icon": {
-					"dark": "res/icons/ref.svg",
-					"light": "res/icons/ref.svg"
-				}
-			},
-			{
-				"command": "cncList.addFolder",
-				"title": "Add folder",
+				"command": "autodesk.post.cncList.addFolder",
+				"title": "Add a custom folder to the CNC file list",
+				"shortTitle": "Add folder",
 				"icon": {
 					"dark": "res/icons/add.svg",
 					"light": "res/icons/add.svg"
 				}
 			},
 			{
-				"command": "machineList.refreshMachineList",
-				"title": "Refresh Machine List",
-				"icon": {
-					"dark": "res/icons/ref.svg",
-					"light": "res/icons/ref.svg"
-				}
+				"command": "autodesk.post.cncList.filter",
+				"title": "Search CNC files",
+				"shortTitle": "Search...",
+				"icon": "$(search)"
 			},
 			{
-				"command": "machineList.addFolder",
-				"title": "Add folder",
+				"command": "autodesk.post.cncList.clearFilter",
+				"title": "Clear the search filter and show all CNC files",
+				"shortTitle": "Clear search",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "autodesk.post.machineList.addFolder",
+				"title": "Add a custom folder to the machine list",
+				"shortTitle": "Add folder",
 				"icon": {
 					"dark": "res/icons/add.svg",
 					"light": "res/icons/add.svg"
 				}
 			},
 			{
-				"command": "propertyList.initializePropertyList",
-				"title": "Initialize Property List",
+				"command": "autodesk.post.machineList.filter",
+				"title": "Search machines",
+				"shortTitle": "Search...",
+				"icon": "$(search)"
+			},
+			{
+				"command": "autodesk.post.machineList.clearFilter",
+				"title": "Clear the search filter and show all machines",
+				"shortTitle": "Clear search",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "autodesk.post.machineList.filterOnlineLibrary",
+				"title": "Filter machines by axis, purpose, kinematics, vendor, TCP (from .mch)",
+				"shortTitle": "Filter machines...",
+				"icon": "$(filter)"
+			},
+			{
+				"command": "autodesk.post.propertyList.refresh",
+				"title": "Load or reload post properties from the current post file",
+				"shortTitle": "Initialize Property List",
 				"icon": {
 					"dark": "res/icons/ref.svg",
 					"light": "res/icons/ref.svg"
 				}
 			},
 			{
-				"command": "hsm.changePostExe",
+				"command": "autodesk.post.propertyList.filter",
+				"title": "Search post properties",
+				"shortTitle": "Search...",
+				"icon": "$(search)"
+			},
+			{
+				"command": "autodesk.post.propertyList.clearFilter",
+				"title": "Clear the search filter and show all properties",
+				"shortTitle": "Clear search",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "autodesk.post.changeProperty",
+				"title": "Change value...",
+				"shortTitle": "Change",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.resetProperty",
+				"title": "Reset to default",
+				"shortTitle": "Reset",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.changePostExe",
 				"title": "Change post executable",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.changeSecondaryPostExe",
+				"command": "autodesk.post.changeSecondaryPostExe",
 				"title": "Change secondary post executable",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.setIncludePath",
+				"command": "autodesk.post.setIncludePath",
 				"title": "Set include path...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.updatePostProperties",
+				"command": "autodesk.post.updatePostProperties",
 				"title": "Update post properties for current file...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.foldPropertyList",
+				"command": "autodesk.post.foldPropertyList",
 				"title": "Fold property list...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.downloadCNCExtractor",
+				"command": "autodesk.post.downloadCNCExtractor",
 				"title": "Download CNC exporting post processor",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.encryptPost",
+				"command": "autodesk.post.encryptPost",
 				"title": "Encrypt post processor",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.mergePost",
+				"command": "autodesk.post.mergePost",
 				"title": "Merge post processor",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.decryptPost",
+				"command": "autodesk.post.decryptPost",
 				"title": "Decrypt post processor",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.deleteCNCFile",
-				"title": "Delete CNC File",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.deleteMachineFile",
-				"title": "Delete machine file...",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.openFolder",
-				"title": "Open folder",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.editMachineFile",
-				"title": "Edit machine file...",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.importCNC",
+				"command": "autodesk.post.importCNC",
 				"title": "Import CNC file...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.changeProperty",
-				"category": "Autodesk HSM Post Utility",
-				"title": "Change property"
-			},
-			{
-				"command": "hsm.resetProperty",
-				"title": "Reset to default...",
-				"category": "Autodesk HSM Post Utility"
-			},
-			{
-				"command": "hsm.clearMachineSelection",
+				"command": "autodesk.post.clearMachineSelection",
 				"title": "Clear selected machine...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.importMachine",
+				"command": "autodesk.post.importMachine",
 				"title": "Import machine file...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.showPostEngineVersion",
+				"command": "autodesk.post.showPostEngineVersion",
 				"title": "Show Post Processor Engine Version...",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.postProcess",
+				"command": "autodesk.post.showDebugForLine",
+				"title": "Post Utility: Debug selected line(s)",
+				"category": "Autodesk Post Utility",
+				"icon": "$(bug)"
+			},
+			{
+				"command": "autodesk.post.postProcess",
 				"title": "Post Process",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.postCompare",
+				"command": "autodesk.post.postCompare",
 				"title": "Compare post processors",
-				"category": "Autodesk HSM Post Utility"
+				"category": "Autodesk Post Utility"
 			},
 			{
-				"command": "hsm.selectCNCFile",
-				"title": "Set CNC file",
-				"category": "Autodesk HSM Post Utility"
+				"command": "autodesk.post.regressionTestList.refresh",
+				"title": "Refresh",
+				"icon": {
+					"dark": "res/icons/ref.svg",
+					"light": "res/icons/ref.svg"
+				}
+			},
+			{
+				"command": "autodesk.post.runRegressionTest",
+				"title": "Run regression test",
+				"shortTitle": "Run",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.runRegressionAndCompare",
+				"title": "Run regression test and compare with reference",
+				"shortTitle": "Run and compare",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.createRegressionReferenceFiles",
+				"title": "Save selected output as reference",
+				"shortTitle": "Create reference",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.compareRegressionWithReference",
+				"title": "Compare output with reference",
+				"shortTitle": "Compare with reference",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.deleteCNCFolder",
+				"title": "Delete folder",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.deleteCNCFile",
+				"title": "Delete file",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.deleteMachineFolder",
+				"title": "Delete folder",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.deleteMachineFile",
+				"title": "Delete machine file",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.editMachineFile",
+				"title": "Edit machine file",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.createCNCFolder",
+				"title": "New folder",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.createMachineFolder",
+				"title": "New folder",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.openFolder",
+				"title": "Open folder",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.removeCNCFolderRef",
+				"title": "Remove folder from list",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.removeMachineFolderRef",
+				"title": "Remove folder from list",
+				"category": "Autodesk Post Utility"
 			}
 		],
 		"keybindings": [
 			{
-				"command": "hsm.selectCNCFile",
+				"command": "autodesk.post.selectCNCFile",
 				"key": "Ctrl+Alt+c"
 			},
 			{
-				"command": "hsm.postProcess",
-				"key": "ctrl+alt+g"
+				"command": "autodesk.post.postProcess",
+				"key": "Ctrl+Alt+g"
 			}
 		],
 		"views": {
@@ -269,81 +340,166 @@
 				{
 					"id": "propertyList",
 					"name": "Post Properties"
+				},
+				{
+					"id": "regressionTestList",
+					"name": "Regression test"
 				}
 			]
 		},
 		"menus": {
+			"editor/context": [
+				{
+					"command": "autodesk.post.showDebugForLine",
+					"when": "resourceExtname == .cps",
+					"group": "1_debug@1"
+				}
+			],
+			"editor/title": [],
 			"view/title": [
 				{
-					"command": "functionList.refreshEntry",
+					"command": "autodesk.post.functionList.refresh",
 					"when": "view == functionList",
 					"group": "navigation"
 				},
 				{
-					"command": "cncList.refreshCNCList",
+					"command": "autodesk.post.cncList.addFolder",
 					"when": "view == cncList",
 					"group": "navigation"
 				},
 				{
-					"command": "cncList.addFolder",
+					"command": "autodesk.post.cncList.filter",
 					"when": "view == cncList",
 					"group": "navigation"
 				},
 				{
-					"command": "machineList.refreshMachineList",
+					"command": "autodesk.post.cncList.clearFilter",
+					"when": "view == cncList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.machineList.addFolder",
 					"when": "view == machineList",
 					"group": "navigation"
 				},
 				{
-					"command": "machineList.addFolder",
+					"command": "autodesk.post.machineList.filter",
 					"when": "view == machineList",
 					"group": "navigation"
 				},
 				{
-					"command": "propertyList.initializePropertyList",
+					"command": "autodesk.post.machineList.clearFilter",
+					"when": "view == machineList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.machineList.filterOnlineLibrary",
+					"when": "view == machineList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.propertyList.refresh",
 					"when": "view == propertyList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.propertyList.filter",
+					"when": "view == propertyList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.propertyList.clearFilter",
+					"when": "view == propertyList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.compareRegressionWithReference",
+					"when": "view == regressionTestList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.createRegressionReferenceFiles",
+					"when": "view == regressionTestList",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
-					"command": "hsm.deleteCNCFile",
-					"when": "view == cncList&&viewItem == customFile"
+					"command": "autodesk.post.deleteCNCFile",
+					"when": "view == cncList && viewItem == customFile"
 				},
 				{
-					"command": "hsm.deleteMachineFile",
-					"when": "view == machineList&&viewItem == customFile"
+					"command": "autodesk.post.deleteMachineFile",
+					"when": "view == machineList && viewItem == customFile"
 				},
 				{
-					"command": "hsm.openFolder",
-					"when": "view == cncList&&viewItem == openFolder"
-				},
-				{
-					"command": "hsm.openFolder",
-					"when": "view == machineList&&viewItem == openFolder"
-				},
-				{
-					"command": "hsm.editMachineFile",
-					"when": "view == machineList&&viewItem != openFolder"
-				},
-				{
-					"command": "hsm.importCNC",
+					"command": "autodesk.post.openFolder",
 					"when": "view == cncList"
 				},
 				{
-					"command": "hsm.changeProperty",
-					"when": "view == propertyList"
-				},
-				{
-					"command": "hsm.resetProperty",
-					"when": "view == propertyList"
-				},
-				{
-					"command": "hsm.clearMachineSelection",
+					"command": "autodesk.post.openFolder",
 					"when": "view == machineList"
 				},
 				{
-					"command": "hsm.importMachine",
+					"command": "autodesk.post.editMachineFile",
+					"when": "view == machineList"
+				},
+				{
+					"command": "autodesk.post.importCNC",
+					"when": "view == cncList"
+				},
+				{
+					"command": "autodesk.post.createCNCFolder",
+					"when": "view == cncList && viewItem == openFolder"
+				},
+				{
+					"command": "autodesk.post.deleteCNCFolder",
+					"when": "view == cncList && viewItem == openFolder"
+				},
+				{
+					"command": "autodesk.post.removeCNCFolderRef",
+					"when": "view == cncList && viewItem == customFolder"
+				},
+				{
+					"command": "autodesk.post.createCNCFolder",
+					"when": "view == cncList && viewItem == customFolder"
+				},
+				{
+					"command": "autodesk.post.importMachine",
+					"when": "view == machineList"
+				},
+				{
+					"command": "autodesk.post.updateOnlineLibrary",
+					"when": "view == machineList && viewItem == onlineLibrary"
+				},
+				{
+					"command": "autodesk.post.createMachineFolder",
+					"when": "view == machineList && viewItem == openFolder"
+				},
+				{
+					"command": "autodesk.post.deleteMachineFolder",
+					"when": "view == machineList && viewItem == openFolder"
+				},
+				{
+					"command": "autodesk.post.removeMachineFolderRef",
+					"when": "view == machineList && viewItem == customFolder"
+				},
+				{
+					"command": "autodesk.post.createMachineFolder",
+					"when": "view == machineList && viewItem == customFolder"
+				},
+				{
+					"command": "autodesk.post.changeProperty",
+					"when": "view == propertyList",
+					"group": "1_property"
+				},
+				{
+					"command": "autodesk.post.resetProperty",
+					"when": "view == propertyList",
+					"group": "1_property"
+				},
+				{
+					"command": "autodesk.post.clearMachineSelection",
 					"when": "view == machineList"
 				}
 			]
@@ -362,11 +518,33 @@
 					"default": "",
 					"description": "The location for the secondary Fusion post executable"
 				},
-				"AutodeskPostUtility.propertyJSON": {
-					"type": "object",
-					"default": {},
-					"description": "Automatically set property that contain the post properties.",
-					"readOnly": true
+				"AutodeskPostUtility.externalDiffTool": {
+					"type": "string",
+					"enum": [
+						"",
+						"winmerge",
+						"beyondcompare",
+						"kdiff3",
+						"meld",
+						"p4merge",
+						"custom"
+					],
+					"enumDescriptions": [
+						"Use VS Code built-in diff",
+						"WinMerge (standard install path)",
+						"Beyond Compare (standard install path)",
+						"KDiff3 (standard install path)",
+						"Meld (standard install path)",
+						"P4Merge / Perforce (standard install path)",
+						"Use path from External Diff Tool Custom Path"
+					],
+					"default": "",
+					"description": "External diff tool for Compare with reference and regression compare. Pick a preset or Custom to use a path from settings."
+				},
+				"AutodeskPostUtility.externalDiffToolPath": {
+					"type": "string",
+					"default": "",
+					"description": "Full path to diff executable. Only used when External Diff Tool is set to Custom. Tool is called with two arguments: reference file, then current file."
 				},
 				"AutodeskPostUtility.sortFunctionListAlphabetically": {
 					"type": "boolean",
@@ -378,30 +556,35 @@
 					"default": true,
 					"description": "Alphabetically sort the post property list"
 				},
+				"AutodeskPostUtility.showPropertiesByGroup": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the post property list grouped by each property's group value (from property definitions)"
+				},
 				"AutodeskPostUtility.postOnSave": {
 					"type": "boolean",
 					"default": true,
-					"description": "Post processes the active CPS file when the document is saved. This will only post if the debug window is open"
+					"description": "Post processes the active CPS file when the document is saved (only when the debug window is open)"
 				},
 				"AutodeskPostUtility.postOnPropertyChange": {
 					"type": "boolean",
 					"default": true,
-					"description": "Post processes the active CPS file when a property was changed. This will only post if the debug window is open"
+					"description": "Post processes the active CPS file when a property is changed (only when the debug window is open)"
 				},
 				"AutodeskPostUtility.autoUpdateFunctionList": {
 					"type": "boolean",
 					"default": true,
-					"description": "Updates the function list automatically, without the need for refreshing"
+					"description": "Updates the function list automatically without refreshing"
 				},
 				"AutodeskPostUtility.shortenOutputCode": {
 					"type": "boolean",
-					"default": true,
-					"description": "Limits the outputted movement blocks to the value set by shortenOutputLineLimit setting, making the outputted code easier to navigate"
+					"default": false,
+					"description": "Limits the outputted movement blocks to the value set by shortenOutputLineLimit"
 				},
 				"AutodeskPostUtility.shortenOutputLineLimit": {
 					"type": "integer",
 					"default": 50,
-					"description": "Set the number of movement blocks to be used by the Shorten Output setting"
+					"description": "Set the number of movement blocks used by the Shorten Output setting"
 				},
 				"AutodeskPostUtility.timeoutForPostProcessing": {
 					"type": "integer",
@@ -432,91 +615,108 @@
 					"enumDescriptions": [
 						"Disable usage of embedded ESLint rules.",
 						"This option will show ESLint issues only.",
-						"This option will show and fix ESLint issues automatically when saving the file."
+						"This option will show and fix ESLint issues automatically when saving."
 					],
 					"default": "Disabled",
-					"markdownDescription": "Enable to use Autodesk's ESLint rules for editing postprocessor files (CPS/CPI files). ESLint and the ESLint Extension must be installed on your system. If you haven't installed ESLint do so by running 'npm install -g eslint' for a global install. The [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) must be installed as well to be able to use this feature."
+					"markdownDescription": "Enable Autodesk's ESLint rules for CPS/CPI files. Requires ESLint (`npm install -g eslint`) and the [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)."
 				},
 				"AutodeskPostUtility.programName": {
 					"type": "string",
 					"default": "1001",
-					"description": "Defines the name used for post processing"
+					"description": "Defines the program name used for post processing"
 				},
 				"AutodeskPostUtility.postOnCNCSelection": {
 					"type": "boolean",
 					"default": true,
-					"description": "If true, post processing will occur as soon as a CNC file is selected"
+					"description": "Post processing occurs as soon as a CNC file is selected"
 				},
 				"AutodeskPostUtility.postOnMachineSelection": {
 					"type": "boolean",
 					"default": true,
-					"description": "If true, post processing will occur as soon as a machine file is selected"
+					"description": "Post processing occurs as soon as a machine file is selected"
 				},
 				"AutodeskPostUtility.twoClickLineJumping": {
 					"type": "boolean",
 					"default": false,
-					"description": "If true, it takes two clicks for the line jumping to work"
+					"description": "If true, two clicks are required for line jumping"
 				},
-				"AutodeskPostUtility.enableAutoLineSelection": {
+				"AutodeskPostUtility.navigateToPostAtLineOnNcClick": {
 					"type": "boolean",
 					"default": true,
-					"description": "If true, the auto line selection will be enabled"
+					"description": "If true, clicking a line in the debug NC output navigates to the post at the corresponding line. F12 (Go to Definition) and hover call stack always work regardless of this setting."
 				},
-				"AutodeskPostUtility.newDebugger": {
+				"AutodeskPostUtility.showCallStackOnHover": {
 					"type": "boolean",
-					"default": false,
-					"description": "If true, the new G-Code debugger will be used."
+					"default": true,
+					"description": "If true, hovering over a line in the debug NC output shows the call stack (post functions that produced that line)."
 				},
 				"AutodeskPostUtility.showDebuggedCode": {
+					"type": "string",
+					"default": "off",
+					"enum": [
+						"off",
+						"inline",
+						"full"
+					],
+					"enumDescriptions": [
+						"Off: clean NC only; click and hover show call stack when enabled",
+						"Inline: entry function and line on each NC line; full call stack on hover",
+						"Full: !DEBUG lines kept in output; call stack on hover"
+					],
+					"description": "Debug output when posting: Off, Inline, or Full"
+				},
+				"AutodeskPostUtility.showWriteBlockInCallStack": {
 					"type": "boolean",
 					"default": false,
-					"description": "If true, a full debug output will be shown when posting"
+					"description": "Show writeBlock in the call stack on hover over inline debug."
+				},
+				"AutodeskPostUtility.showWriteStartBlocksInCallStack": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show writeStartBlocks in the call stack on hover over inline debug."
+				},
+				"AutodeskPostUtility.columnAlignInlineAnnotations": {
+					"type": "boolean",
+					"default": true,
+					"description": "When debug output is Inline: when on, right-align annotations in a column; when off, annotations follow the NC code directly (no padding)."
+				},
+				"AutodeskPostUtility.columnAlignPaddingMax": {
+					"type": "integer",
+					"default": 40,
+					"minimum": 0,
+					"description": "When inline debug column alignment is on: maximum column for the '(→' annotation start (0 = no maximum). Use to cap padding when some lines are very long."
 				},
 				"AutodeskPostUtility.customCNCLocations": {
 					"type": "object",
-					"readOnly": true,
-					"description": "Object containing CNC locations"
+					"description": "Object containing custom CNC folder locations (managed by Add custom CNC folder)"
 				},
 				"AutodeskPostUtility.customMachineLocations": {
 					"type": "object",
-					"readOnly": true,
-					"description": "Object containing CNC locations"
+					"description": "Object containing custom machine folder locations (managed by Add custom machine folder)"
 				},
 				"AutodeskPostUtility.showWarningMessages": {
 					"type": "boolean",
 					"default": false,
-					"description": "If true, you will get notified when the log file includes warning messages."
+					"description": "If true, you will be notified when the log file includes warning messages"
 				}
 			}
 		}
 	},
 	"scripts": {
-		"package": "vsce package --allow-star-activation",
-		"publish": "vsce publish",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test"
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"package": "vsce package",
+		"package:pre": "vsce package --no-dependencies",
+		"publish": "vsce publish"
 	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Autodesk/cam-posteditor"
 	},
-	"homepage": "https://github.com/Autodesk/cam-posteditor/blob/master/README.md",
+	"homepage": "https://github.com/Autodesk/cam-posteditor",
 	"devDependencies": {
-		"@types/mocha": "^2.2.42",
-		"@types/node": "^10.12.0",
-		"eslint": "^8.20.0",
-		"mocha": "^10.0.0",
-		"typescript": "^2.5.2",
-		"vscode": "^1.1.37"
-	},
-	"__metadata": {
-		"id": "d7881a36-c8dd-487b-8ab1-0f00cc4980bd",
-		"publisherDisplayName": "Autodesk",
-		"publisherId": "ea315e41-783a-47fe-9531-1a81dfe2a24d",
-		"isPreReleaseVersion": false,
-		"targetPlatform": "undefined",
-		"updated": false,
-		"isApplicationScoped": false,
-		"installedTimestamp": 1662973499378
+		"@types/node": "^18.0.0",
+		"@types/vscode": "^1.75.0",
+		"typescript": "^5.3.0"
 	}
 }

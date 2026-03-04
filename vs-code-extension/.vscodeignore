@@ -1,0 +1,4 @@
+# Exclude user-populated and downloaded content from VSIX
+res/Machines/Online Library/
+res/CNC files/Custom/
+res/Machines/Custom/
