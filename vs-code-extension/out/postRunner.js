@@ -311,7 +311,7 @@ class PostEngine {
         else {
             for (const loc of locations) {
                 const suffix = loc !== 'production' ? ` [${loc}]` : '';
-                const exe = path.join(process.env.HOME ?? '', 'Library', 'application support', 'autodesk', 'webdeploy', loc, `Autodesk Fusion 360${suffix}.app`, 'contents', 'libraries', 'applications', 'CAM360', macRelative);
+                const exe = path.join(process.env.HOME ?? '', 'Library', 'application support', 'autodesk', 'webdeploy', loc, `Autodesk Fusion${suffix}.app`, 'contents', 'libraries', 'applications', 'CAM360', macRelative);
                 if ((0, utils_1.fileExists)(exe))
                     return exe;
             }
