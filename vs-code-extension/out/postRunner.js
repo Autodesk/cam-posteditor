@@ -1636,20 +1636,21 @@ class PostEngine {
                 return;
             const entries = [];
             const walk = (current, relPrefix) => {
-                for (const name of fs.readdirSync(current)) {
-                    const full = path.join(current, name);
-                    const rel = relPrefix ? path.join(relPrefix, name) : name;
-                    try {
-                        const stat = fs.statSync(full);
-                        if (stat.isFile())
-                            entries.push(`F:${rel}:${stat.mtime.getTime()}`);
-                        else if (stat.isDirectory() && name !== excludeSubdir) {
+                try {
+                    for (const d of fs.readdirSync(current, { withFileTypes: true })) {
+                        const full = path.join(current, d.name);
+                        const rel = relPrefix ? path.join(relPrefix, d.name) : d.name;
+                        if (d.isFile()) {
+                            try { entries.push(`F:${rel}:${fs.statSync(full).mtime.getTime()}`); }
+                            catch { /* skip */ }
+                        }
+                        else if (d.isDirectory() && d.name !== excludeSubdir) {
                             entries.push(`D:${rel}`);
                             walk(full, rel);
                         }
                     }
-                    catch { /* skip */ }
                 }
+                catch { /* skip */ }
             };
             walk(dir, '');
             entries.sort();
@@ -1673,14 +1674,16 @@ class PostEngine {
         catch { /* proceed with backup */ }
         const cncResDir = path.join(this.resLocation, 'CNC files');
         const machResDir = path.join(this.resLocation, 'Machines');
+        const cncFullBackupExisted = (0, utils_1.fileExists)(this.cncFilesBackupDir);
+        const machFullBackupExisted = (0, utils_1.fileExists)(this.machinesBackupDir);
         if ((0, utils_1.fileExists)(cncResDir)) {
-            if ((0, utils_1.fileExists)(this.cncFilesBackupDir))
+            if (cncFullBackupExisted)
                 fs.rmSync(this.cncFilesBackupDir, { recursive: true, force: true });
             fs.mkdirSync(this.cncFilesBackupDir, { recursive: true });
             (0, utils_1.copyFolderSync)(cncResDir, this.cncFilesBackupDir);
         }
         if ((0, utils_1.fileExists)(machResDir)) {
-            if ((0, utils_1.fileExists)(this.machinesBackupDir))
+            if (machFullBackupExisted)
                 fs.rmSync(this.machinesBackupDir, { recursive: true, force: true });
             fs.mkdirSync(this.machinesBackupDir, { recursive: true });
             (0, utils_1.copyFolderSync)(machResDir, this.machinesBackupDir);
@@ -1688,8 +1691,10 @@ class PostEngine {
             if ((0, utils_1.fileExists)(onlineLibInBackup))
                 fs.rmSync(onlineLibInBackup, { recursive: true, force: true });
         }
-        this.copyCustomFiles(path.join(this.resLocation, 'CNC files', 'Custom'), this.customCNCDir, true);
-        this.copyCustomFiles(path.join(this.resLocation, 'Machines', 'Custom'), this.customMachinesDir, true);
+        if (!cncFullBackupExisted)
+            this.copyCustomFiles(path.join(this.resLocation, 'CNC files', 'Custom'), this.customCNCDir, true);
+        if (!machFullBackupExisted)
+            this.copyCustomFiles(path.join(this.resLocation, 'Machines', 'Custom'), this.customMachinesDir, true);
         const cncLocations = config.get('customCNCLocations');
         const machLocations = config.get('customMachineLocations');
         if (cncLocations && typeof cncLocations === 'object' && Array.isArray(cncLocations.folders) && cncLocations.folders.length > 0) {

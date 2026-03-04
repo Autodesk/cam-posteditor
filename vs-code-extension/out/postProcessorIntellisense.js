@@ -44,7 +44,13 @@ function loadSymbols(extensionPath) {
     }
     if (symbols.length === 0)
         return getFallbackSymbols();
-    return symbols;
+    // Deduplicate by name so each symbol appears once (first occurrence wins)
+    const seen = new Set();
+    return symbols.filter((s) => {
+        if (seen.has(s.name)) return false;
+        seen.add(s.name);
+        return true;
+    });
 }
 /** Fallback symbols when globals.d.ts is missing. */
 function getFallbackSymbols() {
@@ -89,9 +95,10 @@ function isCpsOrCpiDocument(doc) {
     const p = doc.uri.fsPath || "";
     return p.toLowerCase().endsWith(".cps") || p.toLowerCase().endsWith(".cpi");
 }
-/** When the file is inside a workspace, the workspace typically has node_modules/globals.d.ts and TS/JS provides IntelliSense. Skip our provider to avoid duplicates. */
-function isOutsideWorkspace(doc) {
-    return !vscode.workspace.getWorkspaceFolder(doc.uri);
+/** Only provide when there's no workspace (so built-in TS server isn't picking up @types/post-processor). */
+function shouldProvide() {
+    const vscode = require("vscode");
+    return !vscode.workspace.workspaceFolders?.length;
 }
 function getWordAtPosition(document, position) {
     const range = document.getWordRangeAtPosition(position);
@@ -101,7 +108,7 @@ function getWordAtPosition(document, position) {
     return { word, range };
 }
 function provideCompletionItems(symbols, document, position) {
-    if (!isCpsOrCpiDocument(document) || !isOutsideWorkspace(document))
+    if (!isCpsOrCpiDocument(document) || !shouldProvide(document))
         return undefined;
     const { word, range } = getWordAtPosition(document, position);
     const prefix = word.toLowerCase();
@@ -129,21 +136,21 @@ function provideCompletionItems(symbols, document, position) {
     return items.length ? items : undefined;
 }
 function provideHover(symbols, document, position) {
-    if (!isCpsOrCpiDocument(document) || !isOutsideWorkspace(document))
+    if (!isCpsOrCpiDocument(document) || !shouldProvide(document))
         return undefined;
-    const { word } = getWordAtPosition(document, position);
+    const { word, range } = getWordAtPosition(document, position);
     if (!word)
         return undefined;
     const sym = symbols.find((s) => s.name === word);
     if (!sym)
         return undefined;
     const md = new vscode.MarkdownString();
-    // Match globals.d.ts style: signature (with syntax highlight), description, @example, @see link
+    md.isTrusted = true;
     if (sym.signature)
         md.appendCodeblock(sym.signature, "typescript");
     else
         md.appendMarkdown(`**${sym.name}** (${sym.kind})\n\n`);
-    md.appendMarkdown("\n" + sym.description + "\n\n");
+    md.appendMarkdown(sym.description + "\n\n");
     if (sym.example) {
         md.appendMarkdown("@example\n\n");
         md.appendCodeblock(sym.example, "javascript");
@@ -153,7 +160,7 @@ function provideHover(symbols, document, position) {
         md.appendMarkdown(`@see — [${sym.seeUrl}](${sym.seeUrl})`);
     else
         md.appendMarkdown(`[Post Processor API](${REFERENCE_URL})`);
-    return new vscode.Hover(md);
+    return range ? new vscode.Hover(md, range) : new vscode.Hover(md);
 }
 function kindToCompletionKind(kind) {
     switch (kind) {

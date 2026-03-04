@@ -335,7 +335,7 @@ class FileTreeProvider {
     setFilter(text) {
         this.filterText = (text || '').trim().toLowerCase();
         this._matchingDescendantCache = null;
-        this.refreshTree();
+        this.refreshTree(true);
     }
     clearFilter() {
         let changed = false;
@@ -349,14 +349,14 @@ class FileTreeProvider {
             changed = true;
         }
         if (changed)
-            this.refreshTree();
+            this.refreshTree(true);
     }
     getFilter() {
         return this.filterText;
     }
     setOnlineLibraryFilter(filter) {
         this.onlineLibraryFilter = filter;
-        this.refreshTree();
+        this.refreshTree(true);
     }
     getOnlineLibraryFilter() {
         return this.onlineLibraryFilter;
@@ -477,11 +477,7 @@ class FileTreeProvider {
         }
         // Fallback: poll every 30s in case fs.watch misses something
         this.pollInterval = setInterval(() => {
-            const current = this.computeFileListHash();
-            if (current !== this.lastFileListHash) {
-                this.lastFileListHash = current;
-                this.refreshTree();
-            }
+            this.refreshTree();
         }, 30000);
         if (this.cfg.checkboxMode && this.cfg.selectionStorageKey !== 'regressionTestSelection') {
             this.restoreSelection();
@@ -506,14 +502,13 @@ class FileTreeProvider {
             return;
         try {
             const watcher = fs.watch(dir, { recursive: true }, (_event, filename) => {
-                if (filename && !this.isMatchingFile(filename))
+                if (this._suppressWatcherUntil && Date.now() < this._suppressWatcherUntil)
                     return;
                 if (this.refreshTimer)
                     clearTimeout(this.refreshTimer);
                 this.refreshTimer = setTimeout(() => {
-                    this.lastFileListHash = this.computeFileListHash();
                     this.refreshTree();
-                }, 300);
+                }, 500);
             });
             watcher.on('error', () => { });
             this.fsWatchers.push(watcher);
@@ -562,17 +557,14 @@ class FileTreeProvider {
         if (!(0, utils_1.fileExists)(dir))
             return;
         try {
-            for (const entry of fs.readdirSync(dir)) {
-                const full = path.join(dir, entry);
-                try {
-                    if (fs.statSync(full).isDirectory()) {
-                        this.collectAllEntries(full, result);
-                    }
-                    else if (this.isMatchingFile(entry)) {
-                        result.push(full);
-                    }
+            for (const d of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, d.name);
+                if (d.isDirectory()) {
+                    this.collectAllEntries(full, result);
                 }
-                catch { /* skip */ }
+                else if (this.isMatchingFile(d.name)) {
+                    result.push(full);
+                }
             }
         }
         catch { /* skip */ }
@@ -612,12 +604,12 @@ class FileTreeProvider {
         }
     }
     getTreeItem(element) {
+        if (!element.id) {
+            const parentPart = element.treeParentPath ?? '';
+            element.id = element.filePath ? `${parentPart}\n${element.filePath}` : `node:${element.label}`;
+        }
         if (this.cfg.checkboxMode) {
             const isFile = this.cfg.fileExtensions.some(ext => (element.filePath || '').toLowerCase().endsWith(ext));
-            // Unique id for every node so the same path in different positions (e.g. folder at root vs under parent) doesn't collide
-            const parentPart = element.treeParentPath ?? (element.filePath ? '' : '');
-            const idBase = element.filePath ? `${parentPart}\n${element.filePath}` : `node:${element.label}`;
-            element.id = idBase;
             if (isFile && element.filePath) {
                 element.checkboxState = this.selectionMap.get(element.filePath)
                     ? vscode.TreeItemCheckboxState.Checked
@@ -694,7 +686,7 @@ class FileTreeProvider {
                 ? (0, utils_1.getFilesFromDirRecursive)(onlineLibraryDir, this.cfg.fileExtensions)
                 : [];
             if (files.length === 0 && this._onOnlineLibraryExpandWhenEmpty) {
-                return this._onOnlineLibraryExpandWhenEmpty(() => this.refreshTree()).then((didDownload) => {
+                return this._onOnlineLibraryExpandWhenEmpty(() => this.refreshTree(true)).then((didDownload) => {
                     if (didDownload)
                         this.loadFiles();
                     return this.buildOnlineLibraryItems();
@@ -714,27 +706,36 @@ class FileTreeProvider {
         }
         return this.buildChildItems(element);
     }
-    refreshTree() {
+    refreshTree(force) {
         const newHash = this.computeFileListHash();
         if (newHash !== this.lastFileListHash) {
             this.lastFileListHash = newHash;
             this._matchingDescendantCache = null;
             this.loadFiles();
+            this._onDidChangeTreeData.fire(undefined);
         }
+        else if (force) {
+            this._onDidChangeTreeData.fire(undefined);
+        }
+    }
+    /** Call after a mutation (delete, import, add/remove folder) so the tree updates immediately without waiting for hash. */
+    refreshTreeFromMutation() {
+        this._suppressWatcherUntil = Date.now() + 1000;
+        this._matchingDescendantCache = null;
+        this.loadFiles();
         this._onDidChangeTreeData.fire(undefined);
+        setTimeout(() => {
+            this.lastFileListHash = this.computeFileListHash();
+        }, 500);
     }
     /** Refresh only the "Recently used" node so the rest of the tree (e.g. custom folders) is not rescanned. */
     refreshRecentOnly() {
         if (!this.cfg.recentStorageKey)
             return;
-        const recent = this.context.globalState.get('recentFiles.' + this.cfg.recentStorageKey);
-        const arr = Array.isArray(recent) ? recent : [];
-        if (arr.length === 0)
-            return;
         if (this._recentNode)
             this._onDidChangeTreeData.fire(this._recentNode);
         else
-            this.refreshTree();
+            this._onDidChangeTreeData.fire(undefined);
     }
     getSelectedFiles() {
         if (!this.cfg.checkboxMode)
@@ -784,15 +785,13 @@ class FileTreeProvider {
         await this.context.globalState.update(stateKey, list);
         await config.update(this.cfg.settingsKey, { folders: list }, true).catch(() => { });
         this.watchDirectory(folderPath);
-        this.lastFileListHash = this.computeFileListHash();
     }
     async removeFolder(folderPath) {
         const stateKey = 'customFolders.' + this.cfg.settingsKey;
         const list = this.getCustomFolders().filter(f => f !== folderPath);
         await this.context.globalState.update(stateKey, list);
         await config.update(this.cfg.settingsKey, { folders: list }, true).catch(() => { });
-        this.lastFileListHash = this.computeFileListHash();
-        this.refreshTree();
+        this.refreshTreeFromMutation();
     }
     async createSubfolder(parentPath) {
         if (!parentPath || !(0, utils_1.fileExists)(parentPath))
@@ -807,7 +806,7 @@ class FileTreeProvider {
             return;
         }
         fs.mkdirSync(newDir, { recursive: true });
-        this.refreshTree();
+        this.refreshTreeFromMutation();
     }
     async deleteFolder(folderPath) {
         if (!folderPath || !(0, utils_1.fileExists)(folderPath))
@@ -820,13 +819,13 @@ class FileTreeProvider {
             return;
         fs.rmSync(folderPath, { recursive: true, force: true });
         vscode.window.showInformationMessage(`Folder "${name}" deleted.`);
-        this.refreshTree();
+        this.refreshTreeFromMutation();
     }
     deleteFile(src) {
         if ((0, utils_1.fileExists)(src)) {
             fs.unlinkSync(src);
         }
-        this.refreshTree();
+        this.refreshTreeFromMutation();
     }
     // ── Private helpers ───────────────────────────────────────────
     getStorageKey() {
@@ -900,9 +899,11 @@ class FileTreeProvider {
             const recent = this.context.globalState.get('recentFiles.' + this.cfg.recentStorageKey);
             const arr = Array.isArray(recent) ? recent.filter(p => typeof p === 'string' && (0, utils_1.fileExists)(p)) : [];
             if (arr.length > 0) {
-                const recentNode = new FileTreeItem(RECENT_LABEL, vscode.TreeItemCollapsibleState.Collapsed, RECENT_PATH);
-                this._recentNode = recentNode;
-                items.push(recentNode);
+                if (!this._recentNode) {
+                    this._recentNode = new FileTreeItem(RECENT_LABEL, vscode.TreeItemCollapsibleState.Collapsed, RECENT_PATH);
+                    this._recentNode.id = '__recent_' + this.cfg.recentStorageKey;
+                }
+                items.push(this._recentNode);
             }
             else
                 this._recentNode = undefined;
@@ -1266,19 +1267,17 @@ class FileTreeProvider {
     findEntries(dir) {
         if (!(0, utils_1.fileExists)(dir))
             return [];
-        const entries = fs.readdirSync(dir);
-        const result = [];
-        for (const entry of entries) {
-            const full = path.join(dir, entry);
-            try {
-                const stat = fs.statSync(full);
-                if (stat.isDirectory() || this.isMatchingFile(entry)) {
-                    result.push([entry, full]);
+        try {
+            const dirents = fs.readdirSync(dir, { withFileTypes: true });
+            const result = [];
+            for (const d of dirents) {
+                if (d.isDirectory() || this.isMatchingFile(d.name)) {
+                    result.push([d.name, path.join(dir, d.name)]);
                 }
             }
-            catch { /* skip inaccessible entries */ }
+            return result;
         }
-        return result;
+        catch { return []; }
     }
     isMatchingFile(name) {
         const lower = name.toLowerCase();

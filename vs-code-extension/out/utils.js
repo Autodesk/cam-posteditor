@@ -115,15 +115,18 @@ function getFilesFromDirRecursive(dir, extensions) {
         return [];
     const result = [];
     const walk = (current) => {
-        for (const entry of fs.readdirSync(current)) {
-            const full = path.join(current, entry);
-            if (fs.statSync(full).isFile() && extensions.includes(path.extname(full).toLowerCase())) {
-                result.push(path.relative(dir, full));
-            }
-            else if (fs.statSync(full).isDirectory()) {
-                walk(full);
+        try {
+            for (const d of fs.readdirSync(current, { withFileTypes: true })) {
+                const full = path.join(current, d.name);
+                if (d.isFile() && extensions.includes(path.extname(d.name).toLowerCase())) {
+                    result.push(path.relative(dir, full));
+                }
+                else if (d.isDirectory()) {
+                    walk(full);
+                }
             }
         }
+        catch { /* skip inaccessible directories */ }
     };
     walk(dir);
     return result;

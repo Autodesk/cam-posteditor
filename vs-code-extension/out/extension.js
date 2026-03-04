@@ -59,40 +59,25 @@ function activate(context) {
     const lineSelection = new lineSelection_1.LineSelection(engine);
     // Restore first (so an update doesn't overwrite the old backup). Backup runs async so startup is not blocked.
     engine.restoreCustomData();
-    setImmediate(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } });
-    const refreshBackup = () => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } };
+    setTimeout(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } }, 2000);
+    let _backupTimer;
+    const refreshBackup = () => {
+        clearTimeout(_backupTimer);
+        _backupTimer = setTimeout(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } }, 5000);
+    };
     // Setup
     addCPSToJSLanguage();
     installTypeDeclarations(context);
-    // Post processor IntelliSense (completion + hover) for .cps/.cpi without node_modules
+    // Post processor IntelliSense (completion + hover) for .cps/.cpi — register once only
     const postProcessorSymbols = postProcessorIntellisense.loadSymbols(context.extensionPath);
-    // Use scheme-only selector so it also matches standalone files (no workspace).
-    // The providers themselves guard with isCpsOrCpiDocument() and return undefined for non-CPS files.
     const cpsCpiSelector = { language: 'javascript', scheme: 'file' };
-    context.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider(cpsCpiSelector, {
-            provideCompletionItems: (document, position) => postProcessorIntellisense.provideCompletionItems(postProcessorSymbols, document, position),
-        }),
-        vscode.languages.registerHoverProvider(cpsCpiSelector, {
-            provideHover: (document, position) => postProcessorIntellisense.provideHover(postProcessorSymbols, document, position),
-        })
-    );
-    // Also install type declarations whenever a CPS/CPI file is opened without a workspace
-    context.subscriptions.push(
-        vscode.workspace.onDidOpenTextDocument(doc => {
-            const p = doc.uri.fsPath || '';
-            if (p.toLowerCase().endsWith('.cps') || p.toLowerCase().endsWith('.cpi')) {
-                installTypeDeclarations(context, path.dirname(p));
-            }
-        })
-    );
-    // Handle any already-open CPS/CPI document at activation time
-    if (vscode.window.activeTextEditor) {
-        const p = vscode.window.activeTextEditor.document.uri.fsPath || '';
-        if (p.toLowerCase().endsWith('.cps') || p.toLowerCase().endsWith('.cpi')) {
-            installTypeDeclarations(context, path.dirname(p));
-        }
-    }
+    const completionDisposable = vscode.languages.registerCompletionItemProvider(cpsCpiSelector, {
+        provideCompletionItems: (document, position) => postProcessorIntellisense.provideCompletionItems(postProcessorSymbols, document, position),
+    });
+    const hoverDisposable = vscode.languages.registerHoverProvider(cpsCpiSelector, {
+        provideHover: (document, position) => postProcessorIntellisense.provideHover(postProcessorSymbols, document, position),
+    });
+    context.subscriptions.push(completionDisposable, hoverDisposable);
     // ── Tree providers ────────────────────────────────────────────
     const cncTree = new fileTreeProvider_1.FileTreeProvider(context, {
         rootDirName: 'CNC files',
@@ -488,7 +473,7 @@ function activate(context) {
         const selected = regressionTestTree.getSelectedFiles();
         engine.runRegressionAndCompare(selected);
     }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.regressionTestList.refresh', () => regressionTestTree.refreshTree()));
+    sub.push(vscode.commands.registerCommand('autodesk.post.regressionTestList.refresh', () => regressionTestTree.refreshTree(true)));
     sub.push(vscode.commands.registerCommand('autodesk.post.regressionTestList.selectAll', () => regressionTestTree.selectAll()));
     sub.push(vscode.commands.registerCommand('autodesk.post.regressionTestList.selectNone', () => regressionTestTree.selectNone()));
     sub.push(vscode.commands.registerCommand('autodesk.post.mergePost', () => engine.mergePost()));
@@ -567,8 +552,7 @@ function activate(context) {
         const arr = Array.isArray(prev) ? prev : [];
         const next = [filePath, ...arr.filter(p => path.normalize(p) !== path.normalize(filePath))].slice(0, RECENT_MAX);
         await context.globalState.update(key, next);
-        // Refresh only the "Recently used" node (no loadFiles(), no custom-folder scan). Fast.
-        if (typeof tree.refreshRecentOnly === 'function')
+        if (typeof tree?.refreshRecentOnly === 'function')
             tree.refreshRecentOnly();
     }
     // CNC / Machine selection
@@ -597,11 +581,11 @@ function activate(context) {
         if (deleted) {
             const lower = el.filePath.toLowerCase();
             if (lower.endsWith('.cnc'))
-                cncTree.refreshTree();
+                cncTree.refreshTreeFromMutation();
             else {
                 if (el.filePath === engine.machineFile)
                     engine.clearMachineSelection();
-                machineTree.refreshTree();
+                machineTree.refreshTreeFromMutation();
             }
             refreshBackup();
         }
@@ -614,7 +598,7 @@ function activate(context) {
             if (deleted) {
                 if (el.filePath === engine.machineFile)
                     engine.clearMachineSelection();
-                machineTree.refreshTree();
+                machineTree.refreshTreeFromMutation();
                 refreshBackup();
             }
         }
@@ -676,7 +660,7 @@ function activate(context) {
                             fs.copyFileSync(src, path.join(onlineLibDir, name));
                     }
                 }
-                machineTree.refreshTree();
+                machineTree.refreshTree(true);
             });
             vscode.window.showInformationMessage('Online Library updated.');
             refreshBackup();
@@ -980,7 +964,7 @@ async function importCustomFile(type, engine, tree, targetPath) {
     }
     if (log) {
         vscode.window.showInformationMessage(`Imported to ${path.basename(destDir)}:\n${log}`);
-        tree.refreshTree();
+        tree.refreshTreeFromMutation();
     }
 }
 async function addFolderToTree(tree) {
@@ -988,7 +972,7 @@ async function addFolderToTree(tree) {
     if (!uris?.[0])
         return;
     await tree.addFolder(uris[0].fsPath);
-    tree.refreshTree();
+    tree.refreshTreeFromMutation();
 }
 function promptFilter(tree, listType, view) {
     const input = vscode.window.createInputBox();
@@ -1122,7 +1106,6 @@ function promptOnlineLibraryFilter(tree, machineListView) {
     quickPick.onDidChangeSelection((selected) => {
         const filter = selectedItemsToFilter(selected, state.items, state.vendorList);
         tree.setOnlineLibraryFilter(filter);
-        tree.refreshTree();
         if (machineListView)
             machineListView.description = formatMachineFilterDescription(filter);
     });
