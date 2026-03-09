@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility for editing, testing, and debugging Autodesk Fusion post processors.",
-	"version": "5.0.0",
+	"version": "5.0.1",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -117,6 +117,11 @@
 				"icon": "$(filter)"
 			},
 			{
+				"command": "autodesk.post.updateOnlineLibrary",
+				"title": "Update Online Library",
+				"category": "Autodesk Post Utility"
+			},
+			{
 				"command": "autodesk.post.propertyList.refresh",
 				"title": "Load or reload post properties from the current post file",
 				"shortTitle": "Initialize Property List",
@@ -167,6 +172,11 @@
 			{
 				"command": "autodesk.post.updatePostProperties",
 				"title": "Update post properties for current file...",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.installTypeDeclarations",
+				"title": "Install IntelliSense type declarations",
 				"category": "Autodesk Post Utility"
 			},
 			{

@@ -642,8 +642,11 @@ class FileTreeProvider {
         if (parentPath === RECENT_PATH)
             return new FileTreeItem(RECENT_LABEL, vscode.TreeItemCollapsibleState.Collapsed, RECENT_PATH);
         const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
-        if (parentPath === onlineLibraryDir)
-            return new FileTreeItem(ONLINE_LIBRARY, vscode.TreeItemCollapsibleState.Collapsed, parentPath);
+        if (parentPath === onlineLibraryDir) {
+            const parentItem = new FileTreeItem(ONLINE_LIBRARY, vscode.TreeItemCollapsibleState.Collapsed, parentPath);
+            parentItem.contextValue = 'onlineLibrary';
+            return parentItem;
+        }
         if (!this.cfg.checkboxMode)
             return undefined;
         const allFilesLabel = (this.cfg.selectionStorageKey === 'regressionTestSelection') ? SELECTED_FILES : ALL_FILES;
@@ -935,7 +938,8 @@ class FileTreeProvider {
             const item = new FileTreeItem(name, state, fullPath);
             const normFull = path.normalize(fullPath);
             const normOnline = path.normalize(onlineLibraryDir);
-            item.contextValue = isFile ? 'customFile' : ((normFull === normOnline) ? 'onlineLibrary' : (this.customFolderPaths.has(fullPath) ? 'customFolder' : 'openFolder'));
+            const isOnlineLibraryNode = !isFile && (normFull === normOnline || name === ONLINE_LIBRARY);
+            item.contextValue = isFile ? 'customFile' : (isOnlineLibraryNode ? 'onlineLibrary' : (this.customFolderPaths.has(fullPath) ? 'customFolder' : 'openFolder'));
             items.push(item);
         }
         return items;

@@ -67,7 +67,75 @@ function activate(context) {
     };
     // Setup
     addCPSToJSLanguage();
-    installTypeDeclarations(context);
+    let typeDeclarationsInstalled = false;
+    let typeDeclarationsPromptShown = false;
+    function ensureTypeDeclarations() {
+        if (!typeDeclarationsInstalled) {
+            typeDeclarationsInstalled = true;
+            installTypeDeclarations(context);
+        }
+    }
+    function isCpsOrCpiFile(uri) {
+        const p = (uri && uri.fsPath || '').toLowerCase();
+        return p.endsWith('.cps') || p.endsWith('.cpi');
+    }
+    function isInWorkspace(uri) {
+        return !!vscode.workspace.getWorkspaceFolder(uri);
+    }
+    function isTypeDeclarationsAlreadyInstalled() {
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders?.length)
+            return false;
+        const root = folders[0].uri.fsPath;
+        const jsconfigPath = path.join(root, 'jsconfig.json');
+        if (!(0, utils_1.fileExists)(jsconfigPath))
+            return false;
+        const extensionTypesPath = path.normalize(path.join(context.extensionPath, 'res', 'language files'));
+        try {
+            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
+            const config = JSON.parse(raw);
+            const roots = config.compilerOptions?.typeRoots;
+            if (!Array.isArray(roots))
+                return false;
+            for (const r of roots) {
+                const resolved = path.normalize(path.isAbsolute(r) ? r : path.join(root, r));
+                if (resolved === extensionTypesPath)
+                    return true;
+            }
+            return false;
+        }
+        catch {
+            return false;
+        }
+    }
+    async function promptTypeDeclarationsIfNeeded() {
+        if (typeDeclarationsPromptShown)
+            return;
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders?.length)
+            return;
+        if (context.workspaceState.get('autodesk.post.dontPromptTypeDeclarations'))
+            return;
+        if (isTypeDeclarationsAlreadyInstalled()) {
+            typeDeclarationsInstalled = true;
+            typeDeclarationsPromptShown = true;
+            return;
+        }
+        typeDeclarationsPromptShown = true;
+        const choice = await vscode.window.showInformationMessage(
+            'Install post processor type declarations in this workspace for better IntelliSense?',
+            'Yes',
+            'Not now',
+            'Don\'t show again for this workspace'
+        );
+        if (choice === 'Yes')
+            ensureTypeDeclarations();
+        else if (choice === 'Don\'t show again for this workspace')
+            context.workspaceState.update('autodesk.post.dontPromptTypeDeclarations', true);
+    }
+    // Prompt only when a .cps/.cpi file inside the workspace is opened (not for outside files like C:\posts\fanuc.cps)
+    context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(doc => { if (isCpsOrCpiFile(doc.uri) && isInWorkspace(doc.uri)) promptTypeDeclarationsIfNeeded(); }));
+    for (const doc of vscode.workspace.textDocuments) { if (isCpsOrCpiFile(doc.uri) && isInWorkspace(doc.uri)) { promptTypeDeclarationsIfNeeded(); break; } }
     // Post processor IntelliSense (completion + hover) for .cps/.cpi — register once only
     const postProcessorSymbols = postProcessorIntellisense.loadSymbols(context.extensionPath);
     const cpsCpiSelector = { language: 'javascript', scheme: 'file' };
@@ -116,6 +184,12 @@ function activate(context) {
     const machineListView = vscode.window.createTreeView('machineList', { treeDataProvider: machineTree });
     context.subscriptions.push(machineListView);
     engine.getPostEngineVersion().then(() => { });
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('AutodeskPostUtility.postExecutablePath')) {
+            _engine.clearPostVersionCache();
+            _engine.getPostEngineVersion().then(() => { });
+        }
+    }));
     const propertyListView = vscode.window.createTreeView('propertyList', { treeDataProvider: propertyProvider });
     context.subscriptions.push(propertyListView);
     vscode.window.registerTreeDataProvider('functionList', functionListProvider);
@@ -322,56 +396,10 @@ function activate(context) {
             return null;
         }
     }
+    // Do not provide definition for debug NC output so Ctrl+hover and Ctrl+click never jump.
+    // Jump to post is only via clicking the line (LineSelection).
     sub.push(vscode.languages.registerDefinitionProvider(debugOutputSelector, {
-        provideDefinition(doc, position) {
-            const stored = isDebugOutputDoc(doc);
-            if (!stored)
-                return null;
-            const text = doc.getText();
-            const offset = doc.offsetAt(position);
-            let m;
-            debugSuffixRe.lastIndex = 0;
-            while ((m = debugSuffixRe.exec(text)) !== null) {
-                const start = m.index;
-                const end = m.index + m[0].length;
-                if (offset >= start && offset <= end) {
-                    const lineNum = parseInt(m[1], 10);
-                    if (lineNum >= 1) {
-                        vscode.commands.executeCommand('autodesk.post.openPostAtLine', stored.postPath, lineNum);
-                        return null;
-                    }
-                    break;
-                }
-            }
-            const lineIndex = position.line;
-            const stackData = resolveStackPathAndPostPath(doc, stored);
-            if (stackData) {
-                const offset = postRunner_1.PostEngine.getDebugLineCountBefore(doc.getText(), lineIndex + 1);
-                const effectiveIndex = Math.max(0, lineIndex - offset);
-                let stack = Array.isArray(stackData.stacks[effectiveIndex]) ? stackData.stacks[effectiveIndex] : null;
-                if (!stack || stack.length === 0) {
-                    for (let i = effectiveIndex; i < stackData.stacks.length; i++) {
-                        const s = stackData.stacks[i];
-                        if (Array.isArray(s) && s.length > 0) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                }
-                if (!stack || stack.length === 0) {
-                    for (let i = effectiveIndex - 1; i >= 0; i--) {
-                        const s = stackData.stacks[i];
-                        if (Array.isArray(s) && s.length > 0) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                }
-                if (stack && stack.length > 0 && stack[0].line != null) {
-                    vscode.commands.executeCommand('autodesk.post.openPostAtLine', stackData.postPath, stack[0].line);
-                    return null;
-                }
-            }
+        provideDefinition() {
             return null;
         },
     }));
@@ -715,6 +743,15 @@ function activate(context) {
     sub.push(vscode.commands.registerCommand('autodesk.post.disableLineSelection', () => toggleLineSelection()));
     sub.push(vscode.commands.registerCommand('autodesk.post.setIncludePath', () => setIncludePath()));
     sub.push(vscode.commands.registerCommand('autodesk.post.updatePostProperties', () => engine.updatePostProperties()));
+    sub.push(vscode.commands.registerCommand('autodesk.post.installTypeDeclarations', () => {
+        if (!vscode.workspace.workspaceFolders?.length) {
+            vscode.window.showWarningMessage('Install IntelliSense type declarations only works when a folder or workspace is open. Open a folder first.');
+            return;
+        }
+        context.workspaceState.update('autodesk.post.dontPromptTypeDeclarations', undefined);
+        installTypeDeclarations(context);
+        vscode.window.showInformationMessage('Post processor IntelliSense type declarations installed for this workspace.');
+    }));
     sub.push(vscode.commands.registerCommand('autodesk.post.foldPropertyList', () => foldPropertyList()));
     sub.push(vscode.commands.registerCommand('autodesk.post.downloadCNCExtractor', () => downloadCNCExtractor()));
     // Backward-compatible aliases for old hsm.* command IDs
@@ -779,34 +816,40 @@ function addCPSToJSLanguage() {
     const updated = { ...current, '*.cps': 'javascript', '*.cpi': 'javascript' };
     vscode.workspace.getConfiguration('files').update('associations', updated, true);
 }
+function ensureJsConfigTypeRoot(root, extensionTypesPath) {
+    const jsconfigPath = path.join(root, 'jsconfig.json');
+    let config = {};
+    try {
+        if ((0, utils_1.fileExists)(jsconfigPath)) {
+            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
+            config = JSON.parse(raw);
+        }
+    }
+    catch { /* ignore parse errors */ }
+    if (!config.compilerOptions)
+        config.compilerOptions = {};
+    const roots = config.compilerOptions.typeRoots;
+    const arr = Array.isArray(roots) ? [...roots] : ['node_modules/@types'];
+    const normalizedEntry = path.normalize(extensionTypesPath);
+    const alreadyHas = arr.some(r => path.normalize(path.isAbsolute(r) ? r : path.join(root, r)) === normalizedEntry);
+    if (!alreadyHas) {
+        arr.unshift(extensionTypesPath);
+        config.compilerOptions.typeRoots = arr;
+    }
+    try {
+        fs.writeFileSync(jsconfigPath, JSON.stringify(config, null, 2), 'utf-8');
+    }
+    catch { /* ignore */ }
+}
 function installTypeDeclarations(context, fallbackDir) {
     const folders = vscode.workspace.workspaceFolders;
-    const source = path.join(context.extensionPath, 'res', 'language files', 'globals.d.ts');
-    if (!fs.existsSync(source))
+    const extensionTypesPath = path.join(context.extensionPath, 'res', 'language files');
+    if (!fs.existsSync(path.join(extensionTypesPath, 'globals.d.ts')))
         return;
     try {
         if (folders?.length) {
-            // Workspace open: install into node_modules/@types so the JS server picks it up project-wide
             const root = folders[0].uri.fsPath;
-            const targetDir = path.join(root, 'node_modules', '@types', 'post-processor');
-            (0, utils_1.ensureDir)(targetDir);
-            const targetFile = path.join(targetDir, 'index.d.ts');
-            let needsCopy = !(0, utils_1.fileExists)(targetFile) || fs.statSync(source).size !== fs.statSync(targetFile).size;
-            if (needsCopy)
-                fs.copyFileSync(source, targetFile);
-            const pkg = path.join(targetDir, 'package.json');
-            if (!(0, utils_1.fileExists)(pkg))
-                fs.writeFileSync(pkg, '{"name":"@types/post-processor","version":"1.0.0","types":"index.d.ts"}');
-        } else {
-            // No workspace: keep globals.d.ts in the OS temp dir so nothing lands next to the user's files.
-            // The extension's own completion/hover provider (registered with scheme:'file') handles
-            // standalone CPS files independently of the TS language server.
-            const tempTypesDir = path.join(require('os').tmpdir(), 'autodesk-cps-types');
-            (0, utils_1.ensureDir)(tempTypesDir);
-            const targetFile = path.join(tempTypesDir, 'globals.d.ts');
-            let needsCopy = !(0, utils_1.fileExists)(targetFile) || fs.statSync(source).size !== fs.statSync(targetFile).size;
-            if (needsCopy)
-                fs.copyFileSync(source, targetFile);
+            ensureJsConfigTypeRoot(root, extensionTypesPath);
         }
     }
     catch { /* ignore */ }

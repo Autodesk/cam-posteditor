@@ -235,7 +235,11 @@ class PostEngine {
         return this.postExecutable;
     }
     ensurePostKernel() {
-        this.postExecutable = config.get('postExecutablePath');
+        const fromConfig = config.get('postExecutablePath');
+        if (fromConfig !== this.postExecutable) {
+            this.postExecutable = fromConfig;
+            this._cachedPostVersion = null;
+        }
         if (!(0, utils_1.fileExists)(this.postExecutable)) {
             this.locatePostExe(true);
         }
@@ -246,6 +250,8 @@ class PostEngine {
             if (found) {
                 this.postExecutable = found;
                 config.update('postExecutablePath', found, true);
+                this.clearPostVersionCache();
+                this.getPostEngineVersion().then(() => { });
                 return;
             }
         }
@@ -259,6 +265,8 @@ class PostEngine {
         if ((0, utils_1.fileExists)(selected) && selected.toLowerCase().includes('post')) {
             this.postExecutable = selected;
             config.update('postExecutablePath', selected, true);
+            this.clearPostVersionCache();
+            this.getPostEngineVersion().then(() => { });
             vscode.window.showInformationMessage('Post processor location updated.');
         }
         else {
@@ -1460,6 +1468,9 @@ class PostEngine {
     }
     // ── Version ─────────────────────────────────────────────────────
     _cachedPostVersion = null;
+    clearPostVersionCache() {
+        this._cachedPostVersion = null;
+    }
     async getPostEngineVersion() {
         if (this._cachedPostVersion != null)
             return this._cachedPostVersion;
