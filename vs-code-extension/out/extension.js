@@ -73,6 +73,7 @@ function activate(context) {
         if (!typeDeclarationsInstalled) {
             typeDeclarationsInstalled = true;
             installTypeDeclarations(context);
+            vscode.commands.executeCommand('typescript.restartTsServer');
         }
     }
     function isCpsOrCpiFile(uri) {
@@ -87,22 +88,16 @@ function activate(context) {
         if (!folders?.length)
             return false;
         const root = folders[0].uri.fsPath;
-        const jsconfigPath = path.join(root, 'jsconfig.json');
-        if (!(0, utils_1.fileExists)(jsconfigPath))
+        const targetIndex = path.join(root, 'node_modules', '@types', 'postprocessor', 'index.d.ts');
+        const targetPkg = path.join(root, 'node_modules', '@types', 'postprocessor', 'package.json');
+        if (!(0, utils_1.fileExists)(targetIndex) || !(0, utils_1.fileExists)(targetPkg))
             return false;
-        const extensionTypesPath = path.normalize(path.join(context.extensionPath, 'res', 'language files'));
+        // Verify the installed file is up to date
+        const sourcePath = path.join(context.extensionPath, 'res', 'language files', 'globals.d.ts');
         try {
-            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
-            const config = JSON.parse(raw);
-            const roots = config.compilerOptions?.typeRoots;
-            if (!Array.isArray(roots))
-                return false;
-            for (const r of roots) {
-                const resolved = path.normalize(path.isAbsolute(r) ? r : path.join(root, r));
-                if (resolved === extensionTypesPath)
-                    return true;
-            }
-            return false;
+            const srcStat = fs.statSync(sourcePath);
+            const dstStat = fs.statSync(targetIndex);
+            return dstStat.size === srcStat.size;
         }
         catch {
             return false;
@@ -750,6 +745,7 @@ function activate(context) {
         }
         context.workspaceState.update('autodesk.post.dontPromptTypeDeclarations', undefined);
         installTypeDeclarations(context);
+        vscode.commands.executeCommand('typescript.restartTsServer');
         vscode.window.showInformationMessage('Post processor IntelliSense type declarations installed for this workspace.');
     }));
     sub.push(vscode.commands.registerCommand('autodesk.post.foldPropertyList', () => foldPropertyList()));
@@ -816,28 +812,47 @@ function addCPSToJSLanguage() {
     const updated = { ...current, '*.cps': 'javascript', '*.cpi': 'javascript' };
     vscode.workspace.getConfiguration('files').update('associations', updated, true);
 }
-function ensureJsConfigTypeRoot(root, extensionTypesPath) {
-    const jsconfigPath = path.join(root, 'jsconfig.json');
-    let config = {};
+function ensureTypesPackage(root, extensionTypesPath) {
+    const sourcePath = path.join(extensionTypesPath, 'globals.d.ts');
+    if (!fs.existsSync(sourcePath))
+        return;
+    const targetDir = path.join(root, 'node_modules', '@types', 'postprocessor');
+    const targetIndex = path.join(targetDir, 'index.d.ts');
+    const targetPkg = path.join(targetDir, 'package.json');
     try {
-        if ((0, utils_1.fileExists)(jsconfigPath)) {
-            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
-            config = JSON.parse(raw);
+        fs.mkdirSync(targetDir, { recursive: true });
+        fs.copyFileSync(sourcePath, targetIndex);
+        if (!fs.existsSync(targetPkg)) {
+            fs.writeFileSync(targetPkg, JSON.stringify({ name: "@types/postprocessor", version: "1.0.0", types: "index.d.ts" }, null, 2), 'utf-8');
         }
     }
-    catch { /* ignore parse errors */ }
-    if (!config.compilerOptions)
-        config.compilerOptions = {};
-    const roots = config.compilerOptions.typeRoots;
-    const arr = Array.isArray(roots) ? [...roots] : ['node_modules/@types'];
-    const normalizedEntry = path.normalize(extensionTypesPath);
-    const alreadyHas = arr.some(r => path.normalize(path.isAbsolute(r) ? r : path.join(root, r)) === normalizedEntry);
-    if (!alreadyHas) {
-        arr.unshift(extensionTypesPath);
-        config.compilerOptions.typeRoots = arr;
-    }
+    catch { /* ignore */ }
+    // Clean up broken typeRoots from jsconfig.json if present
+    const jsconfigPath = path.join(root, 'jsconfig.json');
     try {
-        fs.writeFileSync(jsconfigPath, JSON.stringify(config, null, 2), 'utf-8');
+        if (fs.existsSync(jsconfigPath)) {
+            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
+            const config = JSON.parse(raw);
+            const roots = config.compilerOptions?.typeRoots;
+            if (Array.isArray(roots)) {
+                const normalizedExt = path.normalize(extensionTypesPath);
+                const filtered = roots.filter(r => path.normalize(path.isAbsolute(r) ? r : path.join(root, r)) !== normalizedExt);
+                if (filtered.length !== roots.length) {
+                    if (filtered.length === 0 || (filtered.length === 1 && filtered[0] === 'node_modules/@types')) {
+                        delete config.compilerOptions.typeRoots;
+                    } else {
+                        config.compilerOptions.typeRoots = filtered;
+                    }
+                    if (Object.keys(config.compilerOptions).length === 0)
+                        delete config.compilerOptions;
+                    if (Object.keys(config).length === 0) {
+                        fs.unlinkSync(jsconfigPath);
+                    } else {
+                        fs.writeFileSync(jsconfigPath, JSON.stringify(config, null, 2), 'utf-8');
+                    }
+                }
+            }
+        }
     }
     catch { /* ignore */ }
 }
@@ -849,7 +864,7 @@ function installTypeDeclarations(context, fallbackDir) {
     try {
         if (folders?.length) {
             const root = folders[0].uri.fsPath;
-            ensureJsConfigTypeRoot(root, extensionTypesPath);
+            ensureTypesPackage(root, extensionTypesPath);
         }
     }
     catch { /* ignore */ }

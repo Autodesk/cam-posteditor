@@ -6,7 +6,6 @@
  *
  * Copyright (c) 2012-2026 by Autodesk, Inc.
  */
-
 // ---------------------------------------------------------------------------
 //  Vector
 // ---------------------------------------------------------------------------
@@ -899,121 +898,100 @@ interface CycleParameters {
 //  Set at the top level of a .cps file to configure the post processor.
 // ===========================================================================
 
-/** A short description of the post processor shown in the post library.
+/** Description for the post processor configuration.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a76d2b0133d83c43dfd8a19286ac55325 */
 declare var description: string;
 
-/** A longer description of the post processor. */
-declare var longDescription: string;
-
-/** The vendor name (e.g. "Fanuc", "Heidenhain"). */
+/** The vendor of the post processor configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0e91253390b868169cfe091c815515b5 */
 declare var vendor: string;
 
-/** The vendor URL. */
-declare var vendorUrl: string;
-
-/** The legal/copyright text. */
+/** Legal comment for the post processor configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abd2245ee2db73566a517313ab7341618 */
 declare var legal: string;
 
-/** The certification level (0-2). */
-declare var certificationLevel: number;
-
-/** The minimum post engine revision required. */
+/** Specifies the minimum allowed revision of the post processor (defaults to 1).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aaf3300f01a676287e5bb963fb8810cb5 */
 declare var minimumRevision: number;
 
-/** The NC file extension (e.g. "nc", "gcode", "h"). */
-declare var extension: string;
-
-/** The file name for the output (without extension). */
+/** The default filename (defaults to program name).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae59f2daabb9fbadf96ab4fceb44d6f77 */
 declare var filename: string;
 
-/** The post processor version string. */
-declare var version: string;
-
-/** Capability flags. Combine with bitwise OR: CAPABILITY_MILLING | CAPABILITY_TURNING.
+/** Specifies the capability flags. CAPABILITY_MILLING, CAPABILITY_TURNING, CAPABILITY_JET, CAPABILITY_SETUP_SHEET, CAPABILITY_INTERMEDIATE, and CAPABILITY_CASCADING. The default is "CAPABILITY_MILLING".
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a201e06654b2b8875b11c419093b607b2 */
 declare var capabilities: number;
 
-/** The linearization tolerance in output units. Use `spatial()` to set unit-aware values.
- * @example
- * tolerance = spatial(0.002, MM);
+/** Linearization tolerance.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a40f244d9f6d9ededaacd92c57c78a318 */
 declare var tolerance: number;
 
-/** The minimum chord length for circular output. Use `spatial()`.
+/** The minimum chord length in millimeters. Not used for full circle motion.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a391ac41ffa378246cc556ff9a481c7ef */
 declare var minimumChordLength: number;
 
-/** The minimum allowed circular radius. Use `spatial()`.
+/** The minimum circular radius in millimeters.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac26721edd5466a7953a79f04f50461ac */
 declare var minimumCircularRadius: number;
 
-/** The maximum allowed circular radius. Use `spatial()`.
+/** The maximum circular radius in millimeters.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ace7d1f00e4410e1f4baf57b8c29c8c02 */
 declare var maximumCircularRadius: number;
 
-/** The minimum circular sweep angle in radians. Use `toRad()`.
+/** The minimum circular sweep in radians.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8b0a3da10984e4aa76b26dfa25a757a1 */
 declare var minimumCircularSweep: number;
 
-/** The maximum circular sweep angle in radians. Use `toRad()`.
+/** The maximum circular sweep in radians.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac3cde96c729ef76f069a1a2ebfcf5d0d */
 declare var maximumCircularSweep: number;
 
-/** Set to `true` to allow helical moves.
+/** Specifies that helical motion is allowed. The helical motion is linearized if false.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adea8014cc3c4028a10b12ca27a224698 */
 declare var allowHelicalMoves: boolean;
 
-/** Set to `true` to allow spiral moves.
+/** Specifies that spiral motion is allowed (i.e. the start and end radii are different). The spiral motion is linearized if false.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9d4c62f202e89bd94d79d5ce89b27e9a */
 declare var allowSpiralMoves: boolean;
 
-/** Bitmask of allowed circular planes (PLANE_XY, PLANE_ZX, PLANE_YZ). Set to `undefined` for any plane.
+/** Specifies the allowed circular planes to be output. Set to 0 to linearize all circular motion and undefined to allow any motion. Circular motion in disabled planes will be output as linear motion using the globally specified tolerance. allowedCircularPlanes is a bit mask. PLANE_XY, PLANE_ZX, and PLANE_YZ can be used for accessing the appropriate bits. Handling all planes in onCircular() gives more flexibility with regard to the used tolerances.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8862ca499e5a7a3cfc4ece721f91b4b0 */
 declare var allowedCircularPlanes: number | undefined;
 
-/** The high feedrate value used for rapid substitution. Set per unit system.
- * @example
- * highFeedrate = (unit == MM) ? 9999 : 999;
+/** Specifies the high feedrate for rapid traversal to high feed mapping.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abeabefafe235ec1a3b842eb1e28e9e92 */
 declare var highFeedrate: number;
 
-/** Controls how rapids are mapped to high-feed moves. Use HIGH_FEED_* constants.
+/** Specifies the high feed mapping mode for rapid traversal.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aac46c23bdff2208b8f8120a9fb14e3f6 */
 declare var highFeedMapping: number;
 
-/** The output unit (MM or IN).
+/** The output unit (defaults to the specified measurement system in the regional settings).
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aa63cd118027e6af31ecb0a9a45085e43 */
 declare var unit: number;
 
-/** Allow mapping of work origin.
+/** Specifies that the section origin should be mapped to (0, 0, 0). When disabled the post is responsible for handling the section origin. By default this is enabled. This is a special variable, and, therefore, it should be put in a comment, as per example.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a243007459395443b0a118597f18a824e */
 declare var mapWorkOrigin: boolean;
 
-/** Map coordinates to WCS.
+/** Specifies that the section work plane should be mapped to the WCS. When disabled the post is responsible for handling the WCS and section work plane. By default this is enabled. This is a special variable, and, therefore, it should be put in a comment, as per example.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a98351569a835994527b95d62194f279c */
 declare var mapToWCS: boolean;
 
-/** Allow machine change on section (multi-machine programs).
+/** Specifies that the machine configuration may change during post processing when no machine configuration is defined in the post configuration. Only one machine configuration is allowed by default when they are defined/embedded in the toolpath. This property must be set to true to allow multiple machines to be defined during post processing in which case the machine configuration will become active on onSection() calls. Any machine configuration defined in the post configuration always takes precedence.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abec0571054956f7e2f6b1fa8fa04f62e */
 declare var allowMachineChangeOnSection: boolean;
 
-/** The program name. */
-declare var programName: string;
-
-/** True if the program name is an integer. */
+/** Specifies that the program name must be an integer.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a36d2cff7c4101e07a26220b208bdf3ee */
 declare var programNameIsInteger: boolean;
 
-/** True if running in debug mode. */
-declare var debugMode: boolean;
-
-/** The post processor revision number (set by the engine). */
+/** Specifies the revision of the post processor.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aca13f92beb1248bb96ee122f08faa0e7 */
 declare var revision: number;
 
-/** Set to true to mark this post as deprecated. */
-declare var deprecated: boolean;
-
-/** Set to true to prevent the post from running. */
+/** Denies post processing.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aa829286062f601759659bcace02ba09f */
 declare var preventPost: boolean;
 
 /** Abort on deprecated function calls. */
@@ -1022,22 +1000,16 @@ declare var abortOnDeprecation: boolean;
 /** Set to true to allow probing with multiple features. */
 declare var probeMultipleFeatures: boolean;
 
-/** The circular input tolerance. */
-declare var circularInputTolerance: number;
-
-/** The circular merge tolerance. */
+/** The tolerance in millimeters used to determine if consecutive circular records can be merged into a single record. Specifying a value of 0 will not merge consecutive circular records that are the same circle.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#afb32c52466cdce9a1f230d09b12757a3 */
 declare var circularMergeTolerance: number;
 
-/** Controls whether the post supports TWP (tilted work planes). */
-declare var controlSupportsTWP: boolean;
-
-/** The Euler convention for rotary output. */
+/** Specifies the Euler convention used for tilted workplane angles. Set to undefined to use machine angles, or use one of the EULER_* constants (0-23) to specify the convention. See EULER_XYZ_R, EULER_ZXZ_R, EULER_ZYZ_R, etc. The default is undefined .
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a14ae38de8543aaa2165ca2f61d98f3e4 */
 declare var eulerConvention: number;
 
-/** The work plane calculation method. */
-declare var workPlaneCalculationMethod: number;
-
-/** Allow feed-per-revolution for drilling. */
+/** Specifies that post supports feed per revolution mode for drilling cycles. It must be explicitly set for both milling or turning posts, if they support it.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9c522363e95855fc00092877eb17ee83 */
 declare var allowFeedPerRevolutionDrilling: number;
 
 /** Whether to buffer rotary moves. */
@@ -1046,15 +1018,7 @@ declare var bufferRotaryMoves: boolean;
 /** Supported features bitmask. */
 declare var supportedFeatures: number;
 
-/** Keywords string (space-separated, e.g. "MODEL_IMAGE PREVIEW_IMAGE"). */
-declare var keywords: string;
-
-// ===========================================================================
-//  GLOBAL RUNTIME STATE
-//  Available during post processing (read-only unless noted).
-// ===========================================================================
-
-/** The current section being processed.
+/** The current section. This property is unspecified outside onSection() and onSectionEnd() invocations.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3f363483663847152552a6c19897c842 */
 declare var currentSection: Section;
 
@@ -1066,33 +1030,31 @@ declare var tool: Tool;
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a33ca84fc3441ef9e94208a59659de8e2 */
 declare var feedrate: number;
 
-/** The current spindle speed.
+/** The current spindle speed in RPM. Positive for clockwise direction.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acf8176fc3ff71d9cec8246689c6551a8 */
 declare var spindleSpeed: number;
 
-/** The current movement type constant (MOVEMENT_*).
+/** The current movement type. The supported types are: MOVEMENT_RAPID, MOVEMENT_LEAD_IN, MOVEMENT_CUTTING, MOVEMENT_LEAD_OUT, MOVEMENT_LINK_TRANSITION, MOVEMENT_LINK_DIRECT, MOVEMENT_RAMP_HELIX, MOVEMENT_RAMP_PROFILE, MOVEMENT_RAMP_ZIG_ZAG, MOVEMENT_RAMP, MOVEMENT_PLUNGE, MOVEMENT_PREDRILL, MOVEMENT_EXTENDED, MOVEMENT_REDUCED, MOVEMENT_FINISH_CUTTING, MOVEMENT_HIGH_FEED, MOVEMENT_DEPOSITING, MOVEMENT_BRIDGING, MOVEMENT_PIERCE_CIRCULAR, MOVEMENT_PIERCE_PROFILE, MOVEMENT_PIERCE_LINEAR, and MOVEMENT_PIERCE.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a797d5b9f2e1a2c5fabbe4707d5beb5f7 */
 declare var movement: number;
 
-/** The current radius compensation mode (RADIUS_COMPENSATION_*).
+/** The current radius compensation mode. The modes are: RADIUS_COMPENSATION_OFF, RADIUS_COMPENSATION_LEFT, and RADIUS_COMPENSATION_RIGHT. The current radius compensation. Defaults to RADIUS_COMPENSATION_OFF.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af956c33b96a391f96de8b64ae7ce58a4 */
 declare var radiusCompensation: number;
 
-/** The current active feed mode. */
-declare var activeFeedMode: number;
-
-/** The spindle axis index. */
+/** The spindle axis. Defaults to TOOL_AXIS_Z.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af3e5d8cfc575aa632c1203a79634aeeb */
 declare var spindleAxis: number;
 
-/** The current cycle type string (e.g. "drilling", "tapping").
+/** Specifies the type of the current cycle in canned cycle mode.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8fae97ae25950a6f22a9abb097b06c23 */
 declare var cycleType: string;
 
-/** The current cycle parameters. Available during onCycle() and onCyclePoint().
+/** Specifies the current cycle parameters in canned cycle mode.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acc223e94c02031add0ecad7bda263ab4 */
 declare var cycle: CycleParameters;
 
-/** True if the current cycle has been expanded.
+/** Specifies that a previous cycle point has been expended for the current cycle. Defaults to false.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aff308c18e5596197b74a5228552b512c */
 declare var cycleExpanded: boolean;
 
@@ -1104,58 +1066,44 @@ declare var initialCyclePosition: Vector;
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a754d1d3ad5f53d86f01e30c37444ec7e */
 declare var machineConfiguration: MachineConfiguration;
 
-/** Machine-specific parameters (chip breaking distance, etc.).
+/** Machine parameters.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3278d7f9975131c82562c7b467cb8a0d */
 declare var machineParameters: MachineParameters;
 
-/** The simulation interface.
+/** An interface for telling simulation what to do. E.g. so that connections between toolpaths can be simulated appropriately. See the Detailed Description for the Simulation class.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9959b171e9934828d26b506a04b34dfb */
 declare var simulation: Simulation;
 
-/** The output unit for the current session. */
-declare var outputUnit: number;
-
-/** User-defined properties map. Define at top level; the engine populates values from the UI.
+/** The user-defined properties that are displayed in the Post Properties table when post processing.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a1e996849c5d6bd0559736d2f8c8ffa1f */
 declare var properties: any;
 
-/** The current line number counter (writable). */
-declare var lineNumber: number;
-
-// Circular motion state (available during onCircular)
-/** The end point of the current motion. */
+/** The end position of the current motion.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a940a7a1a8031469fdd81f0dae0b28289 */
 declare var end: Vector;
-/** The arc/segment length. */
-declare var length: number;
-/** The center of the current circular motion. */
+/**
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a53097bfd1b066d304e03e4c7a74108ef */
 declare var circularCenter: Vector;
-/** The offset from the start to the center of the circular motion. */
-declare var circularOffset: Vector;
-/** The normal of the current circular plane. */
+/**
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a25cc87f46f5ff0758f642abfb1109145 */
 declare var circularNormal: Vector;
-/** The circular plane (PLANE_XY, PLANE_ZX, PLANE_YZ, or -1). */
-declare var circularPlane: number;
-/** The radius of the current circular motion. */
+/**
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5eb6bcbaa31920c75afd3b3f06cacb94 */
 declare var circularRadius: number;
-/** The starting radius of the current circular motion. */
-declare var circularStarttRadius: number;
-/** The sweep angle (radians) of the current circular motion. */
+/**
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aaa50fe2ea8ab3b8f055c0817e29b8e7b */
 declare var circularSweep: number;
-/** True if the current circular motion is clockwise. */
-declare var circularClockwise: boolean;
-/** The chord length of the current circular motion. */
+/** The chord length of the current circular motion (0 for full circles). Since r45991.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a58d49d49182572b08de585be569705ec */
 declare var circularChordLength: number;
-/** The arc length of the current circular motion. */
-declare var circularArcLength: number;
-/** True if the current circular motion is a full circle. */
+/** Specifies that the currect circular motion is a full circle. Since r45991.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#afe708b5908722da4800fa430a0ec4892 */
 declare var circularFullCircle: boolean;
-/** True if the current circular motion is helical. */
-declare var circularHelical: boolean;
-/** True if the current circular motion is a spiral. */
+/**
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a031350ab79bbc11dd1c961d190425ae6 */
 declare var circularSpiral: boolean;
-/** The helical offset for the current circular motion. */
-declare var circularHelicalOffset: Vector;
-/** The helical distance for the current circular motion. */
+/** The helical distance for the currect circular motion. Since r45991.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6700e5e70ce85caf32565aa750e7060b */
 declare var circularHelicalDistance: number;
 
 // ===========================================================================
@@ -1543,673 +1491,470 @@ declare const TAB: string;
 
 // ---- Output Functions ----
 
-/** Writes text to the output file without a newline.
+/** Writes the specified text to the NC output file excluding an end-of-line marker.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a32071fff63a93a3494979e835aaacc9a */
 declare function write(message: string): void;
 
-/** Writes text to the output file followed by a newline.
+/** Writes the specified text to the NC output file including an end-of-line marker.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aeb90bf455982d43746741f6dce58279c */
 declare function writeln(message: string): void;
 
-/** Writes non-empty arguments separated by the word separator, followed by a newline.
+/** Writes the specified words to the NC output file including an end-of-line marker using the word separator (see getWordSeparator() and setWordSeparator()). Empty strings or undefined values are ignored. No line is output for completely empty lines.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a2e458cd4cdf20806ac7afaf13232a779 */
 declare function writeWords(...words: string[]): void;
 
-/** Like writeWords but uses a secondary word separator.
+/** This method is similar to writeWords() with the exception that text is only output if the 2 argument or above results in text. This function is useful when outputting block numbers to avoid output.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a26a51e1eef93cfd3f7dcf66da436583b */
 declare function writeWords2(...words: string[]): void;
 
-/** Formats words and returns the concatenated string (without writing).
+/** Returns the string output by writeWords() without end-of-line.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a891175b41f166fce83100d6cbd6d4504 */
 declare function formatWords(...words: string[]): string;
 
-/** Returns the word separator.
+/** Returns the separator for word-based the line output.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ada0c57582300da66213635ccc64c8e7f */
 declare function getWordSeparator(): string;
 
-/** Sets the word separator.
+/** Sets the separator for word-based line output. Defaults to a space (i.e. " ").
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aea95987c6248d8d46db8e7481609fe4d */
 declare function setWordSeparator(separator: string): void;
 
-/** Writes the tool table to the output. */
-declare function writeToolTable(orderBy?: number): void;
-
-/** Writes section notes. */
+/** Writes the notes for the current section as comments.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad3fe4cd43679cb02596baa1d72c4e0e5 */
 declare function writeSectionNotes(): void;
 
-/** Writes setup notes. */
-declare function writeSetupNotes(): void;
-
-// ---- Error / Logging Functions ----
-
-/** Outputs an error and stops post processing.
+/** Writes an error message and aborts the script.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a41de7e97313422e0fa1ff6265901b0e8 */
 declare function error(message: string): void;
 
-/** Outputs a warning.
+/** Writes a warning.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a142480b11a33b89259a93b16d67b35b9 */
 declare function warning(message: string): void;
 
-/** Outputs a warning only once (by ID).
+/** Writes the specified warning if the given warning id has not been used before.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7c84675981a0f7e9672c2653298b344d */
 declare function warningOnce(message: string, id: number): void;
 
-/** Outputs a debug/log message.
+/** Writes the specified message to the log.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5d7d1f99129bbc3846054e8d5b70cb48 */
 declare function log(message: string): void;
 
-/** Outputs a debug message. */
-declare function debug(message: string): void;
-
-/** Validates that expression is truthy; throws error with message if not.
+/** Raises an exception if the expression is false. Use this function to make sure that you have protected your code against invalid cases.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a37d7c88322479cc4b8775219c7104161 */
 declare function validate(expression: any, message: string): void;
 
 // ---- Unit / Conversion Functions ----
 
-/** Converts a value from the specified unit to the output unit.
- * @example
- * tolerance = spatial(0.002, MM);
+/** Returns the specified spatial value and unit in the internal unit. Note: IN values are scaled with 25 relative to MM.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a237487f4656f95641ef1d26ca62b7b01 */
 declare function spatial(value: number, unit: number): number;
 
-/** Converts a value from the input unit to the specified output unit.
+/** Returns the specified value in the output unit. Note: The unit conversion scale used is 25mm to 1in and not 25.4.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7de682c8593fcacc60e146467563e52d */
 declare function toUnit(value: number, unit: number): number;
 
-/** Converts a value to the specified unit with full precision (no rounding).
+/** Returns the specified value in the output unit. Note: The unit conversion scale used is 25.4.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a2f33c593779c135e774347331310dd14 */
 declare function toPreciseUnit(value: number, unit: number): number;
 
-/** Converts radians to degrees.
+/** Returns the specified angle in degrees.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a27965dc305215f673efcea4330d2431a */
 declare function toDeg(radians: number): number;
 
-/** Converts degrees to radians.
+/** Returns the specified angle in radians.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a40562fe347c39025af57410c92c2c373 */
 declare function toRad(degrees: number): number;
 
-/** Parses a spatial value string. */
-declare function parseSpatial(value: string): number;
-
-// ---- Section / Navigation Functions ----
-
-/** Returns the total number of sections.
+/** Returns the number of sections.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a057dfc309ce401ba7b500c9f02932400 */
 declare function getNumberOfSections(): number;
 
-/** Returns the section at the given index.
+/** Returns the specified section. The index must be in the range [0; getNumberOfSections()].
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af315a19e0323fb203e0722c78cd8489e */
 declare function getSection(index: number): Section;
 
-/** Returns the ID of the current section. */
-declare function getCurrentSectionId(): number;
-
-/** Returns the previous section. */
+/** Returns the previous section. Must be called within a section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a37f8e29d0e0d1dc7a72686213017291d */
 declare function getPreviousSection(): Section;
 
-/** Returns true if there is a next section. */
-declare function hasNextSection(): boolean;
-
-/** Returns the next section. */
+/** Returns the next section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a45b53bd6d47a8cb66a4f7b9c48d3b612 */
 declare function getNextSection(): Section;
 
-/** Returns true if this is the first section. */
-declare function isFirstSection(): boolean;
-
-/** Returns true if this is the last section. */
+/** Returns true if the current section is the last section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a88727127d8244592c3fa9b2e038824d6 */
 declare function isLastSection(): boolean;
 
-/** Returns true if the current section is a milling section. */
-declare function isMilling(): boolean;
-
-/** Returns true if the current section is a turning section. */
+/** Returns true for turning toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a628370dfe60afca3c10d0bc35add6b4f */
 declare function isTurning(): boolean;
 
-/** Returns true if the current section is a jet section (waterjet/laser/plasma). */
-declare function isJet(): boolean;
-
-/** Returns true if the program is 3-axis only. */
+/** Returns true if the program is a 3D program (i.e. the tool axis points along the Z-axis for all the sections).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aeb49e46594378647705034b03affee0a */
 declare function is3D(): boolean;
-
-/** Returns true if the program contains multi-axis (5-axis) operations. */
-declare function isMultiAxis(): boolean;
-
-// ---- Position / Transformation Functions ----
 
 /** Returns the current position.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a067bc8148cdc35daadb8afb07ec3f63a */
 declare function getCurrentPosition(): Vector;
 
-/** Sets the current position (use after expanded cycles or manual motion).
+/** Sets the current position.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a4f55914630113a4e4d015f425385156a */
 declare function setCurrentPosition(position: Vector): void;
 
-/** Transforms a section-local position through the active frame rotation/translation.
+/** Returns the specified section position in the current frame specified using setRotation() and setTranslation().
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a16fc4a2c23c1cc1514ff7c58a4c9bce0 */
 declare function getFramePosition(position: Vector): Vector;
 
-/** Transforms a direction through the active frame rotation.
+/** Returns the specified section direction in the current frame specified using setRotation().
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5f40fc8085854d4890cc4c9c685c58cc */
 declare function getFrameDirection(direction: Vector): Vector;
 
-/** Returns the global position from a section-local position. */
-declare function getGlobalPosition(p: Vector): Vector;
-
-/** Returns the WCS position from a section-local position. */
+/** Returns the specified position in the current section in the WCS. You likely want to use getGlobalPosition() instead.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad766e32a70e707566cbc6c2f434223cd */
 declare function getWCSPosition(p: Vector): Vector;
 
-/** Returns the current global position. */
-declare function getCurrentGlobalPosition(): Vector;
-
-/** Returns the current direction. */
+/** Returns the tool axis if the section is not optimized for the machine. Returns the rotary angles if the section is optimnized for the machine.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a1430d74a67b17577acf940ab77773585 */
 declare function getCurrentDirection(): Vector;
 
-/** Sets the current direction. */
-declare function setCurrentDirection(direction: Vector): void;
-
-/** Returns the current ABC angles. */
+/** Returns the current ABC position.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aceaece44998483b92f9ea5be52f7aa13 */
 declare function getCurrentABC(): Vector;
 
-/** Sets the current ABC angles. */
-declare function setCurrentABC(abc: Vector): void;
-
-/** Returns the current tool axis. */
+/** Returns the current tool axis.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9e70702d4117aed3ccfaffd12ab5738e */
 declare function getCurrentToolAxis(): Vector;
 
-/** Returns the current spindle speed. */
-declare function getCurrentSpindleSpeed(): number;
-
-/** Sets the output rotation matrix.
+/** Sets the rotation. This is normally used for rotating around the tool axis.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a41162be7196b5b671c195807c9bbb7fc */
 declare function setRotation(rotation: Matrix): void;
 
-/** Cancels any active rotation. */
-declare function cancelRotation(): void;
-
-/** Sets the output translation.
+/** Sets the translation.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3d7f8b45d5022e52d44b05540674c17c */
 declare function setTranslation(translation: Vector): void;
 
-/** Cancels any active translation. */
-declare function cancelTranslation(): void;
-
-/** Cancels both rotation and translation. */
+/** Cancels any active output frame transformation defined by setRotation() and setTranslation().
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae7825cd471b7b6882817540ffbc73644 */
 declare function cancelTransformation(): void;
 
-/** Returns the current rotation matrix. */
-declare function getRotation(): Matrix;
-
-/** Returns the current translation vector. */
+/** Returns the current translation.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3d002f4077b45f2d82c61c6f6396ba13 */
 declare function getTranslation(): Vector;
 
 // ---- Machine Configuration Functions ----
 
-/** Returns the machine configuration.
+/** Returns the active machine configuration.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a50d1979cdb845a2b7c34301136930623 */
 declare function getMachineConfiguration(): MachineConfiguration;
 
-/** Sets the machine configuration.
+/** Sets the active machine configuration.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad38400d98dcd5a7ac881ba38ee096187 */
 declare function setMachineConfiguration(machine: MachineConfiguration): void;
 
-/** Creates a new machine configuration from specifiers. */
-declare function createMachineConfiguration(specifiers: object): MachineConfiguration;
-
-/** Creates a machine axis from specifiers (coordinate, axis, table, range, etc.).
+/** Constructs a new machine axis. The supported specifiers are:
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8803b36be6893a81991049766abe0794 */
 declare function createAxis(specifiers: object): Axis;
 
-/** Optimizes multi-axis machine angles. */
-declare function optimizeMachineAngles(): void;
-
-/** Optimizes machine angles with type control. */
+/** Optimizes the machine angles for 5-axis motion using the active machine configuration. The directions for onRapid5D() and onLinear5D() are hereafter mapped to machine angles from the initial direction vector. The work plane and origin are mapped into the WCS plane and origin.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab044d9c3d63e55f60c3a0d430287b75b */
 declare function optimizeMachineAngles2(optimizeType: number): void;
 
-/** Optimizes machine angles for a specific machine. */
-declare function optimizeMachineAnglesByMachine(machine: MachineConfiguration, optimizeType: number): void;
-
-/** Returns multi-axis move lengths. */
+/** Returns an object containing length information about the current multiaxis move.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af058edfd50a0b8e35fc3094c3644bdfe */
 declare function getMultiAxisMoveLength(x: number, y: number, z: number, a: number, b: number, c: number): MoveLength;
 
 // ---- Format / Variable Creation Functions ----
 
-/** Creates a number format.
- *
- * Supported specifiers: `decimals`, `forceDecimal`, `forceSign`, `width`,
- * `zeropad`, `separator`, `scale`, `cyclicLimit`, `cyclicSign`, `prefix`, `suffix`, `inherit`, `trim`, `trimLeadZero`.
- * @example
- * var xyzFormat = createFormat({decimals: 3, forceDecimal: true});
+/** Constructs the format specification for the given values. The supported specifiers are: The following specifiers are deprecated since r45892. You cannot mix the new specifiers with the deprecated specifiers in a single command.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0595eae6f27f88872305a126a5db119b */
 declare function createFormat(specifiers: object): FormatNumber;
 
-/** Creates an output variable (prefix + format + modal/force behavior).
- *
- * Supported specifiers: `prefix`, `suffix`, `force`, `onchange`, `type`.
- * @example
- * var xOutput = createOutputVariable({prefix: "X"}, xyzFormat);
+/** Creates a new OutputVariable instance. The supported specifiers are:
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8058a96192a419464ec439ad745a3f97 */
 declare function createOutputVariable(specifiers: object, format: FormatNumber): OutputVariable;
 
-/** Creates a simple modal variable.
+/** Creates a new Variable instance. DEPRECATED, use createOutputVariable. The supported specifiers are:
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aacf9c27543d7dbec4d66d7e37a259ad3 */
 declare function createVariable(specifiers: object, format: FormatNumber): Variable;
 
-/** Creates an incremental variable. */
-declare function createIncrementalVariable(specifiers: object, format: FormatNumber): IncrementalVariable;
-
-/** Creates a reference variable. */
+/** Creates a new ReferenceVariable instance. DEPRECATED, use createOutputVariable. The supported specifiers are: The supported specifiers are:
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae514eb97bff185e62ed1a65d26650087 */
 declare function createReferenceVariable(specifiers: object, format: FormatNumber): ReferenceVariable;
 
-/** Creates a modal (prefix + format, outputs only on change).
- * @example
- * var gMotionModal = createModal({force: true}, gFormat);
+/** Creates a new Modal instance. DEPRECATED, use createOutputVariable. The supported specifiers are:
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a171d6ddae8c04c1ad624561972ad86fd */
 declare function createModal(specifiers: object, format: FormatNumber): Modal;
 
-/** Creates a modal group. */
-declare function createModalGroup(specifiers: object, groups: any[], format: FormatNumber): ModalGroup;
-
-// ---- Cycle Functions ----
-
-/** Expands the current cycle point into linear moves (calls onRapid/onLinear).
+/** May be invoked in cycle mode to expand a well-known cycle. Used when a specific cycle is not supported by a control.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adcaaa09d41e9c6b4434cbc54fa5260e1 */
 declare function expandCyclePoint(x: number, y: number, z: number): void;
 
-/** Repositions to the cycle clearance plane. */
-declare function repositionToCycleClearance(cycle: CycleParameters, x: number, y: number, z: number): void;
-
-/** Raises an error indicating the cycle is not supported. */
+/** Returns an error message if the current cycle is not supported.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6d8623fab197e7d15ea1c71d9d283869 */
 declare function cycleNotSupported(): void;
 
-/** Returns true if this is the first cycle point. */
-declare function isFirstCyclePoint(): boolean;
-
-/** Returns true if this is the last cycle point. */
+/** Returns true if the current cycle point is the last motion for the current cycle. Returns false if cycle is not active.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af571e355eb4565d09ba992b6950327a4 */
 declare function isLastCyclePoint(): boolean;
 
-/** Returns the ID of the current cycle point. */
-declare function getCyclePointId(): number;
-
-/** Returns the total number of cycle points. */
+/** Returns the number of cycle points for the current cycle.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a4b3cdd32aafe3c3c798bb082c6867bbe */
 declare function getNumberOfCyclePoints(): number;
 
-/** Returns the cycle point at the given index. */
-declare function getCyclePoint(index: number): Vector;
-
-/** Returns true if the given cycle URI is a probing cycle. */
+/** Returns true if the given cycle is a probing cycle.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a87de040424e7745da9c117d10cb85274 */
 declare function isProbingCycle(uri: string): boolean;
 
-/** Returns true if the cycle is a sub-spindle cycle. */
-declare function isSubSpindleCycle(uri: string): boolean;
-
-/** Returns true if the current cycle is a well-known cycle type. */
+/** Returns true if the current cycle is a well-known cycle.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acac36f67f92aa367fab39903934d6ee8 */
 declare function isWellKnownCycle(): boolean;
 
 // ---- Tool Functions ----
 
-/** Returns the tool table for the program. */
-declare function getToolTable(): ToolTable;
-
-/** Returns the first tool. */
+/** Returns the first tool.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adadd5d3ac553a53aeb010a4f0347622f */
 declare function getFirstTool(): Tool;
 
-/** Returns the next tool after the given tool number. */
-declare function getNextTool(number: number): Tool;
-
-/** Returns the tool list. */
+/** Returns an array of tools used in the program deemed different based on the 'arguments' and 'flag' criteria. Returns an array of {tool, operations, range} objects. 'tool' is the Tool object, 'operations' is a list of operation ID's that the tool is used in, and 'range' contains the minimum and maximum Z-values for a 3D operation, it will be 'undefined' if the tool is used in a 3+2 or multi-axis operation.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a52c939232474c2c445ce2a31c3d3ca09 */
 declare function getToolList(arguments_: string, flag: number): Tool[];
 
-/** Returns the tool type name string. */
-declare function getToolTypeName(tool: Tool | number): string;
-
-/** Returns true if a tool change is needed for the given section. */
+/** Returns whether a tool change is needed, based on the given criteria as arguments. If "description" is provided as an argument, then the tool description must be defined or an error will be generated. Returns whether a tool change is needed
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab401f18d3ec0987c6fc0f86a9103baa2 */
 declare function isToolChangeNeeded(section: Section, arguments_?: string): boolean;
 
-/** Returns the machining distance for a tool. */
-declare function getMachiningDistance(tool: number): number;
-
-// ---- Parameter Functions ----
-
-/** Returns true if a global parameter exists. */
+/** Returns true if the specified parameter has been defined globally.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7195e2b716f4f40604e0697e3df6634e */
 declare function hasGlobalParameter(name: string): boolean;
 
-/** Returns the value of a global parameter. */
-declare function getGlobalParameter(name: string, defaultValue?: any): any;
-
-/** Returns true if the current record has the named parameter. */
+/** Returns true if the specified parameter has been defined. Only parameters before the current record will be checked.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af023fd31344206b149bafc7650e0c940 */
 declare function hasParameter(name: string): boolean;
 
-/** Returns the value of a parameter for the current record. */
-declare function getParameter(name: string, defaultValue?: any): any;
-
-/** Returns a property value. */
+/** Returns the value of the specified post property. If the specified property doesn't exist, it returns the default value if specified, otherwise it returns undefined. You can retrieve an operation property of a specific section by using the 'section.getProperty()' function. It takes the same arguments as getProperty(). Since r45811. e.g.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8f6be90781835876e83f3f9c3a2a9f2e */
 declare function getProperty(property: any, defaultValue?: any): any;
 
-/** Sets a property value. */
-declare function setProperty(property: any, value: any): void;
-
-/** Validates property definitions. */
+/** Validates the property definitions.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a839f5acba612e862aae67a7f3c1b9a2b */
 declare function validatePropertyDefinitions(): boolean;
 
-/** Validates property values. */
-declare function validateProperties(): boolean;
-
-// ---- Work Plane / Offset Functions ----
-
-/** Returns true if the work plane has changed from the previous section. */
+/** Returns whether a new work plane is needed for the given section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af94e1ac219746838218be332fb272bf8 */
 declare function isNewWorkPlane(section: Section): boolean;
 
-/** Returns true if the work offset has changed from the previous section. */
+/** Returns whether a new work offset is used for the given section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aad87d4f314d638033ac911776ad92675 */
 declare function isNewWorkOffset(section: Section): boolean;
 
 // ---- Circular Motion Query Functions (available during onCircular) ----
 
-/** Returns the circular center. */
-declare function getCircularCenter(): Vector;
-/** Returns the circular offset (from start to center). */
+/** Returns the distance from the circular start point to the circular center for the current circular motion. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3bade4829be3d8fa885e645bb3044835 */
 declare function getCircularOffset(): Vector;
-/** Returns the circular start radius. */
-declare function getCircularStartRadius(): number;
-/** Returns the circular radius. */
+/** Returns the end radius for the current circular motion. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a155d9fb287c5f2bd7435b428b99bbd42 */
 declare function getCircularRadius(): number;
-/** Returns the circular sweep angle in radians. */
-declare function getCircularSweep(): number;
-/** Returns the circular chord length. */
+/** Returns the chord length for the current circular motion. Returns an unspecified value if the current motion is not circular. Returns 0 for full circular motion.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a92b44ddbab2d4d93aaeac12e31b77745 */
 declare function getCircularChordLength(): number;
-/** Returns the circular arc length. */
-declare function getCircularArcLength(): number;
-/** Returns true if the current arc is clockwise. */
+/** Returns true if the current circular motion is clockwise. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a14747147268151dbc30cd3e56fd3a004 */
 declare function isClockwise(): boolean;
-/** Returns true if the current arc is a full circle. */
-declare function isFullCircle(): boolean;
-/** Returns true if the current arc is helical. */
+/** Returns true if the current circular motion is helical. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a01a9ca5a770fd8305ef906f060f22ba4 */
 declare function isHelical(): boolean;
-/** Returns true if the current arc is a spiral. */
-declare function isSpiral(): boolean;
-/** Returns the circular normal. */
+/** The CCW-normal of the circular plane. However, the normal is flipped if isClockwise() is true. This behavior ensures direct compatibility with RS274 for the right hand G17, G18, and G19 plane convention.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a265723cd031146ee8488701cd1d9a3e2 */
 declare function getCircularNormal(): Vector;
-/** Returns the circular plane. */
-declare function getCircularPlane(): number;
-/** Returns the helical offset. */
+/** Returns the helical offset of the current circular motion. Returns (0, 0, 0) for non-helical motion. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aec4b48eb694068006417b64a350e4810 */
 declare function getHelicalOffset(): Vector;
-/** Returns the helical distance. */
-declare function getHelicalDistance(): number;
-/** Returns the helical pitch. */
+/** Returns the helical pitch of the current circular motion. Returns 0 for non-helical motion. Returns an unspecified value if the current motion is not circular.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6064301b2facee8e6cf98d8cef99d599 */
 declare function getHelicalPitch(): number;
-/** Returns true if the circular motion can be linearized. */
-declare function canLinearize(): boolean;
-/** Linearizes the current circular motion. */
+/** Linearizes the current motion to the specified tolerance. Use canLinearize() to determine if the current record can be linearized. The start position is not output.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aac3c83981c8dc36ab49c0fabdd2ff797 */
 declare function linearize(tolerance: number): void;
-/** Returns the number of linearization segments needed. */
-declare function getNumberOfSegments(tolerance: number): number;
-/** Returns the interpolated position at parameter u (0..1). */
+/** Returns the position at the specified u coordinate for the current motion. The u coordinate is clamped to the range [0; 1].
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a62c9464783461827866ce0484f79875b */
 declare function getPositionU(u: number): Vector;
-/** Returns the end point of the current motion. */
-declare function getEnd(): Vector;
-/** Returns the length of the current motion. */
+/** Returns the length of the current motion.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab7d7f0c43fd26b5a4239a308cf30472b */
 declare function getLength(): number;
-/** Returns the feedrate of the current motion. */
-declare function getFeedrate(): number;
-/** Returns the current movement type. */
+/** Returns the current movement type.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae3abe6300395639591b45c33b5381138 */
 declare function getMovement(): number;
-/** Returns the current power state. */
-declare function getPower(): boolean;
-/** Returns the current spindle speed. */
+/** Returns the current spindle speed.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#acf81b549de1d1898a48e1802d2d5a819 */
 declare function getSpindleSpeed(): number;
-/** Returns the current radius compensation mode. */
-declare function getRadiusCompensation(): number;
-
-// ---- Redirection Functions ----
-
-/** Returns true if output is being redirected. */
+/** Returns true if the output is being redirected.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0a6388b6aaf271b71c67bef0f1de654f */
 declare function isRedirecting(): boolean;
-/** Redirects output to a file. */
-declare function redirectToFile(path: string): void;
-/** Redirects output to a buffer. */
+/** Redirects the output to the global buffer. Use getRedirectionBuffer() to access the current buffer content. Use getRedirectionBuffer2() to clear the buffer during redirection. Close redirection again using closeRedirection().
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aa340ed7126b7659daafb1f475231b314 */
 declare function redirectToBuffer(): void;
-/** Returns the redirection buffer contents. */
-declare function getRedirectionBuffer(): string;
-/** Returns the redirection buffer contents and optionally clears it. */
+/** Returns the current content of the redirection buffer.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a219c1ac74b576fb85a9af1438e97d04a */
 declare function getRedirectionBuffer2(clear: boolean): string;
-/** Closes the redirection. */
-declare function closeRedirection(): void;
-
-// ---- Path / File Functions ----
-
-/** Returns the intermediate CNC file path. */
+/** Returns the path on the intermediate file.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9ad7f064508d465d310ee4b1d6207499 */
 declare function getIntermediatePath(): string;
-/** Returns the output file path. */
-declare function getOutputPath(): string;
-/** Returns the configuration folder. */
+/** Returns the path on the configuration folder.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abb5ce62e5dd0f757a5c316068bd936e5 */
 declare function getConfigurationFolder(): string;
-/** Returns the configuration script path. */
-declare function getConfigurationPath(): string;
-/** Returns the post processor folder. */
+/** Returns the folder path on the running post processor.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6cc63a50acc839e5152a0473ca4766db */
 declare function getPostProcessorFolder(): string;
-/** Returns the post processor path. */
-declare function getPostProcessorPath(): string;
-/** Includes another script file.
+/** Includes the specified post processing script.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a92ca78e202ec522d37d4773ec3a37541 */
 declare function include(path: string): void;
-/** Finds a file by path (checks multiple locations). */
-declare function findFile(path: string): string;
-
-// ---- Localization Functions ----
-
-/** Translates a message using locale files.
+/** Returns the localized text for the specified native text if the result is supported in the active code page/encoding. Otherwise the original text is returned.
  * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a336174d3ff096f7bcb809c6fb3893e23 */
 declare function localize(message: string): string;
 
-/** Translates a message with a section qualifier. */
-declare function localize2(section: string, message: string): string;
-
-/** Returns the language ID. */
+/** Returns the language id.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9584192e467c9bc0b08bcf8d70436a95 */
 declare function getLangId(): string;
 
-/** Loads a locale. */
-declare function loadLocale(langId: string): boolean;
-
-// ---- Code Page Functions ----
-
-/** Returns the code page. */
+/** Returns the current output code page id.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7d5e6896041e74f6785b1f25189d7b74 */
 declare function getCodePage(): number;
 
-/** Sets the code page (e.g. "ascii", "ansi", "utf-8"). */
-declare function setCodePage(name: string): void;
-
-// ---- Text Utility Functions ----
-
-/** Returns the value if condition is true, otherwise empty string. */
+/** Returns the specified value if the condition is true and otherwise the empty string.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a40f235f2a37336416b69e72f53d04fa2 */
 declare function conditional(condition: any, value: string): string;
 
-/** Returns true if the text contains only safe characters. */
-declare function isSafeText(text: string, permitted: string): boolean;
-
-/** Filters text to keep only specified characters. */
+/** Returns a new string with all characters not present in keep removed.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab924009686e0b4fa1b363a946c21b648 */
 declare function filterText(text: string, keep: string): string;
 
-/** Translates characters in text (maps src chars to dest chars). */
-declare function translateText(text: string, src: string, dest: string): string;
-
-/** Substitutes placeholders in a format string. */
+/** Returns a new string with the named substrings of the first argument substituted by the specified arguments. This method supports up to 16 arguments.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af80b7272cd5dd0f7f99a1a236247a638 */
 declare function subst(message: string, ...args: any[]): string;
 
-/** Loads text from a URL or file. */
-declare function loadText(url: string, encoding?: string): string;
-
-/** Parses a string as a float. */
+/** Converts the specified text to a float. Raises an exception if all the specified text cannot be converted.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8cbd3635d767a591d11206722ac593f9 */
 declare function getAsFloat(text: string): number;
 
-/** Parses a string as an integer. */
-declare function getAsInt(text: string): number;
-
-// ---- Misc Functions ----
-
-/** Returns the output unit. */
+/** Returns the output unit.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aca73af21b3d2186fc803fe680f1d6f38 */
 declare function getOutputUnit(): number;
-/** Sets the output unit (MM or IN). */
-declare function setOutputUnit(unit: number): void;
-/** Returns true if dog-leg motion is active. */
+/** Returns the dog-leg flag. The default is false.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3471aa215809eeb7d857e2db6a099eeb */
 declare function getDogLeg(): boolean;
-/** Sets dog-leg motion mode. */
-declare function setDogLeg(dogLeg: boolean): void;
-/** Sets the end-of-line marker. */
+/** Sets the EOL style. Windows EOL style CRLF is the default.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#afc3adcad7debce557de1aefe9c491d81 */
 declare function setEOL(eol: string): void;
-/** Sets the exit code for the post engine. */
-declare function setExitCode(code: number): void;
-/** Skips the rest of the current section. */
+/** Tells the post processor to skip the remaining of the current section. onSectionEnd() will still be invoked.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3fa7cf1713aa6d66f84ac3e6fea769a3 */
 declare function skipRemainingSection(): void;
-/** Returns true if speed-feed synchronization is active. */
-declare function isSpindleSpeedDifferent(section: Section): boolean;
-/** Returns the inverse time feedrate. */
+/** Returns the inverse time (F).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#accfe735dd76556e25b597ee506b4d414 */
 declare function getInverseTime(distance: number, speed: number): number;
-/** Returns the plane for a given direction vector. */
-declare function getPlane(direction: Vector): number;
-/** Converts a plane constant to an ISO plane constant. */
+/** Returns the standard G-code plane number (17, 18, or 19). PLANE_XY: 17 PLANE_ZX: 18 PLANE_YZ: 19 Returns 0 for all other planes.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac04586b1089c5c2f30e4e56bb187ba2a */
 declare function getISOPlane(plane: number): number;
-/** Returns true if two directions are the same. */
-declare function isSameDirection(a: any, b: any): boolean;
-/** Returns the quadrant for an angle. */
+/** Returns the quadrant for the specified angle (0 -> 3).
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3dff57fe1bff7929f791c78f072d8a5c */
 declare function getQuadrant(angle: number): number;
-/** Returns the workpiece bounding box. */
-declare function getWorkpiece(): BoundingBox;
-/** Returns the fixture bounding box. */
+/** Returns the fixture bounding box.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0e75c92b9d1e3fa1155c1bf2fa29e56d */
 declare function getFixture(): BoundingBox;
-/** Returns true if a workpiece is defined. */
-declare function isWorkpieceDefined(): boolean;
-/** Gets program name as an integer within range. */
+/** Get the program name as an Integer if it is within the [min, max] range, or error otherwise.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3ae713848a4348b6a1366d12b1b1c886 */
 declare function getProgramNameAsInt(min: number, max: number): number;
-/** Gets program name as a string within character limit. */
-declare function getProgramNameAsString(charLimit: number): string;
-/** Gets the Z range across the whole toolpath. */
+/** Returns the Z range for the currently active tool, for the current and upcoming consecutive sections that use this tool. Returns undefined if the tool does not have a Z axis (e.g. on 2D operations). Returns the Range for the tool's Z axis.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a250bca3a3a1a32ad8798b8d172e5ccc7 */
 declare function toolZRange(): Range;
-/** Gets the system unit. */
-declare function getSystemUnit(): number;
-/** Gets the platform string. */
+/** Returns the platform identifier. E.g. "WIN32" for Windows and "OSX" for Mac OS X.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#adf1be112d5f70697ded4b3e5465d37f2 */
 declare function getPlatform(): string;
-/** Gets the product name. */
-declare function getProduct(): string;
-/** Gets the product version. */
+/** Returns the version of the software component.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a12b5671e8920e8ce5c4457ea8d0d9fb2 */
 declare function getVersion(): string;
-/** Returns a coolant name string. */
-declare function getCoolantName(coolant: number): string;
-/** Returns a material name string. */
+/** Returns the specified material as a string.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6642268d6ed91ea9b516820913f247f4 */
 declare function getMaterialName(material: number): string;
-/** Returns a command string identifier. */
-declare function getCommandStringId(command: number): string;
-/** Returns true if the command is well-known. */
+/** Returns true if the specified command is well-known.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3e865d9162a02f0e92e349fbadbd5e0c */
 declare function isWellKnownCommand(command: number): boolean;
-/** Returns true if the command can be safely ignored. */
-declare function canIgnoreCommand(command: number): boolean;
-/** Handles an unsupported command. */
+/** Writes an error message for the specified command.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a8a05d18dfacdbd16cadf68bb4346e0aa */
 declare function onUnsupportedCommand(command: number): void;
-/** Handles an unsupported coolant. */
-declare function onUnsupportedCoolant(coolant: number): void;
-/** Registers a termination handler function. */
+/** Registers a termination handler to be called after onTerminate(). The termination handlers are called in the opposite order of registration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a927541aef6a94ce44f99b01f3727ee72 */
 declare function registerTerminationHandler(fn: Function): void;
-/** Registers a post-processing step. */
-declare function registerPostProcessing(path: string): void;
-/** Loads a machine configuration from file. */
+/** Loads the specified machine configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a44e37f1703ec1a53346741ed2524d480 */
 declare function loadMachineConfiguration(path: string): MachineConfiguration;
-/** Returns true if user interaction is allowed. */
-declare function isInteractionAllowed(): boolean;
-/** Returns the security level. */
+/** Returns the security level in which is post processor is running.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad2e9135827033f0de36ccf48557cf04a */
 declare function getSecurityLevel(): number;
-/** Returns the number of records. */
-declare function getNumberOfRecords(): number;
-/** Returns a record by ID. */
+/** Returns the specified record.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0a2b6f4236b1d7ffa123d6a49a149791 */
 declare function getRecord(id: number): Record;
-/** Returns the current record ID. */
-declare function getCurrentRecordId(): number;
-/** Returns true if the current cycle point is being expanded. */
+/** Returns true if the current motion is a result of an expanded motion. Expanded motion is for instance produced by expandCyclePoint().
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a02a2028fad06308dcd85b70cb04d4a52 */
 declare function isExpanding(): boolean;
-/** Checks whether a section is a probe operation. */
-declare function isProbeOperation(section: Section): boolean;
-/** Checks whether a section is an inspection operation. */
+/** Returns whether the current section is an inspection operation Returns true if section is an inspection operation, otherwise returns false
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a642a1927f57fb8cc76caf97e8d57ff51 */
 declare function isInspectionOperation(section: Section): boolean;
-/** Checks whether a section is a deposition operation. */
-declare function isDepositionOperation(section: Section): boolean;
-/** Checks whether a section is a drilling cycle. */
+/** Returns whether the current section is a drilling operation Returns true if section is a drilling operation, otherwise returns false
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a7216eb38f0a20d1b80f7a6997d72b812 */
 declare function isDrillingCycle(section: Section, checkBoringCycles?: boolean): boolean;
-/** Checks whether a section is a tapping cycle. */
-declare function isTappingCycle(section: Section): boolean;
-/** Checks whether a section is an axial center drilling. */
+/** Returns whether the current section is an axial center drilling operation Returns true if section is an axial center drilling operation, otherwise returns false
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a41f9c0e32ddbad2431dc5ef8a1afaf05 */
 declare function isAxialCenterDrilling(section: Section, checkLiveTool?: boolean): boolean;
-/** Checks whether a section is a milling cycle. */
-declare function isMillingCycle(section: Section, checkBoringCycles?: boolean): boolean;
-/** Generates an array of numbers. */
+/** Returns an array with values in the requested range. range(end) range(first, end) range(first, end, step)
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#afad3cc545e7389e65984f259550d7f77 */
 declare function range(first: number, end: number, step?: number): number[];
-/** Generates a two-element interval array. */
-declare function interval(from: number, to: number): number[];
-/** Flattens a nested array. */
+/** Flattens the specified array.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a3c74249c9ab6fe2ab2a8638a116b146a */
 declare function flatten(array: any[]): any[];
 
 // ---- Invoke Functions (re-dispatch motion) ----
 
-/** Re-invokes onRapid with the given coordinates. */
-declare function invokeOnRapid(x: number, y: number, z: number): boolean;
-/** Re-invokes onLinear with the given coordinates. */
+/** Called to invoke onLinear in the post engine. Returns true on success.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abe2741ffa77244c8bd6ac1391cfae611 */
 declare function invokeOnLinear(x: number, y: number, z: number, feedrate: number): boolean;
-/** Re-invokes onRapid5D. */
-declare function invokeOnRapid5D(x: number, y: number, z: number, dx: number, dy: number, dz: number): boolean;
-/** Re-invokes onLinear5D. */
+/** Called to invoke onLinear5D in the post engine. Returns true on success.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#abaf22029e26d5f51421fe4166506a1c6 */
 declare function invokeOnLinear5D(x: number, y: number, z: number, dx: number, dy: number, dz: number, feedrate: number): boolean;
-/** Re-invokes onCircular. */
-declare function invokeOnCircular(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, nx: number, ny: number, nz: number, feedrate: number): boolean;
-/** Re-invokes onSpindleSpeed. */
+/** Called to invoke onSpindleSpeed in the post engine. Returns true on success.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aa3ca0ba6f36a8b5919a573d00d2a7f23 */
 declare function invokeOnSpindleSpeed(spindleSpeed: number): boolean;
-/** Called for implied commands. */
-declare function onImpliedCommand(command: number): void;
-
-// ---- Polar Mode Functions ----
-
-/** Activates polar interpolation mode. */
+/** Call to activate and setup Polar Mode. Returns the polar transformed initial position and direction as a pair of vectors. var x_axis = new Vector (1, 0, 0); var posDir = activatePolarMode (0.01, cOutput.getCurrent(), x_axis); var x = posDir. first . x ; var y = posDir.first.y; var z = posDir.first.z; var a = posDir.second.x; var b = posDir.second.y; var c = posDir.second.z;
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae1f3a4050caf79e540af1d476f30b36c */
 declare function activatePolarMode(tolerance: number, currentAngle: number, polarDirection: Vector, interpolateRapidMoves: boolean, optimizeType: number): VectorPair;
-/** Deactivates polar mode. */
-declare function deactivatePolarMode(): void;
-/** Returns true if polar mode is active. */
+/** Call to check if Polar Mode is active. Returns true if activatePolarMode() has been called.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a477da21ffbfa7f66d5b22e49cfc057da */
 declare function isPolarModeActive(): boolean;
-/** Returns the polar position. */
-declare function getPolarPosition(x: number, y: number, z: number): VectorPair;
-/** Activates automatic polar mode handling. */
+/** Activates automatic polar mode handling. The supported options are:
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a1b625e72dad004c2a77eb9279089c7e2 */
 declare function activateAutoPolarMode(options: object): void;
 
 // ---- Expanded motion callbacks (called by expandCyclePoint) ----
 
-/** Called for expanded rapid motion. */
-declare function onExpandedRapid(x: number, y: number, z: number): void;
-/** Called for expanded linear motion. */
+/** onExpandedLinear() calls the onLinear() entry function and lets the post processor know that the current position has changed at the same time. You should generally not call onLinear() directly.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aaa669c442e5def9ccc580358f48526e3 */
 declare function onExpandedLinear(x: number, y: number, z: number, feed: number): void;
-/** Called for expanded spindle speed changes. */
-declare function onExpandedSpindleSpeed(spindleSpeed: number): void;
-
-// ---- Record navigation ----
-
-/** Returns true if a previous record exists. */
+/** Returns true if the section has a previous record.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ae1e59cc8cd9f9354b478b8af6b472331 */
 declare function hasPreviousRecord(): boolean;
-/** Returns the previous record. */
-declare function getPreviousRecord(): Record;
-/** Returns true if a next record exists. */
+/** Returns true if the section has a next record.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab61a4e3f43cedde851db7f3237e4b91c */
 declare function hasNextRecord(): boolean;
-/** Returns the next record. */
-declare function getNextRecord(): Record;
-
-// ===========================================================================
-//  ENTRY FUNCTIONS (implement in your .cps file)
-// ===========================================================================
-
-/** Called when the machine configuration changes. */
+/** Invoked during post processing when the machine configuration changes.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6c28394831f15db91439641be42789aa */
 declare function onMachine(): void;
 
-/** Called once at post processing initialization. Output the program header here.
- * @see https://cam.autodesk.com/posts/reference/entry_functions.html */
+/** Invoked during initialization before the first section.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a65df793600ddb8e3b4dbece18d24438d */
 declare function onOpen(): void;
 
-/** Called for each name-value parameter pair in the CLD data. */
-declare function onParameter(name: string, value: any): void;
-
-/** Called for pass-through text. */
+/** Pass-through entry function.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ac85eb260176dc186767f8e93c650c0c8 */
 declare function onPassThrough(value: any): void;
 
 /** Called for each comment. */
@@ -2218,77 +1963,52 @@ declare function onComment(comment: string): void;
 /** Called at the start of each section (operation). */
 declare function onSection(): void;
 
-/** Called for special cycle sections. */
-declare function onSectionSpecialCycle(): void;
-
-/** Called for dwell commands. */
+/** Entry function invoked for dwelling.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a63f5afc08861039dd5c28fa82f5ef59e */
 declare function onDwell(seconds: number): void;
 
-/** Called when spindle speed changes. */
-declare function onSpindleSpeed(spindleSpeed: number): void;
-
-/** Called for each linear rapid motion.
- * Prevent dog-leg movement in the generated program. */
+/** Entry function invoked for linear motion at rapid traverse.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ad8921f5ec26f581064354f9feb4f928c */
 declare function onRapid(x: number, y: number, z: number): void;
 
-/** Called for each linear feed motion. */
-declare function onLinear(x: number, y: number, z: number, feedrate: number): void;
-
-/** Called for each circular motion. */
+/** Entry function for circular motion.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a69cdac7a0532f704ede16ce81511ee30 */
 declare function onCircular(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, feedrate: number): void;
 
-/** Called for each 5-axis rapid motion. */
-declare function onRapid5D(x: number, y: number, z: number, dx: number, dy: number, dz: number): void;
-
-/** Called for each 5-axis linear feed motion. */
+/** Entry function invoked for linear 5-axis motion at feed. The tool axis may also be returned in machine angles depending on the mode in accordance with the active machine configuration.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a44c2cdde97b41e1ab81bd836ee859aa2 */
 declare function onLinear5D(x: number, y: number, z: number, dx: number, dy: number, dz: number, feedrate: number): void;
 
-/** @deprecated Use onRewindMachineEntry. Called when machine axis rewind is required. */
-declare function onRewindMachine(a: number, b: number, c: number): void;
-
-/** Called before a machine rewind procedure. */
+/** Entry function invoked for 5-axis motion when machine axis rewind is required. This is called before performing a machine rewind in the kernel, as onRewindMachine() is now deprecated. Returns True if we don't want the kernel to perform the machine rewind, False otherwise.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a071236cc3d3d72695f0f11bd1e2e723d */
 declare function onRewindMachineEntry(a: number, b: number, c: number): void;
 
-/** Required for rewinds. Retract to safe position before indexing. */
-declare function onMoveToSafeRetractPosition(): void;
-
-/** Required for rewinds. Return from safe position after indexing. */
+/** Entry function invoked during a machine rewind procedure. It needs to output the code for returning from safe position after indexing rotaries.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a9e63cd78348e19028e0203569a90bb6c */
 declare function onReturnFromSafeRetractPosition(x: number, y: number, z: number): void;
 
-/** Required for rewinds. Rotate axes to new position. */
-declare function onRotateAxes(x: number, y: number, z: number, a: number, b: number, c: number): void;
-
-/** Called when the movement type changes. */
+/** Entry function invoked when the movement type changes.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a5bb516854f5f66d7a4e084c3a45e7a13 */
 declare function onMovement(movement: number): void;
 
-/** Called when power mode changes (for waterjet/laser/plasma). */
-declare function onPower(power: boolean): void;
-
-/** Called when radius compensation mode changes. */
+/** Entry function invoked when the radius compensation mode changes.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#ab82fdefb6ee23686a3c945dcb7147718 */
 declare function onRadiusCompensation(): void;
 
-/** Called when feed mode changes. */
-declare function onFeedMode(mode: number): void;
-
-/** Called when tool compensation mode changes. */
+/** Entry function invoked when the tool compensation changes. Only used for specific tool types for which dual compensation is defined.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af4166ab645097eaea7f43c76f4d7ae80 */
 declare function onToolCompensation(compensation: number): void;
 
-/** Called at the beginning of each cycle. */
-declare function onCycle(): void;
-
-/** Called for each point in the active cycle. */
+/** onCyclePoint() is the entry function for cycle positions. The function expands all well-known cycles by default. The specified position is the center of the hole for drilling or equivalent cycles. You should always use cycle.bottom as the bottom coordinate if defined.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a4e1cf241ab139ce858a305e36dfffb93 */
 declare function onCyclePoint(x: number, y: number, z: number): void;
 
-/** Called at the beginning of a cycle with toolpath. */
-declare function onCyclePath(): void;
-
-/** Called at the end of a cycle with toolpath. */
+/** The onCyclePathEnd() entry function is invoked at the ending of cycle toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a0ee125703ef4618fd8bc76e57a66c5d7 */
 declare function onCyclePathEnd(): void;
 
-/** Called on cycle completion. */
-declare function onCycleEnd(): void;
-
-/** Called for well-known commands (e.g. stop spindle). */
+/** Entry function invoked for well-known commands. The known commands are:
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#af3a71236d7fe350fd33bdc14b0c7a4c6 */
 declare function onCommand(command: number): void;
 
 /** Called for Manual NC commands. */
@@ -2303,40 +2023,28 @@ declare function onOrientateSpindle(angle: number): void;
 /** Called after the last posted operation of a Part Alignment. */
 declare function onLiveAlignment(): void;
 
-/** Called for additive FFF linear extrusion motion. */
-declare function onLinearExtrude(x: number, y: number, z: number, feedrate: number, extrusionLength: number): void;
-
-/** Called for additive FFF circular extrusion motion. */
+/** Entry function invoked for circular extrusion motion at feed.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#aba9be73978debf179c90eba8a1a0cb96 */
 declare function onCircularExtrude(clockwise: boolean, cx: number, cy: number, cz: number, x: number, y: number, z: number, feedrate: number, extrusionLength: number): void;
 
-/** Called at the start of an additive layer. */
-declare function onLayer(layerNumber: number): void;
-
-/** Called at the end of an additive DED layer. */
+/** Entry function invoked at the end of a layer in a DED toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a927e748ba62cc2904121381791ed14c4 */
 declare function onLayerEnd(layerNumber: number): void;
 
-/** Called when FFF extrusion length resets. */
-declare function onExtrusionReset(length: number): void;
-
-/** Called when the FFF extruder changes. */
+/** Entry function invoked when the extruder is changed in an additive FFF toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a6bc70ee5e27a6df284a81caef1b12aeb */
 declare function onExtruderChange(extruderId: number): void;
 
-/** Called when FFF extruder temperature changes. */
-declare function onExtruderTemp(temp: number, wait: boolean, extruderId: number): void;
-
-/** Called when FFF bed temperature changes. */
+/** Entry function invoked when the bed temperature is changed in an additive FFF toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a03ae658a31598983f59dd743f10d7bb4 */
 declare function onBedTemp(temp: number, wait: boolean): void;
 
-/** Called when FFF fan speed changes. */
-declare function onFanSpeed(speed: number, fanId: number): void;
-
-/** Called when FFF max acceleration changes. */
+/** Entry function invoked when the max axis acceleration is changed in an additive FFF toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#a79a06a70f46244b796c7c0061d27b54d */
 declare function onMaxAcceleration(xAxis: number, yAxis: number, zAxis: number, eAxis: number): void;
 
-/** Called when FFF acceleration changes. */
-declare function onAcceleration(travel: number, printing: number, retract: number): void;
-
-/** Called when FFF jerk changes. */
+/** Entry function invoked when the axis jerk is changed in an additive FFF toolpath.
+ * @see https://cam.autodesk.com/posts/reference/classPostProcessor.html#afd0052ff663b0c7572683014d12e9f60 */
 declare function onJerk(xAxis: number, yAxis: number, zAxis: number, eAxis: number): void;
 
 /** Called at the end of each section (operation). */
