@@ -827,6 +827,8 @@ function ensureTypesPackage(root, extensionTypesPath) {
         }
     }
     catch { /* ignore */ }
+    // Ensure ATA picks up postprocessor types when package.json exists.
+    ensureTypesDependencyDeclaration(root);
     // Clean up broken typeRoots from jsconfig.json if present
     const jsconfigPath = path.join(root, 'jsconfig.json');
     try {
@@ -855,6 +857,27 @@ function ensureTypesPackage(root, extensionTypesPath) {
         }
     }
     catch { /* ignore */ }
+}
+function ensureTypesDependencyDeclaration(root) {
+    const packageJsonPath = path.join(root, 'package.json');
+    try {
+        if (!fs.existsSync(packageJsonPath))
+            return;
+        const raw = fs.readFileSync(packageJsonPath, 'utf-8');
+        const pkg = JSON.parse(raw);
+        const inDeps = pkg.dependencies && typeof pkg.dependencies === 'object' && pkg.dependencies['@types/postprocessor'];
+        const inDevDeps = pkg.devDependencies && typeof pkg.devDependencies === 'object' && pkg.devDependencies['@types/postprocessor'];
+        if (inDeps || inDevDeps)
+            return;
+        if (!pkg.devDependencies || typeof pkg.devDependencies !== 'object') {
+            pkg.devDependencies = {};
+        }
+        pkg.devDependencies['@types/postprocessor'] = '1.0.0';
+        fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2), 'utf-8');
+    }
+    catch {
+        // Ignore invalid package.json or write failures.
+    }
 }
 function installTypeDeclarations(context, fallbackDir) {
     const folders = vscode.workspace.workspaceFolders;
