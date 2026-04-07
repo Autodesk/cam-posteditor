@@ -59,6 +59,18 @@
 				}
 			},
 			{
+				"command": "autodesk.post.functionList.filter",
+				"title": "Search functions",
+				"shortTitle": "Search...",
+				"icon": "$(search)"
+			},
+			{
+				"command": "autodesk.post.functionList.clearFilter",
+				"title": "Clear the search filter and show all functions",
+				"shortTitle": "Clear search",
+				"icon": "$(clear-all)"
+			},
+			{
 				"command": "autodesk.post.disableLineSelection",
 				"title": "Disable auto line selection",
 				"category": "Autodesk Post Utility"
@@ -369,6 +381,16 @@
 			"view/title": [
 				{
 					"command": "autodesk.post.functionList.refresh",
+					"when": "view == functionList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.functionList.filter",
+					"when": "view == functionList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.functionList.clearFilter",
 					"when": "view == functionList",
 					"group": "navigation"
 				},

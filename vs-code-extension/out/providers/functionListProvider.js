@@ -65,6 +65,7 @@ class FunctionListProvider {
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.tree = new FunctionNode();
         this.preferredEditor = undefined;
+        this.filterText = '';
         vscode.window.onDidChangeActiveTextEditor(e => {
             if (this.preferredEditor && e?.document.uri.fsPath !== this.preferredEditor.document.uri.fsPath)
                 this.preferredEditor = undefined;
@@ -95,13 +96,30 @@ class FunctionListProvider {
     setPreferredEditor(editor) {
         this.preferredEditor = editor;
     }
+    setFilter(text) {
+        this.filterText = (text || '').trim().toLowerCase();
+        this._onDidChangeTreeData.fire();
+    }
+    clearFilter() {
+        if (this.filterText) {
+            this.filterText = '';
+            this._onDidChangeTreeData.fire();
+        }
+    }
+    getFilter() {
+        return this.filterText;
+    }
     async getChildren(node) {
         if (node) {
             return node.children;
         }
         const editor = this.preferredEditor ?? vscode.window.activeTextEditor;
         await this.updateSymbols(editor);
-        return this.tree.children;
+        let children = this.tree.children;
+        if (this.filterText) {
+            children = this._filterNodes(children, this.filterText);
+        }
+        return children;
     }
     getTreeItem(node) {
         const sym = node.symbol;
@@ -157,6 +175,24 @@ class FunctionListProvider {
             tree.sort();
         }
         this.tree = tree;
+    }
+    _filterNodes(nodes, filter) {
+        const result = [];
+        for (const node of nodes) {
+            const name = node.symbol?.name?.toLowerCase() ?? '';
+            if (name.includes(filter)) {
+                result.push(node);
+            }
+            else if (node.children.length > 0) {
+                const filtered = this._filterNodes(node.children, filter);
+                if (filtered.length > 0) {
+                    const clone = new FunctionNode(node.symbol);
+                    clone.children = filtered;
+                    result.push(clone);
+                }
+            }
+        }
+        return result;
     }
     getIcon(active) {
         const icon = active ? 'active.svg' : 'func.svg';

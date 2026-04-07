@@ -187,7 +187,8 @@ function activate(context) {
     }));
     const propertyListView = vscode.window.createTreeView('propertyList', { treeDataProvider: propertyProvider });
     context.subscriptions.push(propertyListView);
-    vscode.window.registerTreeDataProvider('functionList', functionListProvider);
+    const functionListView = vscode.window.createTreeView('functionList', { treeDataProvider: functionListProvider });
+    context.subscriptions.push(functionListView);
     const regressionTestView = vscode.window.createTreeView('regressionTestList', {
         treeDataProvider: regressionTestTree,
         manageCheckboxStateManually: true,
@@ -732,6 +733,12 @@ function activate(context) {
     // Function list
     sub.push(vscode.commands.registerCommand('autodesk.post.functionList.refresh', () => functionListProvider.refresh()));
     sub.push(vscode.commands.registerCommand('autodesk.post.functionList.revealRange', highlightRange));
+    sub.push(vscode.commands.registerCommand('autodesk.post.functionList.filter', () => promptFilter(functionListProvider, 'functions', functionListView)));
+    sub.push(vscode.commands.registerCommand('autodesk.post.functionList.clearFilter', () => {
+        functionListProvider.clearFilter();
+        if (functionListView)
+            functionListView.description = undefined;
+    }));
     // Other commands
     sub.push(vscode.commands.registerCommand('autodesk.post.showOptions', () => showOptions(engine)));
     sub.push(vscode.commands.registerCommand('autodesk.post.showDebuggedCode', () => toggleShowDebuggedCode()));
