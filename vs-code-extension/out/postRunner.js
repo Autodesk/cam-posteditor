@@ -1244,7 +1244,7 @@ class PostEngine {
                     }
                     fs.writeFileSync(this.outputPath + '.annotations.json', JSON.stringify(annotations), 'utf-8');
                     try { fs.unlinkSync(tempInline); } catch { /* ignore */ }
-                    this.context.workspaceState.update('debugOutputPostPath', {
+                    await this.context.workspaceState.update('debugOutputPostPath', {
                         postPath: postLocation,
                         outputPath: this.outputPath,
                         decorationMode: mode,
@@ -1253,7 +1253,7 @@ class PostEngine {
                 else if (mode === 'off') {
                     await removeDebugLines(this.outputPath, postLocation, this.debugOutputPath);
                     if (postLocation) {
-                        this.context.workspaceState.update('debugOutputPostPath', {
+                        await this.context.workspaceState.update('debugOutputPostPath', {
                             postPath: postLocation,
                             outputPath: this.outputPath,
                         });
@@ -1261,7 +1261,7 @@ class PostEngine {
                 }
                 else if (mode === 'full' && postLocation) {
                     await removeDebugLines(this.outputPath, postLocation, this.debugOutputPath, { writeCleanedFile: false });
-                    this.context.workspaceState.update('debugOutputPostPath', {
+                    await this.context.workspaceState.update('debugOutputPostPath', {
                         postPath: postLocation,
                         outputPath: this.outputPath,
                     });

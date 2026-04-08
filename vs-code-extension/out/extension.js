@@ -243,6 +243,13 @@ function activate(context) {
         if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document)
             updateCallStackDecorations(vscode.window.activeTextEditor);
     });
+    // Catch first-open of debuggedfile.nc when preserveFocus keeps .cps active
+    vscode.window.onDidChangeVisibleTextEditors(editors => {
+        for (const editor of editors) {
+            if (path.basename(editor.document.uri.fsPath).toLowerCase() === 'debuggedfile.nc')
+                updateCallStackDecorations(editor);
+        }
+    });
     vscode.window.onDidChangeTextEditorSelection(e => lineSelection.handleSelectionChange(e));
     // ── Command registration ──────────────────────────────────────
     const sub = context.subscriptions;
