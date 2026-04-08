@@ -326,30 +326,73 @@ function activate(context) {
         const color = entryFunctionColors[fn] || defaultAnnotationColor;
         return decorationTypesByColor.get(color);
     }
+    // Inline mode now renders annotations as ghost text (decorations) instead of writing them into the file
+    const afterAnnotationDecType = vscode.window.createTextEditorDecorationType({});
+    sub.push(afterAnnotationDecType);
     function updateCallStackDecorations(editor) {
         if (!editor)
             return;
         const doc = editor.document;
-        const isDebugOut = doc.languageId === 'nccode' && (path.basename(doc.uri.fsPath).toLowerCase() === 'debuggedfile.nc' || doc.getText().includes('(→'));
-        if (!isDebugOut) {
+        const basename = path.basename(doc.uri.fsPath).toLowerCase();
+        const isDebugFile = basename === 'debuggedfile.nc';
+        const stored = context.workspaceState.get('debugOutputPostPath');
+        const isDecorationMode = isDebugFile && stored?.decorationMode;
+        if (!isDecorationMode) {
             for (const dec of decorationTypesByColor.values())
                 editor.setDecorations(dec, []);
+            editor.setDecorations(afterAnnotationDecType, []);
             return;
         }
-        const text = doc.getText();
-        const rangesByType = new Map();
+        // Clear old color decorations (not used in ghost mode)
         for (const dec of decorationTypesByColor.values())
-            rangesByType.set(dec, []);
-        let m;
-        debugAnnotationRe.lastIndex = 0;
-        while ((m = debugAnnotationRe.exec(text)) !== null) {
-            const start = doc.positionAt(m.index);
-            const end = doc.positionAt(m.index + m[0].length);
-            const dec = getDecorationTypeForFunction(m[1]);
-            rangesByType.get(dec).push(new vscode.Range(start, end));
+            editor.setDecorations(dec, []);
+        const annotPath = doc.uri.fsPath + '.annotations.json';
+        let annotations;
+        try {
+            annotations = JSON.parse(fs.readFileSync(annotPath, 'utf-8'));
+        } catch { editor.setDecorations(afterAnnotationDecType, []); return; }
+        if (!Array.isArray(annotations) || annotations.length === 0) {
+            editor.setDecorations(afterAnnotationDecType, []);
+            return;
         }
-        for (const [dec, ranges] of rangesByType)
-            editor.setDecorations(dec, ranges);
+        const afterDecorations = [];
+        const MIN_COL = 45;
+        const TAB = 4;
+        const dispLen = (s) => { let n = 0; for (let c = 0; c < s.length; c++) n += s[c] === '\t' ? TAB : 1; return n; };
+        // First pass: collect entries and find max NC line display-length
+        const entries = [];
+        let maxLen = 0;
+        const useDetailed = stored?.decorationMode === 'inline-detailed';
+        for (const a of annotations) {
+            if (a.line >= doc.lineCount) continue;
+            const fn = (useDetailed && a.ofn) ? a.ofn : a.fn;
+            const ln = (useDetailed && a.oln != null) ? a.oln : a.ln;
+            const annotationText = ln != null ? `(→ ${fn} ln:${ln})` : `(→ ${fn})`;
+            const color = entryFunctionColors[a.fn] || entryFunctionColors[fn] || defaultAnnotationColor;
+            const lineText = doc.lineAt(a.line).text;
+            const lineDispLen = dispLen(lineText);
+            if (lineDispLen > maxLen) maxLen = lineDispLen;
+            entries.push({ line: a.line, lineDispLen, annotationText, color, lineLen: lineText.length });
+        }
+        const maxColRaw = config.get('columnAlignPaddingMax') || 0;
+        let annotationCol = Math.max(MIN_COL, maxLen + 1);
+        if (maxColRaw > 0) annotationCol = Math.min(annotationCol, maxColRaw);
+        // Second pass: build decorations with margin-based alignment
+        for (const e of entries) {
+            const pad = Math.max(2, annotationCol - e.lineDispLen);
+            afterDecorations.push({
+                range: new vscode.Range(e.line, e.lineLen, e.line, e.lineLen),
+                renderOptions: {
+                    after: {
+                        contentText: e.annotationText,
+                        color: e.color,
+                        fontStyle: 'italic',
+                        margin: `0 0 0 ${pad}ch`,
+                    }
+                }
+            });
+        }
+        editor.setDecorations(afterAnnotationDecType, afterDecorations);
     }
     if (vscode.window.activeTextEditor)
         updateCallStackDecorations(vscode.window.activeTextEditor);
@@ -943,14 +986,15 @@ async function showOptions(engine) {
 }
 async function toggleShowDebuggedCode() {
     const current = config.get('showDebuggedCode');
-    const cur = (current === 'inline' || current === 'full') ? current : 'off';
+    const cur = (current === 'inline' || current === 'inline-detailed' || current === 'full') ? current : 'off';
     const pick = await vscode.window.showQuickPick([
         { label: 'Off', description: 'Clean NC only; click and hover when enabled' },
-        { label: 'Inline', description: 'Entry function and line on each NC line' },
+        { label: 'Inline', description: 'Ghost annotations showing top-level entry functions (e.g. onOpen, onSection, onRapid)' },
+        { label: 'Inline (detailed)', description: 'Ghost annotations showing the actual output function', value: 'inline-detailed' },
         { label: 'Full', description: '!DEBUG lines kept in output' }
-    ], { title: 'Debug output when posting', placeHolder: cur === 'off' ? 'Off' : cur === 'inline' ? 'Inline' : 'Full' });
+        ], { title: 'Debug output when posting', placeHolder: cur === 'off' ? 'Off' : cur === 'inline' ? 'Inline' : cur === 'inline-detailed' ? 'Inline (detailed)' : 'Full' });
     if (pick)
-        config.update('showDebuggedCode', pick.label.toLowerCase(), true);
+        config.update('showDebuggedCode', pick.value || pick.label.toLowerCase(), true);
 }
 async function toggleLineSelection() {
     const val = await vscode.window.showQuickPick(['True', 'False']);

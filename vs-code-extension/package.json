@@ -688,14 +688,16 @@
 					"enum": [
 						"off",
 						"inline",
+						"inline-detailed",
 						"full"
 					],
 					"enumDescriptions": [
 						"Off: clean NC only; click and hover show call stack when enabled",
-						"Inline: entry function and line on each NC line; full call stack on hover",
+						"Inline: clean NC with ghost annotations showing top-level entry functions (e.g. onOpen, onSection, onRapid); full call stack on hover",
+						"Inline (detailed): clean NC with ghost annotations showing the actual output function; full call stack on hover",
 						"Full: !DEBUG lines kept in output; call stack on hover"
 					],
-					"description": "Debug output when posting: Off, Inline, or Full"
+					"description": "Debug output when posting: Off, Inline, Inline (detailed), or Full"
 				},
 				"AutodeskPostUtility.showWriteBlockInCallStack": {
 					"type": "boolean",
