@@ -947,7 +947,8 @@ function installTypeDeclarations(context, fallbackDir) {
     const folders = vscode.workspace.workspaceFolders;
     // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
     const extensionTypesPath = path.join(context.extensionPath, 'res', 'language files');
-    if (!fs.existsSync(path.join(extensionTypesPath, 'globals.d.ts')))
+    const globalsPath = path.join(extensionTypesPath, 'globals.d.ts');
+    if (!fs.existsSync(globalsPath))
         return;
     try {
         if (folders?.length) {
