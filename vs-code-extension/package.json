@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility for editing, testing, and debugging Autodesk Fusion post processors.",
-	"version": "5.0.0",
+	"version": "5.0.1",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -57,6 +57,18 @@
 					"dark": "res/icons/ref.svg",
 					"light": "res/icons/ref.svg"
 				}
+			},
+			{
+				"command": "autodesk.post.functionList.filter",
+				"title": "Search functions",
+				"shortTitle": "Search...",
+				"icon": "$(search)"
+			},
+			{
+				"command": "autodesk.post.functionList.clearFilter",
+				"title": "Clear the search filter and show all functions",
+				"shortTitle": "Clear search",
+				"icon": "$(clear-all)"
 			},
 			{
 				"command": "autodesk.post.disableLineSelection",
@@ -117,6 +129,11 @@
 				"icon": "$(filter)"
 			},
 			{
+				"command": "autodesk.post.updateOnlineLibrary",
+				"title": "Update Online Library",
+				"category": "Autodesk Post Utility"
+			},
+			{
 				"command": "autodesk.post.propertyList.refresh",
 				"title": "Load or reload post properties from the current post file",
 				"shortTitle": "Initialize Property List",
@@ -167,6 +184,11 @@
 			{
 				"command": "autodesk.post.updatePostProperties",
 				"title": "Update post properties for current file...",
+				"category": "Autodesk Post Utility"
+			},
+			{
+				"command": "autodesk.post.installTypeDeclarations",
+				"title": "Install IntelliSense type declarations",
 				"category": "Autodesk Post Utility"
 			},
 			{
@@ -359,6 +381,16 @@
 			"view/title": [
 				{
 					"command": "autodesk.post.functionList.refresh",
+					"when": "view == functionList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.functionList.filter",
+					"when": "view == functionList",
+					"group": "navigation"
+				},
+				{
+					"command": "autodesk.post.functionList.clearFilter",
 					"when": "view == functionList",
 					"group": "navigation"
 				},
@@ -656,14 +688,16 @@
 					"enum": [
 						"off",
 						"inline",
+						"inline-detailed",
 						"full"
 					],
 					"enumDescriptions": [
 						"Off: clean NC only; click and hover show call stack when enabled",
-						"Inline: entry function and line on each NC line; full call stack on hover",
+						"Inline: clean NC with ghost annotations showing top-level entry functions (e.g. onOpen, onSection, onRapid); full call stack on hover",
+						"Inline (detailed): clean NC with ghost annotations showing the actual output function; full call stack on hover",
 						"Full: !DEBUG lines kept in output; call stack on hover"
 					],
-					"description": "Debug output when posting: Off, Inline, or Full"
+					"description": "Debug output when posting: Off, Inline, Inline (detailed), or Full"
 				},
 				"AutodeskPostUtility.showWriteBlockInCallStack": {
 					"type": "boolean",

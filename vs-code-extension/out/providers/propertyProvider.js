@@ -151,9 +151,32 @@ class PropertyProvider {
         }
         return Array.from(names).sort((a, b) => (a === 'Other' ? 1 : a.localeCompare(b === 'Other' ? '\uffff' : b)));
     }
+    async getOrActivateCpsPath() {
+        const activeEditor = vscode.window.activeTextEditor;
+        if (activeEditor && activeEditor.document.fileName.toUpperCase().endsWith('.CPS')) {
+            this.lastCpsPath = activeEditor.document.fileName;
+            return activeEditor.document.fileName;
+        }
+        const cpsPath = this.lastCpsPath || '';
+        if (!cpsPath)
+            return '';
+        const norm = (p) => path.normalize(p).toLowerCase();
+        const existing = vscode.window.visibleTextEditors.find(e => norm(e.document.uri.fsPath) === norm(cpsPath));
+        try {
+            await vscode.window.showTextDocument(existing ? existing.document.uri : vscode.Uri.file(cpsPath), {
+                preserveFocus: false,
+                preview: false,
+                viewColumn: existing?.viewColumn ?? vscode.ViewColumn.One,
+            });
+            return cpsPath;
+        }
+        catch {
+            return '';
+        }
+    }
     // ── Property change handling ────────────────────────────────────
     async changeProperty(element, reset) {
-        const cpsPath = this.engine.getCpsPath();
+        const cpsPath = await this.getOrActivateCpsPath();
         if (!cpsPath)
             return;
         const cache = this.engine.getPropertyCache(cpsPath);

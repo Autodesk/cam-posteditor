@@ -67,7 +67,73 @@ function activate(context) {
     };
     // Setup
     addCPSToJSLanguage();
-    installTypeDeclarations(context);
+    let typeDeclarationsInstalled = false;
+    let typeDeclarationsPromptShown = false;
+    function ensureTypeDeclarations() {
+        if (!typeDeclarationsInstalled) {
+            typeDeclarationsInstalled = true;
+            installTypeDeclarations(context);
+            vscode.commands.executeCommand('typescript.restartTsServer');
+        }
+    }
+    function isCpsOrCpiFile(uri) {
+        const p = (uri && uri.fsPath || '').toLowerCase();
+        return p.endsWith('.cps') || p.endsWith('.cpi');
+    }
+    function isInWorkspace(uri) {
+        return !!vscode.workspace.getWorkspaceFolder(uri);
+    }
+    function isTypeDeclarationsAlreadyInstalled() {
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders?.length)
+            return false;
+        const root = folders[0].uri.fsPath;
+        // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+        const targetIndex = path.join(root, 'node_modules', '@types', 'postprocessor', 'index.d.ts');
+        // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+        const targetPkg = path.join(root, 'node_modules', '@types', 'postprocessor', 'package.json');
+        if (!(0, utils_1.fileExists)(targetIndex) || !(0, utils_1.fileExists)(targetPkg))
+            return false;
+        // Verify the installed file is up to date
+        // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+        const sourcePath = path.join(context.extensionPath, 'res', 'language files', 'globals.d.ts');
+        try {
+            const srcStat = fs.statSync(sourcePath);
+            const dstStat = fs.statSync(targetIndex);
+            return dstStat.size === srcStat.size;
+        }
+        catch {
+            return false;
+        }
+    }
+    async function promptTypeDeclarationsIfNeeded() {
+        if (typeDeclarationsPromptShown)
+            return;
+        const folders = vscode.workspace.workspaceFolders;
+        if (!folders?.length)
+            return;
+        if (context.workspaceState.get('autodesk.post.dontPromptTypeDeclarations'))
+            return;
+        if (isTypeDeclarationsAlreadyInstalled()) {
+            typeDeclarationsInstalled = true;
+            typeDeclarationsPromptShown = true;
+            return;
+        }
+        typeDeclarationsPromptShown = true;
+        const choice = await vscode.window.showInformationMessage(
+            'Install post processor type declarations in this workspace for better IntelliSense?',
+            'Yes',
+            'Not now',
+            'Don\'t show again for this workspace'
+        );
+        if (choice === 'Yes')
+            ensureTypeDeclarations();
+        else if (choice === 'Don\'t show again for this workspace')
+            context.workspaceState.update('autodesk.post.dontPromptTypeDeclarations', true);
+    }
+    // Prompt only when a .cps/.cpi file inside the workspace is opened (not for outside files like C:\posts\fanuc.cps)
+    context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(doc => { if (isCpsOrCpiFile(doc.uri) && isInWorkspace(doc.uri)) promptTypeDeclarationsIfNeeded(); }));
+    for (const doc of vscode.workspace.textDocuments) { if (isCpsOrCpiFile(doc.uri) && isInWorkspace(doc.uri)) { promptTypeDeclarationsIfNeeded(); break; } }
     // Post processor IntelliSense (completion + hover) for .cps/.cpi — register once only
     const postProcessorSymbols = postProcessorIntellisense.loadSymbols(context.extensionPath);
     const cpsCpiSelector = { language: 'javascript', scheme: 'file' };
@@ -116,9 +182,16 @@ function activate(context) {
     const machineListView = vscode.window.createTreeView('machineList', { treeDataProvider: machineTree });
     context.subscriptions.push(machineListView);
     engine.getPostEngineVersion().then(() => { });
+    context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('AutodeskPostUtility.postExecutablePath')) {
+            _engine.clearPostVersionCache();
+            _engine.getPostEngineVersion().then(() => { });
+        }
+    }));
     const propertyListView = vscode.window.createTreeView('propertyList', { treeDataProvider: propertyProvider });
     context.subscriptions.push(propertyListView);
-    vscode.window.registerTreeDataProvider('functionList', functionListProvider);
+    const functionListView = vscode.window.createTreeView('functionList', { treeDataProvider: functionListProvider });
+    context.subscriptions.push(functionListView);
     const regressionTestView = vscode.window.createTreeView('regressionTestList', {
         treeDataProvider: regressionTestTree,
         manageCheckboxStateManually: true,
@@ -172,6 +245,13 @@ function activate(context) {
     vscode.workspace.onDidChangeTextDocument(e => {
         if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document)
             updateCallStackDecorations(vscode.window.activeTextEditor);
+    });
+    // Catch first-open of debuggedfile.nc when preserveFocus keeps .cps active
+    vscode.window.onDidChangeVisibleTextEditors(editors => {
+        for (const editor of editors) {
+            if (path.basename(editor.document.uri.fsPath).toLowerCase() === 'debuggedfile.nc')
+                updateCallStackDecorations(editor);
+        }
     });
     vscode.window.onDidChangeTextEditorSelection(e => lineSelection.handleSelectionChange(e));
     // ── Command registration ──────────────────────────────────────
@@ -256,30 +336,73 @@ function activate(context) {
         const color = entryFunctionColors[fn] || defaultAnnotationColor;
         return decorationTypesByColor.get(color);
     }
+    // Inline mode now renders annotations as ghost text (decorations) instead of writing them into the file
+    const afterAnnotationDecType = vscode.window.createTextEditorDecorationType({});
+    sub.push(afterAnnotationDecType);
     function updateCallStackDecorations(editor) {
         if (!editor)
             return;
         const doc = editor.document;
-        const isDebugOut = doc.languageId === 'nccode' && (path.basename(doc.uri.fsPath).toLowerCase() === 'debuggedfile.nc' || doc.getText().includes('(→'));
-        if (!isDebugOut) {
+        const basename = path.basename(doc.uri.fsPath).toLowerCase();
+        const isDebugFile = basename === 'debuggedfile.nc';
+        const stored = context.workspaceState.get('debugOutputPostPath');
+        const isDecorationMode = isDebugFile && stored?.decorationMode;
+        if (!isDecorationMode) {
             for (const dec of decorationTypesByColor.values())
                 editor.setDecorations(dec, []);
+            editor.setDecorations(afterAnnotationDecType, []);
             return;
         }
-        const text = doc.getText();
-        const rangesByType = new Map();
+        // Clear old color decorations (not used in ghost mode)
         for (const dec of decorationTypesByColor.values())
-            rangesByType.set(dec, []);
-        let m;
-        debugAnnotationRe.lastIndex = 0;
-        while ((m = debugAnnotationRe.exec(text)) !== null) {
-            const start = doc.positionAt(m.index);
-            const end = doc.positionAt(m.index + m[0].length);
-            const dec = getDecorationTypeForFunction(m[1]);
-            rangesByType.get(dec).push(new vscode.Range(start, end));
+            editor.setDecorations(dec, []);
+        const annotPath = doc.uri.fsPath + '.annotations.json';
+        let annotations;
+        try {
+            annotations = JSON.parse(fs.readFileSync(annotPath, 'utf-8'));
+        } catch { editor.setDecorations(afterAnnotationDecType, []); return; }
+        if (!Array.isArray(annotations) || annotations.length === 0) {
+            editor.setDecorations(afterAnnotationDecType, []);
+            return;
         }
-        for (const [dec, ranges] of rangesByType)
-            editor.setDecorations(dec, ranges);
+        const afterDecorations = [];
+        const MIN_COL = 45;
+        const TAB = 4;
+        const dispLen = (s) => { let n = 0; for (let c = 0; c < s.length; c++) n += s[c] === '\t' ? TAB : 1; return n; };
+        // First pass: collect entries and find max NC line display-length
+        const entries = [];
+        let maxLen = 0;
+        const useDetailed = stored?.decorationMode === 'inline-detailed';
+        for (const a of annotations) {
+            if (a.line >= doc.lineCount) continue;
+            const fn = (useDetailed && a.ofn) ? a.ofn : a.fn;
+            const ln = (useDetailed && a.oln != null) ? a.oln : a.ln;
+            const annotationText = ln != null ? `(→ ${fn} ln:${ln})` : `(→ ${fn})`;
+            const color = entryFunctionColors[a.fn] || entryFunctionColors[fn] || defaultAnnotationColor;
+            const lineText = doc.lineAt(a.line).text;
+            const lineDispLen = dispLen(lineText);
+            if (lineDispLen > maxLen) maxLen = lineDispLen;
+            entries.push({ line: a.line, lineDispLen, annotationText, color, lineLen: lineText.length });
+        }
+        const maxColRaw = config.get('columnAlignPaddingMax') || 0;
+        let annotationCol = Math.max(MIN_COL, maxLen + 1);
+        if (maxColRaw > 0) annotationCol = Math.min(annotationCol, maxColRaw);
+        // Second pass: build decorations with margin-based alignment
+        for (const e of entries) {
+            const pad = Math.max(2, annotationCol - e.lineDispLen);
+            afterDecorations.push({
+                range: new vscode.Range(e.line, e.lineLen, e.line, e.lineLen),
+                renderOptions: {
+                    after: {
+                        contentText: e.annotationText,
+                        color: e.color,
+                        fontStyle: 'italic',
+                        margin: `0 0 0 ${pad}ch`,
+                    }
+                }
+            });
+        }
+        editor.setDecorations(afterAnnotationDecType, afterDecorations);
     }
     if (vscode.window.activeTextEditor)
         updateCallStackDecorations(vscode.window.activeTextEditor);
@@ -322,56 +445,10 @@ function activate(context) {
             return null;
         }
     }
+    // Do not provide definition for debug NC output so Ctrl+hover and Ctrl+click never jump.
+    // Jump to post is only via clicking the line (LineSelection).
     sub.push(vscode.languages.registerDefinitionProvider(debugOutputSelector, {
-        provideDefinition(doc, position) {
-            const stored = isDebugOutputDoc(doc);
-            if (!stored)
-                return null;
-            const text = doc.getText();
-            const offset = doc.offsetAt(position);
-            let m;
-            debugSuffixRe.lastIndex = 0;
-            while ((m = debugSuffixRe.exec(text)) !== null) {
-                const start = m.index;
-                const end = m.index + m[0].length;
-                if (offset >= start && offset <= end) {
-                    const lineNum = parseInt(m[1], 10);
-                    if (lineNum >= 1) {
-                        vscode.commands.executeCommand('autodesk.post.openPostAtLine', stored.postPath, lineNum);
-                        return null;
-                    }
-                    break;
-                }
-            }
-            const lineIndex = position.line;
-            const stackData = resolveStackPathAndPostPath(doc, stored);
-            if (stackData) {
-                const offset = postRunner_1.PostEngine.getDebugLineCountBefore(doc.getText(), lineIndex + 1);
-                const effectiveIndex = Math.max(0, lineIndex - offset);
-                let stack = Array.isArray(stackData.stacks[effectiveIndex]) ? stackData.stacks[effectiveIndex] : null;
-                if (!stack || stack.length === 0) {
-                    for (let i = effectiveIndex; i < stackData.stacks.length; i++) {
-                        const s = stackData.stacks[i];
-                        if (Array.isArray(s) && s.length > 0) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                }
-                if (!stack || stack.length === 0) {
-                    for (let i = effectiveIndex - 1; i >= 0; i--) {
-                        const s = stackData.stacks[i];
-                        if (Array.isArray(s) && s.length > 0) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                }
-                if (stack && stack.length > 0 && stack[0].line != null) {
-                    vscode.commands.executeCommand('autodesk.post.openPostAtLine', stackData.postPath, stack[0].line);
-                    return null;
-                }
-            }
+        provideDefinition() {
             return null;
         },
     }));
@@ -709,12 +786,28 @@ function activate(context) {
     // Function list
     sub.push(vscode.commands.registerCommand('autodesk.post.functionList.refresh', () => functionListProvider.refresh()));
     sub.push(vscode.commands.registerCommand('autodesk.post.functionList.revealRange', highlightRange));
+    sub.push(vscode.commands.registerCommand('autodesk.post.functionList.filter', () => promptFilter(functionListProvider, 'functions', functionListView)));
+    sub.push(vscode.commands.registerCommand('autodesk.post.functionList.clearFilter', () => {
+        functionListProvider.clearFilter();
+        if (functionListView)
+            functionListView.description = undefined;
+    }));
     // Other commands
     sub.push(vscode.commands.registerCommand('autodesk.post.showOptions', () => showOptions(engine)));
     sub.push(vscode.commands.registerCommand('autodesk.post.showDebuggedCode', () => toggleShowDebuggedCode()));
     sub.push(vscode.commands.registerCommand('autodesk.post.disableLineSelection', () => toggleLineSelection()));
     sub.push(vscode.commands.registerCommand('autodesk.post.setIncludePath', () => setIncludePath()));
     sub.push(vscode.commands.registerCommand('autodesk.post.updatePostProperties', () => engine.updatePostProperties()));
+    sub.push(vscode.commands.registerCommand('autodesk.post.installTypeDeclarations', () => {
+        if (!vscode.workspace.workspaceFolders?.length) {
+            vscode.window.showWarningMessage('Install IntelliSense type declarations only works when a folder or workspace is open. Open a folder first.');
+            return;
+        }
+        context.workspaceState.update('autodesk.post.dontPromptTypeDeclarations', undefined);
+        installTypeDeclarations(context);
+        vscode.commands.executeCommand('typescript.restartTsServer');
+        vscode.window.showInformationMessage('Post processor IntelliSense type declarations installed for this workspace.');
+    }));
     sub.push(vscode.commands.registerCommand('autodesk.post.foldPropertyList', () => foldPropertyList()));
     sub.push(vscode.commands.registerCommand('autodesk.post.downloadCNCExtractor', () => downloadCNCExtractor()));
     // Backward-compatible aliases for old hsm.* command IDs
@@ -779,34 +872,89 @@ function addCPSToJSLanguage() {
     const updated = { ...current, '*.cps': 'javascript', '*.cpi': 'javascript' };
     vscode.workspace.getConfiguration('files').update('associations', updated, true);
 }
+function ensureTypesPackage(root, extensionTypesPath) {
+    // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+    const sourcePath = path.join(extensionTypesPath, 'globals.d.ts');
+    if (!fs.existsSync(sourcePath))
+        return;
+    // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+    const targetDir = path.join(root, 'node_modules', '@types', 'postprocessor');
+    const targetIndex = path.join(targetDir, 'index.d.ts');
+    const targetPkg = path.join(targetDir, 'package.json');
+    try {
+        fs.mkdirSync(targetDir, { recursive: true });
+        fs.copyFileSync(sourcePath, targetIndex);
+        if (!fs.existsSync(targetPkg)) {
+            fs.writeFileSync(targetPkg, JSON.stringify({ name: "@types/postprocessor", version: "1.0.0", types: "index.d.ts" }, null, 2), 'utf-8');
+        }
+    }
+    catch { /* ignore */ }
+    // Ensure ATA picks up postprocessor types when package.json exists.
+    ensureTypesDependencyDeclaration(root);
+    // Clean up broken typeRoots from jsconfig.json if present
+    // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+    const jsconfigPath = path.join(root, 'jsconfig.json');
+    try {
+        if (fs.existsSync(jsconfigPath)) {
+            const raw = fs.readFileSync(jsconfigPath, 'utf-8');
+            const config = JSON.parse(raw);
+            const roots = config.compilerOptions?.typeRoots;
+            if (Array.isArray(roots)) {
+                const normalizedExt = path.normalize(extensionTypesPath);
+                const filtered = roots.filter(r => path.normalize(path.isAbsolute(r) ? r : path.join(root, r)) !== normalizedExt);
+                if (filtered.length !== roots.length) {
+                    if (filtered.length === 0 || (filtered.length === 1 && filtered[0] === 'node_modules/@types')) {
+                        delete config.compilerOptions.typeRoots;
+                    } else {
+                        config.compilerOptions.typeRoots = filtered;
+                    }
+                    if (Object.keys(config.compilerOptions).length === 0)
+                        delete config.compilerOptions;
+                    if (Object.keys(config).length === 0) {
+                        fs.unlinkSync(jsconfigPath);
+                    } else {
+                        fs.writeFileSync(jsconfigPath, JSON.stringify(config, null, 2), 'utf-8');
+                    }
+                }
+            }
+        }
+    }
+    catch { /* ignore */ }
+}
+function ensureTypesDependencyDeclaration(root) {
+    // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+    const packageJsonPath = path.join(root, 'package.json');
+    try {
+        if (!fs.existsSync(packageJsonPath))
+            return;
+        const raw = fs.readFileSync(packageJsonPath, 'utf-8');
+        const pkg = JSON.parse(raw);
+        const inDeps = pkg.dependencies && typeof pkg.dependencies === 'object' && pkg.dependencies['@types/postprocessor'];
+        const inDevDeps = pkg.devDependencies && typeof pkg.devDependencies === 'object' && pkg.devDependencies['@types/postprocessor'];
+        if (inDeps || inDevDeps)
+            return;
+        if (!pkg.devDependencies || typeof pkg.devDependencies !== 'object') {
+            pkg.devDependencies = {};
+        }
+        pkg.devDependencies['@types/postprocessor'] = '1.0.0';
+        fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2), 'utf-8');
+    }
+    catch {
+        // Ignore invalid package.json or write failures.
+    }
+}
 function installTypeDeclarations(context, fallbackDir) {
     const folders = vscode.workspace.workspaceFolders;
-    const source = path.join(context.extensionPath, 'res', 'language files', 'globals.d.ts');
-    if (!fs.existsSync(source))
+    // nosemgrep
+    const extensionTypesPath = path.join(context.extensionPath, 'res', 'language files');
+    // nosemgrep
+    const globalsPath = path.join(extensionTypesPath, 'globals.d.ts');
+    if (!fs.existsSync(globalsPath))
         return;
     try {
         if (folders?.length) {
-            // Workspace open: install into node_modules/@types so the JS server picks it up project-wide
             const root = folders[0].uri.fsPath;
-            const targetDir = path.join(root, 'node_modules', '@types', 'post-processor');
-            (0, utils_1.ensureDir)(targetDir);
-            const targetFile = path.join(targetDir, 'index.d.ts');
-            let needsCopy = !(0, utils_1.fileExists)(targetFile) || fs.statSync(source).size !== fs.statSync(targetFile).size;
-            if (needsCopy)
-                fs.copyFileSync(source, targetFile);
-            const pkg = path.join(targetDir, 'package.json');
-            if (!(0, utils_1.fileExists)(pkg))
-                fs.writeFileSync(pkg, '{"name":"@types/post-processor","version":"1.0.0","types":"index.d.ts"}');
-        } else {
-            // No workspace: keep globals.d.ts in the OS temp dir so nothing lands next to the user's files.
-            // The extension's own completion/hover provider (registered with scheme:'file') handles
-            // standalone CPS files independently of the TS language server.
-            const tempTypesDir = path.join(require('os').tmpdir(), 'autodesk-cps-types');
-            (0, utils_1.ensureDir)(tempTypesDir);
-            const targetFile = path.join(tempTypesDir, 'globals.d.ts');
-            let needsCopy = !(0, utils_1.fileExists)(targetFile) || fs.statSync(source).size !== fs.statSync(targetFile).size;
-            if (needsCopy)
-                fs.copyFileSync(source, targetFile);
+            ensureTypesPackage(root, extensionTypesPath);
         }
     }
     catch { /* ignore */ }
@@ -855,14 +1003,15 @@ async function showOptions(engine) {
 }
 async function toggleShowDebuggedCode() {
     const current = config.get('showDebuggedCode');
-    const cur = (current === 'inline' || current === 'full') ? current : 'off';
+    const cur = (current === 'inline' || current === 'inline-detailed' || current === 'full') ? current : 'off';
     const pick = await vscode.window.showQuickPick([
         { label: 'Off', description: 'Clean NC only; click and hover when enabled' },
-        { label: 'Inline', description: 'Entry function and line on each NC line' },
+        { label: 'Inline', description: 'Ghost annotations showing top-level entry functions (e.g. onOpen, onSection, onRapid)' },
+        { label: 'Inline (detailed)', description: 'Ghost annotations showing the actual output function', value: 'inline-detailed' },
         { label: 'Full', description: '!DEBUG lines kept in output' }
-    ], { title: 'Debug output when posting', placeHolder: cur === 'off' ? 'Off' : cur === 'inline' ? 'Inline' : 'Full' });
+        ], { title: 'Debug output when posting', placeHolder: cur === 'off' ? 'Off' : cur === 'inline' ? 'Inline' : cur === 'inline-detailed' ? 'Inline (detailed)' : 'Full' });
     if (pick)
-        config.update('showDebuggedCode', pick.label.toLowerCase(), true);
+        config.update('showDebuggedCode', pick.value || pick.label.toLowerCase(), true);
 }
 async function toggleLineSelection() {
     const val = await vscode.window.showQuickPick(['True', 'False']);

@@ -69,14 +69,14 @@ function getMachineDisplayLabelFromPath(filePath) {
         return undefined;
     }
 }
-/** Returns "off" | "inline" | "full". Boolean true → inline, false → off. */
+/** Returns "off" | "inline" | "inline-detailed" | "full". Boolean true → inline, false → off. */
 function getDebugOutputMode() {
     const raw = config.get('showDebuggedCode');
     if (raw === true)
         return 'inline';
     if (raw === false)
         return 'off';
-    if (raw === 'off' || raw === 'inline' || raw === 'full')
+    if (raw === 'off' || raw === 'inline' || raw === 'inline-detailed' || raw === 'full')
         return raw;
     return 'off';
 }
@@ -235,7 +235,11 @@ class PostEngine {
         return this.postExecutable;
     }
     ensurePostKernel() {
-        this.postExecutable = config.get('postExecutablePath');
+        const fromConfig = config.get('postExecutablePath');
+        if (fromConfig !== this.postExecutable) {
+            this.postExecutable = fromConfig;
+            this._cachedPostVersion = null;
+        }
         if (!(0, utils_1.fileExists)(this.postExecutable)) {
             this.locatePostExe(true);
         }
@@ -246,6 +250,8 @@ class PostEngine {
             if (found) {
                 this.postExecutable = found;
                 config.update('postExecutablePath', found, true);
+                this.clearPostVersionCache();
+                this.getPostEngineVersion().then(() => { });
                 return;
             }
         }
@@ -259,6 +265,8 @@ class PostEngine {
         if ((0, utils_1.fileExists)(selected) && selected.toLowerCase().includes('post')) {
             this.postExecutable = selected;
             config.update('postExecutablePath', selected, true);
+            this.clearPostVersionCache();
+            this.getPostEngineVersion().then(() => { });
             vscode.window.showInformationMessage('Post processor location updated.');
         }
         else {
@@ -1187,21 +1195,65 @@ class PostEngine {
             await (0, utils_1.execFileAsync)(this.postExecutable, params, { timeout });
             if ((0, utils_1.fileExists)(this.outputPath)) {
                 const mode = getDebugOutputMode();
-                if (mode === 'inline' && postLocation) {
+                if ((mode === 'inline' || mode === 'inline-detailed') && postLocation) {
+                    // 1. Save raw debug output
                     fs.copyFileSync(this.outputPath, this.debugOutputPath);
-                    transformDebugOutputToInline(this.outputPath, postLocation);
-                    if ((config.get('columnAlignInlineAnnotations') ?? config.get('showInlineAnnotations') ?? true) === false) {
-                        stripAnnotationPaddingFromFile(this.outputPath);
+                    // 2. Run inline transform on a temp copy to get entry-function annotations
+                    const tempInline = this.outputPath + '.tmp_inline';
+                    fs.copyFileSync(this.outputPath, tempInline);
+                    transformDebugOutputToInline(tempInline, postLocation);
+                    // 3. Extract annotations and build clean file from the inline output
+                    const annotRe = /\s*\(→\s+(\w+)\s+ln:(\d+)\)\s*$/;
+                    const inlineLines = fs.readFileSync(tempInline, 'utf-8').split('\n');
+                    const annotations = [];
+                    const cleanLines = [];
+                    for (let i = 0; i < inlineLines.length; i++) {
+                        const m = inlineLines[i].match(annotRe);
+                        if (m) {
+                            annotations.push({ line: i, fn: m[1], ln: parseInt(m[2], 10) });
+                            cleanLines.push(inlineLines[i].substring(0, inlineLines[i].length - m[0].length).replace(/\s+$/, ''));
+                        } else {
+                            cleanLines.push(inlineLines[i]);
+                        }
                     }
-                    this.context.workspaceState.update('debugOutputPostPath', {
+                    // 4. Write the clean file
+                    fs.writeFileSync(this.outputPath, cleanLines.join('\n'));
+                    // 5. Write .stack.json for hover support
+                    await removeDebugLines(this.debugOutputPath, postLocation, this.debugOutputPath, { writeCleanedFile: false });
+                    const srcStack = this.debugOutputPath + '.stack.json';
+                    const dstStack = this.outputPath + '.stack.json';
+                    try { if ((0, utils_1.fileExists)(srcStack)) fs.copyFileSync(srcStack, dstStack); } catch { /* ignore */ }
+                    // 6. For inline-detailed, enrich annotations with output-function info from .stack.json
+                    if (mode === 'inline-detailed') {
+                        try {
+                            const stackData = JSON.parse(fs.readFileSync(dstStack, 'utf-8'));
+                            const stacks = stackData?.stacks;
+                            if (Array.isArray(stacks)) {
+                                for (const a of annotations) {
+                                    const stack = stacks[a.line];
+                                    if (Array.isArray(stack) && stack.length > 0) {
+                                        const innermost = stack[stack.length - 1];
+                                        if (innermost?.name) {
+                                            a.ofn = innermost.name;
+                                            a.oln = innermost.line;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch { /* ignore */ }
+                    }
+                    fs.writeFileSync(this.outputPath + '.annotations.json', JSON.stringify(annotations), 'utf-8');
+                    try { fs.unlinkSync(tempInline); } catch { /* ignore */ }
+                    await this.context.workspaceState.update('debugOutputPostPath', {
                         postPath: postLocation,
                         outputPath: this.outputPath,
+                        decorationMode: mode,
                     });
                 }
                 else if (mode === 'off') {
                     await removeDebugLines(this.outputPath, postLocation, this.debugOutputPath);
                     if (postLocation) {
-                        this.context.workspaceState.update('debugOutputPostPath', {
+                        await this.context.workspaceState.update('debugOutputPostPath', {
                             postPath: postLocation,
                             outputPath: this.outputPath,
                         });
@@ -1209,7 +1261,7 @@ class PostEngine {
                 }
                 else if (mode === 'full' && postLocation) {
                     await removeDebugLines(this.outputPath, postLocation, this.debugOutputPath, { writeCleanedFile: false });
-                    this.context.workspaceState.update('debugOutputPostPath', {
+                    await this.context.workspaceState.update('debugOutputPostPath', {
                         postPath: postLocation,
                         outputPath: this.outputPath,
                     });
@@ -1460,6 +1512,9 @@ class PostEngine {
     }
     // ── Version ─────────────────────────────────────────────────────
     _cachedPostVersion = null;
+    clearPostVersionCache() {
+        this._cachedPostVersion = null;
+    }
     async getPostEngineVersion() {
         if (this._cachedPostVersion != null)
             return this._cachedPostVersion;
