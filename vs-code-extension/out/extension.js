@@ -945,7 +945,7 @@ function ensureTypesDependencyDeclaration(root) {
 }
 function installTypeDeclarations(context, fallbackDir) {
     const folders = vscode.workspace.workspaceFolders;
-    // nosemgrep: app.chorus.semgrep.rules.njsscan.traversal.join_resolve_path_traversal
+    // nosemgrep: app.chorus.semgrep.rules.njsscan.semantic_grep.traversal.join_resolve_path_traversal
     const extensionTypesPath = path.join(context.extensionPath, 'res', 'language files');
     const globalsPath = path.join(extensionTypesPath, 'globals.d.ts');
     if (!fs.existsSync(globalsPath))
