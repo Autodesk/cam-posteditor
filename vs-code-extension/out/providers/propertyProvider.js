@@ -258,8 +258,25 @@ class PropertyProvider {
                 cache = { defaults: (0, utils_1.deepClone)(data), changed: existing.changed };
             }
             else {
-                // New or defaults changed: start fresh
-                cache = { defaults: (0, utils_1.deepClone)(data), changed: (0, utils_1.deepClone)(data) };
+                // New or defaults changed: start from new defaults but re-apply any user overrides
+                const newChanged = (0, utils_1.deepClone)(data);
+                if (existing) {
+                    for (const key of Object.keys(newChanged.properties)) {
+                        if (!(key in existing.changed.properties))
+                            continue;
+                        const userVal = this.extractValue(existing.changed.properties[key]);
+                        const oldDefault = this.extractValue(existing.defaults.properties[key]);
+                        // Only re-apply if the user had actually overridden this property
+                        if (userVal === undefined || String(userVal) === String(oldDefault))
+                            continue;
+                        const np = newChanged.properties[key];
+                        if (typeof np === 'object' && np !== null && 'value' in np)
+                            np.value = userVal;
+                        else
+                            newChanged.properties[key] = userVal;
+                    }
+                }
+                cache = { defaults: (0, utils_1.deepClone)(data), changed: newChanged };
             }
             this.engine.setPropertyCache(cpsPath, cache);
             return cache;

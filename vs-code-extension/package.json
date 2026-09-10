@@ -2,7 +2,7 @@
 	"name": "hsm-post-processor",
 	"displayName": "Autodesk Fusion Post Processor Utility",
 	"description": "Post processor utility for editing, testing, and debugging Autodesk Fusion post processors.",
-	"version": "5.0.1",
+	"version": "5.0.2",
 	"icon": "res/icons/logo.png",
 	"author": {
 		"name": "Autodesk",
@@ -543,11 +543,13 @@
 				"AutodeskPostUtility.postExecutablePath": {
 					"type": "string",
 					"default": "",
+					"scope": "machine",
 					"description": "The location for the Fusion post executable"
 				},
 				"AutodeskPostUtility.secondaryPostExecutablePath": {
 					"type": "string",
 					"default": "",
+					"scope": "machine",
 					"description": "The location for the secondary Fusion post executable"
 				},
 				"AutodeskPostUtility.externalDiffTool": {
@@ -576,6 +578,7 @@
 				"AutodeskPostUtility.externalDiffToolPath": {
 					"type": "string",
 					"default": "",
+					"scope": "machine",
 					"description": "Full path to diff executable. Only used when External Diff Tool is set to Custom. Tool is called with two arguments: reference file, then current file."
 				},
 				"AutodeskPostUtility.sortFunctionListAlphabetically": {
