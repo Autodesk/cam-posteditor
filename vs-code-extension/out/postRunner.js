@@ -1069,7 +1069,7 @@ class PostEngine {
     }
     async createRegressionReferenceFiles(selectedCncPaths) {
         if (this.hasRegressionReference()) {
-            const choice = await vscode.window.showWarningMessage('Reference already exists. Overwrite?', { modal: true }, 'Overwrite', 'Cancel');
+            const choice = await vscode.window.showWarningMessage('Reference already exists. Overwrite?', { modal: true }, 'Overwrite');
             if (choice !== 'Overwrite')
                 return;
         }

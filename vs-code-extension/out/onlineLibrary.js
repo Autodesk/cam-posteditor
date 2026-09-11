@@ -48,6 +48,7 @@ const MACHINES_JSON_URL = 'https://cam.autodesk.com/machines/machines/machines.j
 const DOWNLOAD_BASE = 'https://cam.autodesk.com/machines/download.php?name=';
 const DOWNLOAD_CONCURRENCY = 25;
 const HTTPS_AGENT = new https.Agent({ keepAlive: true, maxSockets: 32 });
+const MAX_REDIRECTS = 5;
 let cachedMachines;
 let cacheTime = 0;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -237,6 +238,12 @@ function inferAxisCount(name, description) {
         return parseInt(m[1], 10);
     return undefined;
 }
+/** True only for a plain file name that stays inside the directory it is joined to. */
+function isSafeCacheFilename(name) {
+    return typeof name === 'string' && name.length > 0 && name.length <= 200 &&
+        name !== '.' && name !== '..' && !path.isAbsolute(name) &&
+        name === path.basename(name) && !/[\u0000-\u001f:*?"<>|]/.test(name);
+}
 function parseMachineList(json) {
     const machines = [];
     let entries;
@@ -251,6 +258,8 @@ function parseMachineList(json) {
     for (const m of entries) {
         const filename = m.filename?.trim();
         if (!filename)
+            continue;
+        if (!isSafeCacheFilename(filename))
             continue;
         const name = [m.vendor, m.model].filter(Boolean).join(' ') || m.description || filename;
         const purpose = machiningToPurpose(m.machining);
@@ -271,13 +280,17 @@ function parseMachineList(json) {
     }
     return machines;
 }
-function httpGet(url) {
+function httpGet(url, redirectsLeft = MAX_REDIRECTS) {
     return new Promise((resolve, reject) => {
         https.get(url, { headers: { 'User-Agent': 'Autodesk-Post-Utility/5.0' } }, res => {
             if (res.statusCode === 301 || res.statusCode === 302) {
                 const loc = res.headers.location;
                 if (loc) {
-                    httpGet(loc.startsWith('http') ? loc : `https://cam.autodesk.com${loc}`).then(resolve, reject);
+                    if (redirectsLeft <= 0) {
+                        reject(new Error('Too many redirects'));
+                        return;
+                    }
+                    httpGet(loc.startsWith('http') ? loc : `https://cam.autodesk.com${loc}`, redirectsLeft - 1).then(resolve, reject);
                     return;
                 }
             }
@@ -292,14 +305,18 @@ function httpGet(url) {
         }).on('error', reject);
     });
 }
-function httpGetBuffer(url) {
+function httpGetBuffer(url, redirectsLeft = MAX_REDIRECTS) {
     const opts = { agent: HTTPS_AGENT, headers: { 'User-Agent': 'Autodesk-Post-Utility/5.0' } };
     return new Promise((resolve, reject) => {
         https.get(url, opts, res => {
             if (res.statusCode === 301 || res.statusCode === 302) {
                 const loc = res.headers.location;
                 if (loc) {
-                    httpGetBuffer(loc.startsWith('http') ? loc : `https://cam.autodesk.com${loc}`).then(resolve, reject);
+                    if (redirectsLeft <= 0) {
+                        reject(new Error('Too many redirects'));
+                        return;
+                    }
+                    httpGetBuffer(loc.startsWith('http') ? loc : `https://cam.autodesk.com${loc}`, redirectsLeft - 1).then(resolve, reject);
                     return;
                 }
             }

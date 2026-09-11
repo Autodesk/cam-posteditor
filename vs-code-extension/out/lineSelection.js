@@ -45,41 +45,61 @@ class LineSelection {
         this.engine = engine;
         this.amountToMove = 0;
         this.secondClick = false;
-        this.clickCount = 0;
+    }
+    parkCursor(editor, line, clickedChar) {
+        const docUri = editor.document.uri.fsPath;
+        setTimeout(() => {
+            const target = vscode.window.visibleTextEditors.find(e => e.document.uri.fsPath === docUri);
+            if (!target || !target.selection.isEmpty)
+                return;
+            // Only park if the caret is still where the click left it, so we never fight the user.
+            if (target.selection.start.line !== line || target.selection.start.character !== clickedChar)
+                return;
+            const lineLen = target.document.lineAt(line).text.length;
+            const parkChar = clickedChar === 0 ? Math.min(1, lineLen) : 0;
+            if (parkChar === clickedChar)
+                return;
+            target.selection = new vscode.Selection(line, parkChar, line, parkChar);
+        }, 0);
     }
     handleSelectionChange(event) {
         if (event.kind !== vscode.TextEditorSelectionChangeKind.Mouse)
             return;
-        const activeFile = vscode.window.activeTextEditor?.document.fileName ?? '';
+        const editor = event.textEditor;
+        const activeFile = editor.document.fileName;
         if (!activeFile.includes('debuggedfile') || activeFile.includes('.log'))
             return;
-        if (!vscode.window.activeTextEditor.selection.isEmpty)
-            return;
+        const selection = editor.selection;
+        if (!selection.isEmpty) {
+            if (selection.start.line !== selection.end.line)
+                return;
+            const wordRange = editor.document.getWordRangeAtPosition(selection.start);
+            if (!wordRange || !wordRange.isEqual(selection))
+                return;
+        }
         const enabled = config.get('navigateToPostAtLineOnNcClick') ?? config.get('enableClickToJumpInNcOutput') ?? config.get('enableAutoLineSelection') ?? true;
         if (!enabled)
             return;
-        this.clickCount++;
-        const selectedLine = vscode.window.activeTextEditor.selection.start.line;
-        if (selectedLine !== this.lastSelectedLine) {
+        const selectedLine = selection.start.line;
+        const clickedChar = selection.start.character;
+        const sameLine = selectedLine === this.lastSelectedLine;
+        this.lastSelectedLine = selectedLine;
+        if (!sameLine) {
             this.amountToMove = 0;
             this.secondClick = false;
         }
-        // Only require second click when first activating a new line; same-line clicks cycle through stack
-        if (selectedLine !== this.lastSelectedLine && this.clickCount % 2 !== 0)
-            return;
-        const needTwoClicks = config.get('twoClickLineJumping');
-        if (!this.secondClick && needTwoClicks) {
+        this.parkCursor(editor, selectedLine, clickedChar);
+        if (config.get('twoClickLineJumping') && !this.secondClick) {
             this.secondClick = true;
-            this.lastSelectedLine = selectedLine;
             return;
         }
-        const doc = vscode.window.activeTextEditor.document;
+        const doc = editor.document;
         const path = require('path');
         const norm = (p) => path.normalize((p || '').toLowerCase());
+        const isOwnDebugOutput = norm(doc.uri.fsPath) === norm(this.engine.outputPath);
         const stackPath = doc.uri.fsPath + '.stack.json';
-        const hasStackFile = fs.existsSync(stackPath);
-        const isTransformedOutput = hasStackFile || norm(activeFile) === norm(this.engine.outputPath);
-        if (isTransformedOutput && hasStackFile) {
+        const hasStackFile = isOwnDebugOutput && fs.existsSync(stackPath);
+        if (hasStackFile) {
             let lineToMoveTo = 0;
             let postPath = this.engine.getDebugPostPath();
             try {
@@ -112,23 +132,8 @@ class LineSelection {
             if (lineToMoveTo >= 1 && postPath) {
                 vscode.commands.executeCommand('autodesk.post.openPostAtLine', postPath, lineToMoveTo);
                 this.amountToMove++;
-                this.lastSelectedLine = selectedLine;
-                const self = this;
-                const docUri = doc.uri.fsPath;
-                const lineNum = selectedLine;
-                const col = vscode.window.activeTextEditor.selection.start.character;
-                setTimeout(() => {
-                    const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.fsPath === docUri);
-                    if (!editor || !editor.selection.isEmpty)
-                        return;
-                    if (editor.selection.start.line !== lineNum)
-                        return;
-                    const lineLen = editor.document.lineAt(lineNum).text.length;
-                    const newChar = lineLen > 0 ? Math.min(col + 1, lineLen) : 0;
-                    editor.selection = new vscode.Selection(lineNum, newChar, lineNum, newChar);
-                    if (config.get('twoClickLineJumping'))
-                        self.secondClick = false;
-                }, 0);
+                if (config.get('twoClickLineJumping'))
+                    this.secondClick = false;
                 return;
             }
         }
@@ -183,7 +188,6 @@ class LineSelection {
             }
             lineData.push(upper);
         }
-        this.lastSelectedLine = selectedLine;
     }
 }
 exports.LineSelection = LineSelection;

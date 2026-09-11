@@ -1,4 +1,10 @@
 
+## 5.0.2
+Fixed:
+  - **Click to jump**: clicking in the `.cps` file no longer makes the cursor jump around.
+  - **Machine Selector**: Machine names now always display the `.mch` filename instead of vendor + model, preventing duplicate entries.
+  - **Post Properties**: Changing a property in the `.cps` file no longer resets other user-modified property values back to their defaults.
+---
 ## 5.0.0 Major Update
 - **Recently used** files for CNC and Machines
 - Added **Search** support for CNC and Machine files

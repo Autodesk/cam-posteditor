@@ -145,7 +145,6 @@ function provideHover(symbols, document, position) {
     if (!sym)
         return undefined;
     const md = new vscode.MarkdownString();
-    md.isTrusted = true;
     if (sym.signature)
         md.appendCodeblock(sym.signature, "typescript");
     else

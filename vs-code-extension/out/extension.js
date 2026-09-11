@@ -336,6 +336,9 @@ function activate(context) {
         const color = entryFunctionColors[fn] || defaultAnnotationColor;
         return decorationTypesByColor.get(color);
     }
+    const defaultOutputDirForStack = path.join(os.tmpdir(), 'AutodeskPostUtility', 'OutputFiles');
+    const debugOutputFileForStack = path.join(defaultOutputDirForStack, 'debuggedfile.nc');
+    const normPath = (p) => path.normalize(p || '').toLowerCase();
     // Inline mode now renders annotations as ghost text (decorations) instead of writing them into the file
     const afterAnnotationDecType = vscode.window.createTextEditorDecorationType({});
     sub.push(afterAnnotationDecType);
@@ -343,8 +346,7 @@ function activate(context) {
         if (!editor)
             return;
         const doc = editor.document;
-        const basename = path.basename(doc.uri.fsPath).toLowerCase();
-        const isDebugFile = basename === 'debuggedfile.nc';
+        const isDebugFile = normPath(doc.uri.fsPath) === normPath(debugOutputFileForStack);
         const stored = context.workspaceState.get('debugOutputPostPath');
         const isDecorationMode = isDebugFile && stored?.decorationMode;
         if (!isDecorationMode) {
@@ -406,40 +408,53 @@ function activate(context) {
     }
     if (vscode.window.activeTextEditor)
         updateCallStackDecorations(vscode.window.activeTextEditor);
+    const MAX_STACK_FRAMES = 100;
+    const FRAME_NAME_RE = /^[\w$?]{1,120}$/; // names come from /function (\w+)\(/ in the post, or '?' when unknown
     function isDebugOutputDoc(doc) {
         const stored = context.workspaceState.get('debugOutputPostPath');
-        if (!stored?.postPath)
-            return null;
         const docPath = doc.uri.fsPath;
-        const storedPath = stored.outputPath || '';
-        const norm = (p) => path.normalize(p).toLowerCase();
-        const ok = norm(docPath) === norm(storedPath) ||
-            (path.basename(docPath).toLowerCase() === 'debuggedfile.nc' && docPath.toLowerCase().includes('outputfiles'));
-        return ok ? { postPath: stored.postPath } : null;
+        const isOurs = normPath(docPath) === normPath(debugOutputFileForStack) ||
+            (stored?.outputPath && normPath(docPath) === normPath(stored.outputPath));
+        return isOurs ? { postPath: stored?.postPath } : null;
+    }
+    function escapeMarkdownText(text) {
+        return String(text).replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, '\\$&').replace(/[\r\n]+/g, ' ');
+    }
+    function isUsablePostPath(p) {
+        return typeof p === 'string' && p.length > 0 && p.length <= 1024 && !/[\u0000-\u001f]/.test(p) &&
+            /\.(cps|cpi|js)$/i.test(p) && fs.existsSync(p);
+    }
+    function sanitizeStackEntry(entry) {
+        if (!Array.isArray(entry) || entry.length === 0)
+            return null;
+        const frames = [];
+        for (const f of entry.slice(0, MAX_STACK_FRAMES)) {
+            if (!f || typeof f !== 'object')
+                continue;
+            const name = typeof f.name === 'string' && FRAME_NAME_RE.test(f.name) ? f.name : '?';
+            const line = Number.isInteger(f.line) && f.line >= 1 && f.line <= 10000000 ? f.line : null;
+            frames.push({ name, line });
+        }
+        return frames.length > 0 ? frames : null;
     }
     // No document links on debug annotations — decorations only; F12 / DefinitionProvider still handles go-to-post.
     // F12 / click: use our command so .cps opens in left pane. Annotation click or .stack.json fallback when no inline annotation.
-    const defaultOutputDirForStack = path.join(os.tmpdir(), 'AutodeskPostUtility', 'OutputFiles');
     function resolveStackPathAndPostPath(doc, stored) {
+        if (!stored)
+            return null;
         const docPath = doc.uri.fsPath;
-        let stackPath = null;
-        if (path.basename(docPath).toLowerCase() === 'debuggedfile.nc') {
-            const fallback = path.join(defaultOutputDirForStack, 'debuggedfile.nc.stack.json');
-            if (fs.existsSync(fallback))
-                stackPath = fallback;
-        }
+        const stackPath = [docPath + '.stack.json', debugOutputFileForStack + '.stack.json'].find(p => fs.existsSync(p));
         if (!stackPath)
-            stackPath = docPath + '.stack.json';
-        if (!fs.existsSync(stackPath) && stored?.outputPath && fs.existsSync(stored.outputPath + '.stack.json'))
-            stackPath = stored.outputPath + '.stack.json';
-        if (!stackPath || !fs.existsSync(stackPath))
             return null;
         try {
             const raw = fs.readFileSync(stackPath, 'utf-8');
             const parsed = JSON.parse(raw);
-            const postPath = (parsed && typeof parsed.postPath === 'string') ? parsed.postPath : stored?.postPath;
-            const stacks = parsed && typeof parsed.stacks === 'object' ? parsed.stacks : null;
-            return Array.isArray(stacks) && postPath ? { stacks, postPath } : null;
+            const stacks = parsed && Array.isArray(parsed.stacks) ? parsed.stacks : null;
+            if (!stacks)
+                return null;
+            const postPath = isUsablePostPath(parsed.postPath) ? parsed.postPath
+                : (isUsablePostPath(stored.postPath) ? stored.postPath : null);
+            return postPath ? { stacks, postPath } : null;
         }
         catch {
             return null;
@@ -465,35 +480,24 @@ function activate(context) {
             const lineIndex = position.line;
             const offset = postRunner_1.PostEngine.getDebugLineCountBefore(doc.getText(), lineIndex + 1);
             const effectiveIndex = Math.max(0, lineIndex - offset);
-            let stack = Array.isArray(stacksArray) ? stacksArray[effectiveIndex] : undefined;
-            if (!stack || !Array.isArray(stack) || stack.length === 0) {
-                for (let i = effectiveIndex + 1; i < stacksArray.length; i++) {
-                    const s = stacksArray[i];
-                    if (Array.isArray(s) && s.length > 0) {
-                        stack = s;
-                        break;
-                    }
-                }
-                if (!stack || !Array.isArray(stack) || stack.length === 0) {
-                    for (let i = effectiveIndex - 1; i >= 0; i--) {
-                        const s = stacksArray[i];
-                        if (Array.isArray(s) && s.length > 0) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                }
+            let stack = sanitizeStackEntry(stacksArray[effectiveIndex]);
+            if (!stack) {
+                for (let i = effectiveIndex + 1; i < stacksArray.length && !stack; i++)
+                    stack = sanitizeStackEntry(stacksArray[i]);
+                for (let i = effectiveIndex - 1; i >= 0 && !stack; i--)
+                    stack = sanitizeStackEntry(stacksArray[i]);
             }
             try {
-                if (!stack || !Array.isArray(stack) || stack.length === 0) {
+                const trustedCommands = { enabledCommands: ['autodesk.post.openPostAtLine'] };
+                if (!stack) {
                     // Still show a hover so user sees the feature is active and can open the post
                     if (!postPath)
                         return null;
                     const md = new vscode.MarkdownString();
-                    md.isTrusted = true;
+                    md.isTrusted = trustedCommands;
                     md.appendMarkdown('**Call stack**\n\nNo call stack for this line.');
                     const args = encodeURIComponent(JSON.stringify([postPath, 1]));
-                    md.appendMarkdown(`\n\n[Open post: ${path.basename(postPath)}](command:autodesk.post.openPostAtLine?${args})`);
+                    md.appendMarkdown(`\n\n[Open post: ${escapeMarkdownText(path.basename(postPath))}](command:autodesk.post.openPostAtLine?${args})`);
                     return new vscode.Hover(md);
                 }
                 // Collapse consecutive same-name frames (e.g. writeToolCall called via writeStartBlocks callback) so the stack shows each function once, using the innermost line
@@ -507,16 +511,17 @@ function activate(context) {
                     return acc;
                 }, []);
                 const md = new vscode.MarkdownString();
-                md.isTrusted = true;
+                md.isTrusted = trustedCommands;
                 md.appendMarkdown('**Call stack**\n\n');
                 stack.forEach((f, i) => {
                     const note = i === stack.length - 1 ? ' ← output' : '';
+                    const label = escapeMarkdownText(f.line != null ? `${f.name} (ln:${f.line})` : f.name);
                     if (postPath && f.line != null) {
                         const args = encodeURIComponent(JSON.stringify([postPath, f.line]));
-                        md.appendMarkdown(`${i + 1}. [${f.name} (ln:${f.line})](command:autodesk.post.openPostAtLine?${args})${note}\n`);
+                        md.appendMarkdown(`${i + 1}. [${label}](command:autodesk.post.openPostAtLine?${args})${note}\n`);
                     }
                     else {
-                        md.appendMarkdown(`${i + 1}. ${f.name} (ln:${f.line})${note}\n`);
+                        md.appendMarkdown(`${i + 1}. ${label}${note}\n`);
                     }
                 });
                 return new vscode.Hover(md);
@@ -593,7 +598,9 @@ function activate(context) {
                 /* not JSON, use as path; line stays undefined */
             }
         }
-        if (!postPath || line == null || line <= 0)
+        if (typeof postPath !== 'string' || !Number.isInteger(line) || line <= 0)
+            return;
+        if (!/\.(cps|cpi|js)$/i.test(postPath) || !fs.existsSync(postPath))
             return;
         if (jumpHighlightTimeout)
             clearTimeout(jumpHighlightTimeout);
@@ -1294,12 +1301,7 @@ function openFolder(itemPath) {
         return;
     // If it's a file, open its parent directory
     const target = fs.statSync(itemPath).isFile() ? path.dirname(itemPath) : itemPath;
-    if (os.type() === 'Windows_NT') {
-        require('child_process').exec(`start "" "${target}"`);
-    }
-    else {
-        require('child_process').exec(`open "" "${target}"`);
-    }
+    vscode.env.openExternal(vscode.Uri.file(target));
 }
 function deactivate() {
     if (_engine) {

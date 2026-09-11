@@ -78,39 +78,42 @@ function getCachedMch(filePath) {
         return null;
     }
 }
+/** Escapes Markdown control characters: every field below comes out of a .mch file we did not write. */
+function escapeMarkdownText(text) {
+    return String(text).replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, '\\$&').replace(/[\r\n]+/g, ' ');
+}
 function makeMachineTooltip(name, subtitle, imageUrl, info) {
     const md = new vscode.MarkdownString();
-    md.isTrusted = true;
-    md.appendMarkdown(`**${name.replace(/\*\*/g, '\\*\\*')}**\n`);
+    md.appendMarkdown(`**${escapeMarkdownText(name)}**\n`);
     if (info?.description) {
         const desc = info.description.replace(/\s*\*\*\d+-axis\*\*\s*$/i, '').replace(/\s+\d+-axis\s*$/i, '').trim();
         if (desc)
-            md.appendMarkdown(`\n\n${desc}\n\n`);
+            md.appendMarkdown(`\n\n${escapeMarkdownText(desc)}\n\n`);
     }
     if (info) {
         const lines = [];
         if (info.vendor)
-            lines.push(`**Vendor:** ${info.vendor}`);
+            lines.push(`**Vendor:** ${escapeMarkdownText(info.vendor)}`);
         if (info.purpose && info.purpose !== 'Other')
-            lines.push(`**Purpose:** ${info.purpose}`);
+            lines.push(`**Purpose:** ${escapeMarkdownText(info.purpose)}`);
         const kinematicsPart = [info.axisCount != null ? `${info.axisCount}-axis` : '', info.kinematics].filter(Boolean).join(' ');
         if (kinematicsPart)
-            lines.push(`**Kinematics:** ${kinematicsPart}`);
+            lines.push(`**Kinematics:** ${escapeMarkdownText(kinematicsPart)}`);
         if (info.rotaryRanges && info.rotaryRanges.length > 0) {
             const rangesText = info.rotaryRanges.length > 2
                 ? info.rotaryRanges.slice(0, 2).join('; ') + '; …'
                 : info.rotaryRanges.join('; ');
-            lines.push(`**Rotary:** ${rangesText}`);
+            lines.push(`**Rotary:** ${escapeMarkdownText(rangesText)}`);
         }
         if (info.hasTcp != null)
             lines.push(`**TCP:** ${info.hasTcp ? 'Yes' : 'No'}`);
         if (info.feedrateMethod)
-            lines.push(`**Feedrate:** ${info.feedrateMethod}`);
+            lines.push(`**Feedrate:** ${escapeMarkdownText(info.feedrateMethod)}`);
         if (lines.length > 0)
             md.appendMarkdown(lines.join('  \n') + '\n\n');
     }
     if (subtitle && subtitle !== `File: ${name}`)
-        md.appendMarkdown(subtitle);
+        md.appendMarkdown(escapeMarkdownText(subtitle));
     if (imageUrl)
         md.appendMarkdown(`\n\n![preview](${imageUrl})`);
     return md;
@@ -172,19 +175,8 @@ function buildRotaryRanges(mch) {
     }
     return ranges;
 }
-/** Return "vendor model" from .mch general when present, else undefined (caller uses filename). */
+/** Always return undefined so callers use the filename instead of vendor/model. */
 function getMachineDisplayLabel(filePath) {
-    const mch = getCachedMch(filePath);
-    if (!mch)
-        return undefined;
-    const vendor = (mch.general?.vendor && String(mch.general.vendor).trim()) || '';
-    const model = (mch.general?.model && String(mch.general.model).trim()) || '';
-    if (vendor && model)
-        return `${vendor} ${model}`.trim();
-    if (vendor)
-        return vendor;
-    if (model)
-        return model;
     return undefined;
 }
 function getMachineTooltipInfo(filePath) {
@@ -212,7 +204,10 @@ function getEmbeddedImageFromMch(filePath) {
     if (!mch)
         return undefined;
     const b64 = mch.fusion?.default?.image;
-    return b64 ? `data:image/png;base64,${b64}` : undefined;
+    const cleaned = typeof b64 === 'string' ? b64.replace(/\s+/g, '') : '';
+    if (!cleaned || !/^[A-Za-z0-9+/]+={0,2}$/.test(cleaned))
+        return undefined;
+    return `data:image/png;base64,${cleaned}`;
 }
 /** Exclude .machine files that use default Haas vendors from Online Library. */
 function isExcludedMachineFile(fullPath) {
