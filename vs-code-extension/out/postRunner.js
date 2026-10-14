@@ -49,11 +49,12 @@ const process = __importStar(require("process"));
 const cp = __importStar(require("child_process"));
 const config = __importStar(require("./config"));
 const utils_1 = require("./utils");
-const MACHINE_EXTENSIONS = ['.machine', '.mch'];
+const fusionArchive_1 = require("./fusionArchive");
+const MACHINE_EXTENSIONS = ['.machine', '.mch', ...fusionArchive_1.ARCHIVE_EXTENSIONS];
 /** Return "vendor model" from .mch/.machine JSON when present, else undefined (caller uses filename). Matches tree label. */
 function getMachineDisplayLabelFromPath(filePath) {
     try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
+        const raw = fs.readFileSync((0, fusionArchive_1.resolveMachineFile)(filePath), 'utf-8');
         const mch = JSON.parse(raw);
         const vendor = (mch.general?.vendor && String(mch.general.vendor).trim()) || '';
         const model = (mch.general?.model && String(mch.general.model).trim()) || '';
@@ -366,6 +367,15 @@ class PostEngine {
     setMachineFile(selectedFile) {
         if (!MACHINE_EXTENSIONS.some(ext => selectedFile.toLowerCase().endsWith(ext)))
             return;
+        if ((0, fusionArchive_1.isFusionArchive)(selectedFile)) {
+            try {
+                (0, fusionArchive_1.extractMchFromArchive)(selectedFile);
+            }
+            catch (e) {
+                vscode.window.showErrorMessage(`Cannot use ${path.basename(selectedFile)} as a machine: ${e.message}`);
+                return;
+            }
+        }
         this.machineFile = selectedFile;
         vscode.window.setStatusBarMessage('Machine file updated', 2000);
         if (!this.machineStatusBar) {
@@ -464,10 +474,23 @@ class PostEngine {
         }
     }
     // ── Parameter building ──────────────────────────────────────────
+    /** Path handed to the post engine: archives (.f3d/.f3z) are swapped for their extracted .mch. */
+    getMachineFileForPost() {
+        if (!this.machineFile)
+            return '';
+        try {
+            return (0, fusionArchive_1.resolveMachineFile)(this.machineFile);
+        }
+        catch (e) {
+            vscode.window.showErrorMessage(`Machine ${path.basename(this.machineFile)} ignored: ${e.message}`);
+            return '';
+        }
+    }
     createParameters(postLocation, isCompare, isSecondary = false) {
         const params = ['--noeditor'];
-        if (this.machineFile) {
-            params.unshift(this.machineFile);
+        const machineFile = this.getMachineFileForPost();
+        if (machineFile) {
+            params.unshift(machineFile);
             params.unshift('--machine');
         }
         params.push('--debugall'); // always run with debug so line jumping works; strip for display when mode is 'off'
@@ -506,8 +529,9 @@ class PostEngine {
     }
     createParametersForFile(postLocation, cncPath, outputPath, forRegressionTest = false, noDebugAll = false) {
         const params = ['--noeditor'];
-        if (this.machineFile) {
-            params.unshift(this.machineFile);
+        const machineFile = this.getMachineFileForPost();
+        if (machineFile) {
+            params.unshift(machineFile);
             params.unshift('--machine');
         }
         if (!forRegressionTest && !noDebugAll) {

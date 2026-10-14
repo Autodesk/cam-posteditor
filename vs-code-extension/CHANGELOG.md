@@ -1,4 +1,8 @@
 
+## Unreleased
+Added:
+  - **Machine Selector**: Fusion `.f3d` / `.f3z` files can be selected and imported as machines. The embedded `.mch` is extracted and passed to the post processor; archives without a machine are hidden from the list.
+---
 ## 5.0.2
 Fixed:
   - **Click to jump**: clicking in the `.cps` file no longer makes the cursor jump around.

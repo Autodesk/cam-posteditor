@@ -45,6 +45,7 @@ const config = __importStar(require("./config"));
 const utils_1 = require("./utils");
 const postRunner_1 = require("./postRunner");
 const onlineLibrary_1 = require("./onlineLibrary");
+const fusionArchive_1 = require("./fusionArchive");
 const lineSelection_1 = require("./lineSelection");
 const fileTreeProvider_1 = require("./providers/fileTreeProvider");
 const propertyProvider_1 = require("./providers/propertyProvider");
@@ -167,7 +168,7 @@ function activate(context) {
     });
     const machineTree = new fileTreeProvider_1.FileTreeProvider(context, {
         rootDirName: 'Machines',
-        fileExtensions: ['.machine', '.mch'],
+        fileExtensions: ['.machine', '.mch', ...fusionArchive_1.ARCHIVE_EXTENSIONS],
         settingsKey: 'customMachineLocations',
         selectCommand: 'autodesk.post.setMachine',
         includeAllFilesNode: false,
@@ -1095,7 +1096,7 @@ async function importCustomFile(type, engine, tree, targetPath) {
     const isMachine = type === 'machineFile';
     const fileType = isMachine ? 'Machines' : 'CNC files';
     const filters = isMachine
-        ? { 'Machine Configuration file': ['machine', 'mch'] }
+        ? { 'Machine Configuration file': ['machine', 'mch', 'f3d', 'f3z'] }
         : { 'Autodesk CAM intermediate file': ['cnc'] };
     // Use the right-clicked folder if it's a directory, otherwise fall back to Custom
     let destDir;
@@ -1292,6 +1293,16 @@ function promptOnlineLibraryFilter(tree, machineListView) {
 function editMachineFile(filePath) {
     if (!(0, utils_1.fileExists)(filePath))
         return;
+    if ((0, fusionArchive_1.isFusionArchive)(filePath)) {
+        try {
+            filePath = (0, fusionArchive_1.extractMchFromArchive)(filePath);
+        }
+        catch (e) {
+            vscode.window.showErrorMessage(e.message);
+            return;
+        }
+        vscode.window.showInformationMessage('Showing the machine extracted from the Fusion archive. Edits are not saved back into the archive.');
+    }
     vscode.workspace.openTextDocument(filePath).then(doc => {
         vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
     });

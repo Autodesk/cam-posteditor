@@ -43,6 +43,7 @@ const process = __importStar(require("process"));
 const config = __importStar(require("../config"));
 const utils_1 = require("../utils");
 const onlineLibrary_1 = require("../onlineLibrary");
+const fusionArchive_1 = require("../fusionArchive");
 class FileTreeItem extends vscode.TreeItem {
     constructor(label, collapsibleState, filePath = '', 
     /** When set (checkbox mode), tree parent path for unique id and getParent. */
@@ -68,7 +69,7 @@ function getCachedMch(filePath) {
         const mtime = fs.statSync(filePath).mtime.getTime();
         if (cached && cached.mtime === mtime)
             return cached.data;
-        const raw = fs.readFileSync(filePath, 'utf-8');
+        const raw = fs.readFileSync((0, fusionArchive_1.resolveMachineFile)(filePath), 'utf-8');
         const data = JSON.parse(raw);
         _mchCache.set(filePath, { mtime, data });
         return data;
@@ -209,8 +210,10 @@ function getEmbeddedImageFromMch(filePath) {
         return undefined;
     return `data:image/png;base64,${cleaned}`;
 }
-/** Exclude .machine files that use default Haas vendors from Online Library. */
+/** Exclude .machine files that use default Haas vendors from Online Library, and Fusion archives that carry no machine. */
 function isExcludedMachineFile(fullPath) {
+    if ((0, fusionArchive_1.isFusionArchive)(fullPath))
+        return !(0, fusionArchive_1.archiveContainsMch)(fullPath);
     if (!fullPath || !fullPath.toLowerCase().endsWith('.machine'))
         return false;
     try {
