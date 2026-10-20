@@ -33,6 +33,9 @@ const SUPPORTED_CAPABILITIES = [
 ];
 const UNITS = ['IN', 'MM'];
 const SKIPPED_SCAN_DIRS = new Set(['node_modules', '.git', 'jenkins', 'tests', 'machines', 'packages']);
+/** Post engine errors caused by parallel runs accessing the same files; such runs are retried one at a time, like merge_posts.py. */
+const ENGINE_BUSY = /Unable to open|Failed to construct/;
+const ENGINE_BUSY_RETRIES = 2;
 const STATUS = {
     notRun: 'notRun',
     stale: 'stale',
@@ -114,16 +117,23 @@ function listJsonFiles(dir) {
 function hasTestCases(dir) {
     return !!dir && isDirectory(path.join(dir, 'test_cases'));
 }
-/** QA project = folder containing test_cases/. Setting first, then walk up from startPath checking <dir> and <dir>/tests. */
-function findProjectRoot(startPath) {
+/** True if a folder is open and startPath is outside all workspace folders. */
+function isOutsideWorkspace(startPath) {
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    return !!startPath && folders.length > 0 && !folders.some(f => isInside(f.uri.fsPath, path.resolve(startPath)));
+}
+/**
+ * QA project = folder containing test_cases/. Setting first, then walk up from startPath checking <dir> and <dir>/tests.
+ * Workspace folders are only used without startPath. With a folder open, a startPath outside it finds no project
+ * unless allowOutsideWorkspace is set, so tests and expected files outside the open folder are only used on request.
+ */
+function findProjectRoot(startPath, { allowOutsideWorkspace = false } = {}) {
     const configured = config.get('qaProjectFolder');
     if (typeof configured === 'string' && configured.trim() && hasTestCases(configured.trim()))
         return path.resolve(configured.trim());
-    const starts = [];
-    if (startPath)
-        starts.push(startPath);
-    for (const f of vscode.workspace.workspaceFolders ?? [])
-        starts.push(f.uri.fsPath);
+    if (!allowOutsideWorkspace && isOutsideWorkspace(startPath))
+        return undefined;
+    const starts = startPath ? [startPath] : (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
     for (const start of starts) {
         let dir = isDirectory(start) ? path.resolve(start) : path.dirname(path.resolve(start));
         for (;;) {
@@ -520,6 +530,7 @@ class QaTestRunner {
         this.project = undefined;
         /** Displayed posts: [{ name, cpsPath, state, cases: [{ entry, caseIndex, testCase, jobs }] }] */
         this.model = { posts: [], auto: true, label: '' };
+        this.outsideRoot = undefined;
         this.results = new Map();
         this.running = false;
         this.problemsOnly = false;
@@ -553,10 +564,13 @@ class QaTestRunner {
     }
     // ── Model ───────────────────────────────────────────────────
     /** Loads the project for startPath (or keeps the current one) and builds the displayed model for the posts. */
-    setPosts(cpsPaths, { auto = false, label = '', startPath } = {}) {
-        const root = findProjectRoot(startPath ?? cpsPaths[0]);
+    setPosts(cpsPaths, { auto = false, label = '', startPath, allowOutsideWorkspace = false } = {}) {
+        const start = startPath ?? cpsPaths[0];
+        const root = findProjectRoot(start, { allowOutsideWorkspace });
         this.project = root ? loadProject(root) : undefined;
-        this.model = { posts: [], auto, label, cpsPaths: [...cpsPaths] };
+        /** QA project above a post outside the open folder; only used after the user chose it, until the posts change. */
+        this.outsideRoot = !root && isOutsideWorkspace(start) ? findProjectRoot(start, { allowOutsideWorkspace: true }) : undefined;
+        this.model = { posts: [], auto, label, cpsPaths: [...cpsPaths], allowOutsideWorkspace };
         if (this.project)
             this.model.posts = cpsPaths.map(p => this.buildPostModel(p));
         this.fireChanged(true);
@@ -568,7 +582,7 @@ class QaTestRunner {
             this.fireChanged(true);
             return;
         }
-        const root = this.project?.root ?? findProjectRoot(this.model.cpsPaths[0]);
+        const root = this.project?.root ?? findProjectRoot(this.model.cpsPaths[0], { allowOutsideWorkspace: this.model.allowOutsideWorkspace });
         this.project = root ? loadProject(root) : undefined;
         if (this.project)
             this.model.posts = this.model.cpsPaths.map(p => this.buildPostModel(p));
@@ -911,23 +925,59 @@ class QaTestRunner {
                 cancellable: true,
             }, async (progress, token) => {
                 let next = 0;
+                const busy = new Map();
+                const record = (item, result) => {
+                    const { engineBusy, ...stored } = result;
+                    this.results.set(item.job.id, stored);
+                    if (this.isProblem(stored.status) || stored.status === STATUS.ignored || stored.status === STATUS.skipped)
+                        this.logResult(item.job, stored);
+                    if (stopOnFailure && this.isProblem(stored.status) && stored.status !== STATUS.missingExpected)
+                        stopped = true;
+                    this.fireChanged();
+                };
                 const worker = async () => {
                     while (next < queue.length && !token.isCancellationRequested && !stopped) {
                         const item = queue[next++];
                         this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
                         this.fireChanged();
                         const result = await this.runJob(project, exe, item, packagesCache);
-                        this.results.set(item.job.id, result);
                         done++;
                         progress.report({ message: `${done}/${queue.length} ${item.job.post}`, increment: 100 / queue.length });
-                        if (this.isProblem(result.status) || result.status === STATUS.ignored || result.status === STATUS.skipped)
-                            this.logResult(item.job, result);
-                        if (stopOnFailure && this.isProblem(result.status) && result.status !== STATUS.missingExpected)
-                            stopped = true;
-                        this.fireChanged();
+                        if (result.engineBusy) {
+                            busy.set(item, { result, retries: 0 });
+                            this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
+                            this.fireChanged();
+                            continue;
+                        }
+                        record(item, result);
                     }
                 };
                 await Promise.all(Array.from({ length: Math.min(parallel, queue.length) }, worker));
+                for (let attempt = 1; attempt <= ENGINE_BUSY_RETRIES && busy.size > 0 && !token.isCancellationRequested && !stopped; attempt++) {
+                    this.output.appendLine(`Post engine was busy for ${busy.size} ${busy.size === 1 ? 'test' : 'tests'}. Running ${busy.size === 1 ? 'it' : 'them'} again one at a time (${attempt}/${ENGINE_BUSY_RETRIES}) ...`);
+                    for (const item of [...busy.keys()]) {
+                        if (token.isCancellationRequested || stopped)
+                            break;
+                        this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
+                        this.fireChanged();
+                        progress.report({ message: `Retrying ${item.job.post}` });
+                        const result = await this.runJob(project, exe, item, packagesCache);
+                        if (result.engineBusy) {
+                            busy.set(item, { result, retries: attempt });
+                            this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
+                            this.fireChanged();
+                            continue;
+                        }
+                        busy.delete(item);
+                        record(item, result);
+                    }
+                }
+                for (const [item, { result, retries }] of busy) {
+                    const note = retries > 0
+                        ? `Post engine was busy, still failing after ${retries} ${retries === 1 ? 'retry' : 'retries'} one at a time.`
+                        : 'Post engine was busy, not retried because the run was stopped.';
+                    record(item, { ...result, message: `${note}\n${result.message}` });
+                }
             });
         }
         finally {
@@ -1032,7 +1082,7 @@ class QaTestRunner {
                 ctx.progress.report({ message: ctx.expected ? `${ctx.reported.size}/${ctx.expected} ${jobs[0].post}` : `${ctx.reported.size} ${jobs[0].post}` });
                 this.fireChanged();
             }, ctx.token);
-            if (code === 0 || !/Unable to open|Failed to construct/.test(stderr))
+            if (code === 0 || !ENGINE_BUSY.test(stderr))
                 break;
             log(`Post engine was busy. Retrying with --parallel=1 (${attempt + 1}/2) ...`);
             runArgs = [...args.filter(a => !a.startsWith('--parallel=')), '--parallel=1'];
@@ -1230,7 +1280,8 @@ class QaTestRunner {
         }
         else if (engineError) {
             const detail = (engineError.stderr || engineError.stdout || engineError.message || '').trim();
-            return { ...withCmd, status: STATUS.failed, message: engineError.killed ? `Timed out after ${timeout / 1000}s` : detail.split(/\r?\n/).slice(-15).join('\n') };
+            const engineBusy = !engineError.killed && ENGINE_BUSY.test(String(engineError.stderr ?? ''));
+            return { ...withCmd, status: STATUS.failed, message: engineError.killed ? `Timed out after ${timeout / 1000}s` : detail.split(/\r?\n/).slice(-15).join('\n'), engineBusy };
         }
         const [actualSize, expectedSize] = await Promise.all([fileSize(paths.actual), fileSize(paths.expected)]);
         if (actualSize < 0)

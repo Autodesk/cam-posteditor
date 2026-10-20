@@ -217,6 +217,14 @@ class QaTestEditor {
     async ensureProject(postModel) {
         if (this.project)
             return true;
+        if (this.runner.outsideRoot) {
+            const outside = await vscode.window.showInformationMessage(`This post is outside the open folder. Use the QA tests in ${this.runner.outsideRoot}?`, 'Use these QA tests');
+            if (outside !== 'Use these QA tests')
+                return false;
+            const model = this.runner.model;
+            this.runner.setPosts(model.cpsPaths ?? [], { auto: model.auto, label: model.label, allowOutsideWorkspace: true });
+            return !!this.project;
+        }
         const choice = await vscode.window.showInformationMessage('There is no QA project yet. A QA project is a folder that holds your test cases, input files and expected output.', 'Create QA project', 'Use existing folder...');
         if (choice === 'Create QA project')
             return this.createProject(postModel?.cpsPath, false);

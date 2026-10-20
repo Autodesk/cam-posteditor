@@ -78,10 +78,13 @@ function registerQaTestCommands(context, engine) {
         vscode.commands.executeCommand('setContext', 'autodesk.qaTest.problemsOnly', runner.problemsOnly);
         vscode.commands.executeCommand('setContext', 'autodesk.qaTest.running', runner.running);
         vscode.commands.executeCommand('setContext', 'autodesk.qaTest.following', !!runner.model.auto);
+        vscode.commands.executeCommand('setContext', 'autodesk.qaTest.outsideProject', !runner.project && !!runner.outsideRoot);
         updateLibraryStatus();
-        view.message = runner.project && runner.problemsOnly && runner.model.posts.length > 0 && provider.getChildren().length === 0
-            ? 'No problems. Click "Show all" in the title bar to see every test.'
-            : undefined;
+        view.message = !runner.project && runner.outsideRoot
+            ? `This post is outside the open folder. QA tests found in ${runner.outsideRoot}`
+            : runner.project && runner.problemsOnly && runner.model.posts.length > 0 && provider.getChildren().length === 0
+                ? 'No problems. Click "Show all" in the title bar to see every test.'
+                : undefined;
     };
     runner.onDidChange(updateContext);
     const enabled = () => !!config.get('qaTestEnabled');
@@ -119,7 +122,7 @@ function registerQaTestCommands(context, engine) {
         if (!enabled())
             return;
         if (e.affectsConfiguration('AutodeskPostUtility.qaProjectFolder') || e.affectsConfiguration('AutodeskPostUtility.qaUnits') || e.affectsConfiguration('AutodeskPostUtility.outputUnits')) {
-            runner.setPosts(runner.model.cpsPaths ?? [], { auto: runner.model.auto, label: runner.model.label });
+            runner.setPosts(runner.model.cpsPaths ?? [], { auto: runner.model.auto, label: runner.model.label, allowOutsideWorkspace: runner.model.allowOutsideWorkspace });
             runner.updateUnitPairs(runner.allJobs());
             runner.fireChanged(true);
         }
@@ -433,9 +436,13 @@ function registerQaTestCommands(context, engine) {
         runner.model.auto = true;
         const file = activeCps();
         if (file && (runner.model.posts.length <= 1))
-            runner.setPosts([file], { auto: true });
+            runner.setPosts([file], { auto: true, allowOutsideWorkspace: !!runner.model.allowOutsideWorkspace && runner.model.cpsPaths?.[0] === file });
         else
             runner.reload();
+    });
+    reg('useOutsideProject', () => {
+        if (runner.outsideRoot)
+            runner.setPosts(runner.model.cpsPaths ?? [], { auto: runner.model.auto, label: runner.model.label, allowOutsideWorkspace: true });
     });
     reg('followActivePost', () => {
         runner.model.auto = true;

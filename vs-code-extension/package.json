@@ -395,7 +395,8 @@
 			{ "command": "autodesk.post.qaTest.toggleUseDefaultProperties", "title": "Use / skip default properties (common.json)", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.duplicateTestCase", "title": "Duplicate test case...", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.removeTestCase", "title": "Remove test case...", "category": "QA Test" },
-			{ "command": "autodesk.post.qaTest.openTestCaseJson", "title": "Open test case file (JSON)", "category": "QA Test" }
+			{ "command": "autodesk.post.qaTest.openTestCaseJson", "title": "Open test case file (JSON)", "category": "QA Test" },
+			{ "command": "autodesk.post.qaTest.useOutsideProject", "title": "Use the QA tests found above this post", "category": "QA Test" }
 		],
 		"keybindings": [
 			{
@@ -440,7 +441,12 @@
 			{
 				"view": "qaTestList",
 				"contents": "QA tests run your post with a set of test cases (CNC inputs, properties and machines) and compare the output with the expected output.\n[Create QA project](command:autodesk.post.qaTest.createProject)\n[Use existing QA project folder](command:autodesk.post.qaTest.selectProject)\nA post-library \"tests\" folder is found automatically when you open a post from that library.",
-				"when": "!autodesk.qaTest.hasProject"
+				"when": "!autodesk.qaTest.hasProject && !autodesk.qaTest.outsideProject"
+			},
+			{
+				"view": "qaTestList",
+				"contents": "This post is outside the open folder, so QA tests found above it are not used automatically.\n[Use these QA tests](command:autodesk.post.qaTest.useOutsideProject)\nThe choice applies until you switch to another post.\n[Create QA project](command:autodesk.post.qaTest.createProject)\n[Use existing QA project folder](command:autodesk.post.qaTest.selectProject)",
+				"when": "!autodesk.qaTest.hasProject && autodesk.qaTest.outsideProject"
 			},
 			{
 				"view": "qaTestList",
@@ -590,6 +596,7 @@
 				{ "command": "autodesk.post.qaTest.addTestCase", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.saveViewProperties", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.openTestCaseJson", "when": "config.AutodeskPostUtility.qaTestEnabled" },
+				{ "command": "autodesk.post.qaTest.useOutsideProject", "when": "config.AutodeskPostUtility.qaTestEnabled && autodesk.qaTest.outsideProject" },
 				{ "command": "autodesk.post.qaTest.runExplorer", "when": "false" },
 				{ "command": "autodesk.post.qaTest.runItem", "when": "false" },
 				{ "command": "autodesk.post.qaTest.openJob", "when": "false" },
