@@ -63,6 +63,8 @@ const SEARCH_RESULTS = '__search_results__';
 const PURPOSE_SORT_ORDER = ['Milling', 'Turning', 'Mill / Turn', 'Additive', 'Waterjet / Laser / Plasma', 'Inspection', 'Other'];
 const _mchCache = new Map();
 function getCachedMch(filePath) {
+    if (path.extname(filePath).toLowerCase() === '.f3d')
+        return null;
     const cached = _mchCache.get(filePath);
     try {
         const mtime = fs.statSync(filePath).mtime.getTime();
@@ -378,6 +380,8 @@ class FileTreeProvider {
             return true;
         if (!this.isMatchingFile(path.basename(fullPath)))
             return true;
+        if (path.extname(fullPath).toLowerCase() === '.f3d')
+            return false;
         const info = getAxisCountAndPurposeFromMch(fullPath);
         if (!info)
             return true;

@@ -1,4 +1,19 @@
 
+## 5.0.3
+Added:
+  - **Post Properties: machine defaults**: when you select a machine that stores post property defaults, the extension offers to apply them. These properties show a machine icon and "machine default", and **Reset** returns to the machine default. New title bar button **Apply property defaults from the selected machine**.
+
+Added QA test:
+  - **QA test view** in the Explorer: run your posts with a set of test cases (CNC inputs, properties and machine) and compare the output with the expected output. Turn it on with **Enable QA testing** or the `AutodeskPostUtility.qaTestEnabled` setting.
+  - **Guided test case editing**: add, duplicate and remove test cases, edit properties, input CNC files, machine, description, output suffix and additional post engine flags, ignore a test case or skip the default properties from `common.json`.
+  - **Save Post Properties view settings as new test case**: turns the properties you changed in the Post Properties view into a test case.
+  - **Run QA tests** for the current post, selected posts, a folder or all posts with test cases, also from the Explorer context menu on `.cps` files and folders. Tests run in parallel.
+  - **Results** per post, test case and output file with status icons: success, output differs, failure, missing input, new (no expected file), ignored. **Compare with expected** (built-in diff or the external diff tool), **Accept as expected**, **Accept all new and differing outputs**, **Run failed and changed tests again** and **Show only problems**.
+  - **Machine post properties in QA tests**: properties stored in the `.mch` file of a test case are used when the post defines them with machine scope. Order: `defaultProperties` in `common.json`, then the machine, then the test case. Machine properties that the post does not define, or defines with another scope, are listed as notes in the QA test log.
+  - **QA test log** with coloured results.
+  - **Command line runner** `out/qaRun.js`: runs the QA tests without a VS Code window and writes `output/qa-report.md` and `output/qa-report.json`.
+  - New settings: `qaTestEnabled`, `qaProjectFolder`, `qaPostEngine`, `qaUnits`, `qaParallel`, `qaTimeout`, `qaStopOnFailure`.
+---
 ## 5.0.2
 Fixed:
   - **Click to jump**: clicking in the `.cps` file no longer makes the cursor jump around.

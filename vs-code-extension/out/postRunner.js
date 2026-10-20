@@ -41,6 +41,7 @@ exports.removeDebugLines = removeDebugLines;
 exports.findErrorLine = findErrorLine;
 exports.findWarningMessages = findWarningMessages;
 exports.moveLine = moveLine;
+exports.resolveExternalDiffToolPath = resolveExternalDiffToolPath;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -49,9 +50,11 @@ const process = __importStar(require("process"));
 const cp = __importStar(require("child_process"));
 const config = __importStar(require("./config"));
 const utils_1 = require("./utils");
-const MACHINE_EXTENSIONS = ['.machine', '.mch'];
+const MACHINE_EXTENSIONS = ['.machine', '.mch', '.f3d'];
 /** Return "vendor model" from .mch/.machine JSON when present, else undefined (caller uses filename). Matches tree label. */
 function getMachineDisplayLabelFromPath(filePath) {
+    if (path.extname(filePath).toLowerCase() === '.f3d')
+        return undefined;
     try {
         const raw = fs.readFileSync(filePath, 'utf-8');
         const mch = JSON.parse(raw);
@@ -183,6 +186,8 @@ class PostEngine {
         this.cncFile = '';
         this.postFile = '';
         this.machineFile = '';
+        /** Set by PropertyProvider; awaited so property defaults are updated before post-on-selection runs. */
+        this.machineChangeHandler = undefined;
         this.postExecutable = '';
         this.secondaryPostExecutable = '';
         this.propertyCache = new Map();
@@ -363,9 +368,13 @@ class PostEngine {
             this.postProcess();
         }
     }
-    setMachineFile(selectedFile) {
+    async setMachineFile(selectedFile) {
         if (!MACHINE_EXTENSIONS.some(ext => selectedFile.toLowerCase().endsWith(ext)))
             return;
+        if (selectedFile.toLowerCase().endsWith('.f3d') && !(0, utils_1.f3dHasMachine)(selectedFile)) {
+            vscode.window.showWarningMessage(`${path.basename(selectedFile)} contains no machine definition (.mch).`);
+            return;
+        }
         this.machineFile = selectedFile;
         vscode.window.setStatusBarMessage('Machine file updated', 2000);
         if (!this.machineStatusBar) {
@@ -376,6 +385,8 @@ class PostEngine {
             : path.basename(selectedFile, path.extname(selectedFile));
         this.machineStatusBar.text = `Machine: ${displayName}`;
         this.machineStatusBar.show();
+        if (this.machineChangeHandler)
+            await this.machineChangeHandler();
         if (config.get('postOnMachineSelection')) {
             this.postProcess();
         }
@@ -384,6 +395,7 @@ class PostEngine {
         this.machineFile = '';
         vscode.window.setStatusBarMessage('Machine file unselected.', 2000);
         this.machineStatusBar?.hide();
+        this.machineChangeHandler?.();
     }
     async selectCNCFromQuickPick(followUpCommand = '') {
         const rootDir = path.join(this.resLocation, 'CNC files');
@@ -1069,6 +1081,8 @@ class PostEngine {
     }
     async createRegressionReferenceFiles(selectedCncPaths) {
         if (this.hasRegressionReference()) {
+            // No explicit 'Cancel' item: a modal dialog already gets one from VS Code, and passing
+            // our own rendered a second Cancel button next to it.
             const choice = await vscode.window.showWarningMessage('Reference already exists. Overwrite?', { modal: true }, 'Overwrite');
             if (choice !== 'Overwrite')
                 return;

@@ -50,6 +50,7 @@ const fileTreeProvider_1 = require("./providers/fileTreeProvider");
 const propertyProvider_1 = require("./providers/propertyProvider");
 const functionListProvider_1 = require("./providers/functionListProvider");
 const postProcessorIntellisense = require("./postProcessorIntellisense");
+const qaTestCommands_1 = require("./qaTestCommands");
 let _engine;
 function activate(context) {
     const engine = new postRunner_1.PostEngine(context);
@@ -167,7 +168,7 @@ function activate(context) {
     });
     const machineTree = new fileTreeProvider_1.FileTreeProvider(context, {
         rootDirName: 'Machines',
-        fileExtensions: ['.machine', '.mch'],
+        fileExtensions: ['.machine', '.mch', '.f3d'],
         settingsKey: 'customMachineLocations',
         selectCommand: 'autodesk.post.setMachine',
         includeAllFilesNode: false,
@@ -202,6 +203,13 @@ function activate(context) {
         }
     });
     context.subscriptions.push(regressionTestView);
+    try {
+        (0, qaTestCommands_1.registerQaTestCommands)(context, engine);
+    }
+    catch (e) {
+        console.error('QA test view failed to start', e);
+        vscode.window.showErrorMessage(`QA test view failed to start: ${e?.message ?? e}`);
+    }
     async function promptAndDownloadOnlineLibrary(refreshTree) {
         const choice = await vscode.window.showInformationMessage(
             'Online machine library is empty. Download machines from the online library?',
@@ -645,7 +653,7 @@ function activate(context) {
         await addToRecentAndRefresh(context, file, 'recentCNC', cncTree);
     }));
     sub.push(vscode.commands.registerCommand('autodesk.post.setMachine', async (file) => {
-        engine.setMachineFile(file);
+        await engine.setMachineFile(file);
         await addToRecentAndRefresh(context, file, 'recentMachine', machineTree);
     }));
     sub.push(vscode.commands.registerCommand('autodesk.post.selectCNCFile', () => engine.selectCNCFromQuickPick()));
@@ -711,6 +719,10 @@ function activate(context) {
                 return;
             }
         }
+        if (path.extname(targetPath).toLowerCase() === '.f3d') {
+            vscode.window.showInformationMessage('This machine is stored in a Fusion design (.f3d). Edit it in Fusion.');
+            return;
+        }
         editMachineFile(targetPath);
     }));
     // Tree refresh & folder management
@@ -764,6 +776,7 @@ function activate(context) {
         machineTree.removeFolder(el.filePath); }));
     // Properties
     sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.refresh', () => propertyProvider.refreshTree()));
+    sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.applyMachineDefaults', () => propertyProvider.applyMachineDefaultsNow()));
     sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.filter', () => promptFilter(propertyProvider, 'post properties', propertyListView)));
     sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.clearFilter', () => {
         propertyProvider.clearFilter();
@@ -1095,7 +1108,7 @@ async function importCustomFile(type, engine, tree, targetPath) {
     const isMachine = type === 'machineFile';
     const fileType = isMachine ? 'Machines' : 'CNC files';
     const filters = isMachine
-        ? { 'Machine Configuration file': ['machine', 'mch'] }
+        ? { 'Machine Configuration file': ['machine', 'mch', 'f3d'] }
         : { 'Autodesk CAM intermediate file': ['cnc'] };
     // Use the right-clicked folder if it's a directory, otherwise fall back to Custom
     let destDir;
@@ -1110,13 +1123,21 @@ async function importCustomFile(type, engine, tree, targetPath) {
     if (!uris?.length)
         return;
     let log = '';
+    const noMachine = [];
     for (const uri of uris) {
         const src = uri.fsPath;
         if ((0, utils_1.fileExists)(src)) {
+            if (isMachine && path.extname(src).toLowerCase() === '.f3d' && !(0, utils_1.f3dHasMachine)(src)) {
+                noMachine.push(path.basename(src));
+                continue;
+            }
             const dest = path.join(destDir, path.basename(src));
             fs.copyFileSync(src, dest);
             log += `"${path.basename(src)}"\n`;
         }
+    }
+    if (noMachine.length) {
+        vscode.window.showWarningMessage(`Not imported, no machine definition (.mch) in: ${noMachine.join(', ')}`);
     }
     if (log) {
         vscode.window.showInformationMessage(`Imported to ${path.basename(destDir)}:\n${log}`);
