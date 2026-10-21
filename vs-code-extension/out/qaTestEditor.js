@@ -700,7 +700,7 @@ class QaTestEditor {
             if (!mode)
                 return;
             properties = mode.mode === 'view' ? changed : mode.mode === 'pick'
-                ? await this.editPropertiesInteractive(post.cpsPath, {}, description, undefined, qa.readMachineProperties(this.runner.project, machine)) : {};
+                ? await this.editPropertiesInteractive(post.cpsPath, {}, description, undefined, await qa.readMachineProperties(this.runner.project, machine)) : {};
             if (properties === undefined)
                 return;
         }
@@ -774,7 +774,7 @@ class QaTestEditor {
                 return;
             fresh.testCase.properties = props;
             this.saveCase(fresh);
-        }, qa.readMachineProperties(this.runner.project, loaded.testCase.machine));
+        }, await qa.readMachineProperties(this.runner.project, loaded.testCase.machine));
         if (result)
             vscode.window.setStatusBarMessage(`Properties of "${label}" saved`, 4000);
     }

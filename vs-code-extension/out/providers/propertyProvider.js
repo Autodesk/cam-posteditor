@@ -425,7 +425,11 @@ class PropertyProvider {
         const differing = keys.filter(k => String(this.extractValue(cache.changed.properties[k])) !== String(values[k]));
         if (differing.length > 0) {
             const name = path.basename(machineFile, path.extname(machineFile));
-            const answer = await vscode.window.showInformationMessage(`Machine '${name}' defines default values for ${differing.length} post propert${differing.length === 1 ? 'y' : 'ies'}. Update the property defaults?`, 'Update', 'Not Now');
+            const defined = `${keys.length} post propert${keys.length === 1 ? 'y' : 'ies'}`;
+            const changes = differing.length === keys.length
+                ? ''
+                : ` ${differing.length} of them ${differing.length === 1 ? 'has' : 'have'} a different value now.`;
+            const answer = await vscode.window.showInformationMessage(`Machine '${name}' defines default values for ${defined}.${changes} Update the property defaults?`, 'Update', 'Not Now');
             if (answer !== 'Update')
                 return;
         }

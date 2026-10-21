@@ -128,7 +128,7 @@ function registerQaTestCommands(context, engine) {
         }
     }));
     const showResults = () => vscode.commands.executeCommand('qaTestList.focus');
-    const runPosts = async (cpsPaths, label, auto = false) => {
+    const runPosts = async (cpsPaths, label, auto = false, { perUnit = false } = {}) => {
         if (cpsPaths.length === 0) {
             vscode.window.showInformationMessage('No post (.cps) files found.');
             return;
@@ -148,19 +148,19 @@ function registerQaTestCommands(context, engine) {
                 editor.addTestCase({ kind: 'post', post: single });
             return;
         }
-        await runner.run({ title: `QA test: ${label}` });
+        await runner.run({ title: `QA test: ${label}`, perUnit });
     };
-    const runCurrent = async () => {
+    const runCurrent = async (options = {}) => {
         if (runner.model.posts.length > 0)
-            return runPosts(runner.model.cpsPaths, runner.model.label || runner.model.posts.map(p => p.name).join(', '), runner.model.auto);
+            return runPosts(runner.model.cpsPaths, runner.model.label || runner.model.posts.map(p => p.name).join(', '), runner.model.auto, options);
         const file = activeCps();
         if (!file) {
             vscode.window.showInformationMessage('Open a post (.cps) file, or use "Run QA tests for a folder".');
             return;
         }
-        return runPosts([file], path.basename(file, '.cps'), true);
+        return runPosts([file], path.basename(file, '.cps'), true, options);
     };
-    const runFolder = async (folder) => {
+    const runFolder = async (folder, options = {}) => {
         if (!folder) {
             const uris = await vscode.window.showOpenDialog({ canSelectFolders: true, canSelectFiles: false, openLabel: 'Run QA tests', defaultUri: runner.project ? vscode.Uri.file(runner.project.baseDir) : undefined });
             if (!uris?.[0])
@@ -192,7 +192,20 @@ function registerQaTestCommands(context, engine) {
                 return;
             list = pick.only ? tested : posts;
         }
-        await runPosts(list, path.basename(folder));
+        await runPosts(list, path.basename(folder), false, options);
+    };
+    const runExplorer = async (uri, uris, options = {}) => {
+        const selected = (uris && uris.length ? uris : uri ? [uri] : []).map(u => u.fsPath);
+        if (selected.length === 1 && fs.statSync(selected[0]).isDirectory())
+            return runFolder(selected[0], options);
+        const files = [];
+        for (const p of selected) {
+            if (fs.statSync(p).isDirectory())
+                files.push(...qa.listPostsInFolder(p, false));
+            else if (isCps(p))
+                files.push(p);
+        }
+        return runPosts(files, files.length === 1 ? path.basename(files[0], '.cps') : `${files.length} posts`, false, options);
     };
     const reg = (id, fn) => context.subscriptions.push(vscode.commands.registerCommand(`autodesk.post.qaTest.${id}`, fn));
     reg('enable', async () => {
@@ -269,7 +282,8 @@ function registerQaTestCommands(context, engine) {
             await runner.updateLibraryEngine(lib);
     });
     // ── Running ─────────────────────────────────────────────────
-    reg('run', runCurrent);
+    reg('run', () => runCurrent());
+    reg('runPerUnit', () => runCurrent({ perUnit: true }));
     reg('runActivePost', () => {
         const file = activeCps();
         if (!file) {
@@ -309,19 +323,8 @@ function registerQaTestCommands(context, engine) {
         const files = names.map(n => path.join(project.baseDir, `${n}.cps`));
         return runPosts(files, `all ${names.length} posts with test cases`);
     });
-    reg('runExplorer', async (uri, uris) => {
-        const selected = (uris && uris.length ? uris : uri ? [uri] : []).map(u => u.fsPath);
-        if (selected.length === 1 && fs.statSync(selected[0]).isDirectory())
-            return runFolder(selected[0]);
-        const files = [];
-        for (const p of selected) {
-            if (fs.statSync(p).isDirectory())
-                files.push(...qa.listPostsInFolder(p, false));
-            else if (isCps(p))
-                files.push(p);
-        }
-        return runPosts(files, files.length === 1 ? path.basename(files[0], '.cps') : `${files.length} posts`);
-    });
+    reg('runExplorer', (uri, uris) => runExplorer(uri, uris));
+    reg('runExplorerPerUnit', (uri, uris) => runExplorer(uri, uris, { perUnit: true }));
     reg('runItem', async (node) => {
         const jobs = jobsOf(node);
         if (!jobs) {
@@ -336,7 +339,7 @@ function registerQaTestCommands(context, engine) {
     reg('rerunProblems', async () => {
         const ids = new Set(runner.allJobs().filter(j => {
             const s = runner.getJobStatus(j);
-            return runner.isProblem(s) || s === qa.STATUS.stale;
+            return runner.isProblem(s) || s === qa.STATUS.stale || (s === qa.STATUS.notRun && !!runner.getResult(j));
         }).map(j => j.id));
         if (ids.size === 0) {
             vscode.window.showInformationMessage('There are no failed or changed tests to run again.');

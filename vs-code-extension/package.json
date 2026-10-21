@@ -357,6 +357,7 @@
 			{ "command": "autodesk.post.qaTest.enable", "title": "Enable QA testing", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.disable", "title": "Disable QA testing", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.run", "title": "Run QA tests", "category": "QA Test", "icon": "$(play)" },
+			{ "command": "autodesk.post.qaTest.runPerUnit", "title": "Run QA tests per unit", "category": "QA Test", "icon": "$(run-below)" },
 			{ "command": "autodesk.post.qaTest.runActivePost", "title": "Run QA tests for current post", "category": "QA Test", "icon": "$(play)" },
 			{ "command": "autodesk.post.qaTest.runPost", "title": "Run QA tests for posts...", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.runFolder", "title": "Run QA tests for a folder...", "category": "QA Test" },
@@ -366,6 +367,7 @@
 			{ "command": "autodesk.post.qaTest.checkLibraryEngine", "title": "Check post engine version", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.updateLibraryEngine", "title": "Update post engine", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.runExplorer", "title": "Run QA tests", "category": "QA Test" },
+			{ "command": "autodesk.post.qaTest.runExplorerPerUnit", "title": "Run QA tests per unit", "category": "QA Test" },
 			{ "command": "autodesk.post.qaTest.runItem", "title": "Run", "category": "QA Test", "icon": "$(play)" },
 			{ "command": "autodesk.post.qaTest.rerunProblems", "title": "Run failed and changed tests again", "category": "QA Test", "icon": "$(debug-rerun)" },
 			{ "command": "autodesk.post.qaTest.openJob", "title": "Open result", "category": "QA Test" },
@@ -547,6 +549,7 @@
 					"group": "navigation"
 				},
 				{ "command": "autodesk.post.qaTest.run", "when": "view == qaTestList && autodesk.qaTest.hasPosts && !autodesk.qaTest.running", "group": "navigation@1" },
+				{ "command": "autodesk.post.qaTest.runPerUnit", "when": "view == qaTestList && autodesk.qaTest.libraryMode && autodesk.qaTest.hasPosts && !autodesk.qaTest.running", "group": "navigation@1" },
 				{ "command": "autodesk.post.qaTest.rerunProblems", "when": "view == qaTestList && autodesk.qaTest.hasPosts", "group": "navigation@2" },
 				{ "command": "autodesk.post.qaTest.addTestCase", "when": "view == qaTestList && autodesk.qaTest.hasPosts", "group": "navigation@4" },
 				{ "command": "autodesk.post.qaTest.runChangedPosts", "when": "view == qaTestList && autodesk.qaTest.libraryMode && !autodesk.qaTest.running", "group": "navigation@3" },
@@ -554,6 +557,7 @@
 				{ "command": "autodesk.post.qaTest.showAll", "when": "view == qaTestList && autodesk.qaTest.problemsOnly", "group": "navigation@5" },
 				{ "command": "autodesk.post.qaTest.followActivePost", "when": "view == qaTestList && !autodesk.qaTest.following", "group": "navigation@0" },
 				{ "command": "autodesk.post.qaTest.refresh", "when": "view == qaTestList", "group": "navigation@6" },
+				{ "command": "autodesk.post.qaTest.runPerUnit", "when": "view == qaTestList && autodesk.qaTest.libraryMode && autodesk.qaTest.hasPosts", "group": "1_run@0" },
 				{ "command": "autodesk.post.qaTest.runActivePost", "when": "view == qaTestList", "group": "1_run@1" },
 				{ "command": "autodesk.post.qaTest.runPost", "when": "view == qaTestList", "group": "1_run@2" },
 				{ "command": "autodesk.post.qaTest.runFolder", "when": "view == qaTestList", "group": "1_run@3" },
@@ -570,12 +574,14 @@
 				{ "command": "autodesk.post.qaTest.openSettings", "when": "view == qaTestList", "group": "4_project@4" }
 			],
 			"explorer/context": [
-				{ "command": "autodesk.post.qaTest.runExplorer", "when": "config.AutodeskPostUtility.qaTestEnabled && (resourceExtname == .cps || explorerResourceIsFolder)", "group": "7_qatest@1" }
+				{ "command": "autodesk.post.qaTest.runExplorer", "when": "config.AutodeskPostUtility.qaTestEnabled && (resourceExtname == .cps || explorerResourceIsFolder)", "group": "7_qatest@1" },
+				{ "command": "autodesk.post.qaTest.runExplorerPerUnit", "when": "config.AutodeskPostUtility.qaTestEnabled && autodesk.qaTest.libraryMode && (resourceExtname == .cps || explorerResourceIsFolder)", "group": "7_qatest@2" }
 			],
 			"commandPalette": [
 				{ "command": "autodesk.post.qaTest.enable", "when": "!config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.disable", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.run", "when": "config.AutodeskPostUtility.qaTestEnabled" },
+				{ "command": "autodesk.post.qaTest.runPerUnit", "when": "config.AutodeskPostUtility.qaTestEnabled && autodesk.qaTest.libraryMode" },
 				{ "command": "autodesk.post.qaTest.runActivePost", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.runPost", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.runFolder", "when": "config.AutodeskPostUtility.qaTestEnabled" },
@@ -598,6 +604,7 @@
 				{ "command": "autodesk.post.qaTest.openTestCaseJson", "when": "config.AutodeskPostUtility.qaTestEnabled" },
 				{ "command": "autodesk.post.qaTest.useOutsideProject", "when": "config.AutodeskPostUtility.qaTestEnabled && autodesk.qaTest.outsideProject" },
 				{ "command": "autodesk.post.qaTest.runExplorer", "when": "false" },
+				{ "command": "autodesk.post.qaTest.runExplorerPerUnit", "when": "false" },
 				{ "command": "autodesk.post.qaTest.runItem", "when": "false" },
 				{ "command": "autodesk.post.qaTest.openJob", "when": "false" },
 				{ "command": "autodesk.post.qaTest.diff", "when": "false" },

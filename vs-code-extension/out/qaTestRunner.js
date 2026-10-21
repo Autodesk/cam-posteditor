@@ -10,7 +10,6 @@ exports.getPostCapabilities = getPostCapabilities;
 exports.getCapabilityFolder = getCapabilityFolder;
 exports.resolveInside = resolveInside;
 exports.readMachineProperties = readMachineProperties;
-exports.convertToPropertyType = convertToPropertyType;
 exports.hasMachineScope = hasMachineScope;
 exports.isInside = isInside;
 exports.toPosixRelative = toPosixRelative;
@@ -36,6 +35,16 @@ const SKIPPED_SCAN_DIRS = new Set(['node_modules', '.git', 'jenkins', 'tests', '
 /** Post engine errors caused by parallel runs accessing the same files; such runs are retried one at a time, like merge_posts.py. */
 const ENGINE_BUSY = /Unable to open|Failed to construct/;
 const ENGINE_BUSY_RETRIES = 2;
+/** Index in UNITS of the unit that runs first: the editor's output unit. */
+function firstUnitIndex() {
+    return config.get('outputUnits') === 'IN' ? 0 : 1;
+}
+function isFirstUnit(job) {
+    return Number(job.properties?.unit) === firstUnitIndex();
+}
+function secondUnitSkipMessage() {
+    return `Not run: the ${UNITS[firstUnitIndex()]} outputs of this post have problems. Fix them and run the tests again.`;
+}
 const STATUS = {
     notRun: 'notRun',
     stale: 'stale',
@@ -344,7 +353,18 @@ const machinePropertiesCache = new Map();
  * Post properties stored in a .mch machine file (post.default.properties). The unit is left out so the
  * job's own unit always wins. Only .mch files are read; .f3d and .machine files are containers.
  */
-function readMachineProperties(project, machine) {
+function machinePropertiesFromMchJson(stored) {
+    const properties = {};
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+        for (const [key, value] of Object.entries(stored)) {
+            if (key !== 'unit' && value !== null && typeof value !== 'object')
+                properties[key] = value;
+        }
+    }
+    return properties;
+}
+/** Sync read for building the test tree; run-time merging uses {@link readMachineProperties}. */
+function readMachinePropertiesSync(project, machine) {
     if (!project || typeof machine !== 'string' || path.extname(machine).toLowerCase() !== '.mch')
         return {};
     const file = resolveInside(project.baseDir, machine);
@@ -358,48 +378,46 @@ function readMachineProperties(project, machine) {
         return {};
     }
     const cached = machinePropertiesCache.get(file);
-    if (cached && cached.mtime === mtime)
+    if (cached && cached.mtime === mtime && cached.properties)
         return cached.properties;
-    const properties = {};
+    let properties = {};
     try {
-        const stored = readJsonFile(file)?.post?.default?.properties;
-        if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
-            for (const [key, value] of Object.entries(stored)) {
-                if (key !== 'unit' && value !== null && typeof value !== 'object')
-                    properties[key] = value;
-            }
-        }
+        properties = machinePropertiesFromMchJson(readJsonFile(file)?.post?.default?.properties);
     }
     catch { /* not a JSON machine file */ }
     machinePropertiesCache.set(file, { mtime, properties });
     return properties;
 }
+async function readMachineProperties(project, machine) {
+    if (!project || typeof machine !== 'string' || path.extname(machine).toLowerCase() !== '.mch')
+        return {};
+    const file = resolveInside(project.baseDir, machine);
+    if (!file)
+        return {};
+    let mtime;
+    try {
+        mtime = (await fs.promises.stat(file)).mtimeMs;
+    }
+    catch {
+        return {};
+    }
+    const cached = machinePropertiesCache.get(file);
+    if (cached && cached.mtime === mtime && cached.promise)
+        return cached.promise;
+    const promise = fs.promises.readFile(file, 'utf8')
+        .then(text => machinePropertiesFromMchJson(JSON.parse(text)?.post?.default?.properties))
+        .catch(() => ({}))
+        .then(properties => {
+            machinePropertiesCache.set(file, { mtime, properties, promise });
+            return properties;
+        });
+    machinePropertiesCache.set(file, { mtime, promise });
+    return promise;
+}
 /** Only machine-scoped properties are stored in and taken from .mch files. */
 function hasMachineScope(def) {
     const scope = def?.scope;
     return Array.isArray(scope) ? scope.includes('machine') : scope === 'machine';
-}
-const NUMERIC_PROPERTY_TYPES = new Set(['integer', 'number', 'spatial', 'angle', 'rate']);
-/** Machine files may store booleans and numbers as strings; convert them to the type the post declares. */
-function convertToPropertyType(value, def) {
-    if (typeof value !== 'string')
-        return value;
-    const text = value.trim();
-    const type = def?.type;
-    if (type === 'boolean') {
-        const lower = text.toLowerCase();
-        return lower === 'true' ? true : lower === 'false' ? false : value;
-    }
-    if (NUMERIC_PROPERTY_TYPES.has(type))
-        return text !== '' && Number.isFinite(Number(text)) ? Number(text) : value;
-    if (type === 'enum' && Array.isArray(def.values)) {
-        for (const v of def.values) {
-            const id = typeof v === 'object' && v !== null ? v.id : v;
-            if (typeof id !== 'string' && String(id) === text)
-                return id;
-        }
-    }
-    return value;
 }
 // ── Job creation ────────────────────────────────────────────────
 /** Mirrors run-tests.js createTestJob: one job per input and unit, unless the case pins the unit. */
@@ -414,7 +432,7 @@ function createJobs(project, entry, caseIndex) {
     if (caseKeys.length)
         properties = { ...properties, ...testCase.properties };
     const machine = typeof testCase.machine === 'string' ? testCase.machine : '';
-    const machineProperties = readMachineProperties(project, machine);
+    const machineProperties = readMachinePropertiesSync(project, machine);
     const hasUnit = properties.unit !== undefined;
     const unitSetting = config.get('qaUnits') || 'both';
     const inputs = Array.isArray(testCase.input) ? testCase.input.filter(i => typeof i === 'string') : [null];
@@ -755,10 +773,7 @@ class QaTestRunner {
      * The job's machine properties that the post defines with machine scope, and the ones skipped with the reason.
      * Properties set by the test case are left out of both. Interrogation is cached per engine, post and post file time.
      */
-    async machinePropertiesForPost(job, cpsPath, exe) {
-        const machine = Object.fromEntries(Object.entries(job.machineProperties ?? {}).filter(([key]) => !job.caseKeys.includes(key)));
-        if (!Object.keys(machine).length)
-            return { applied: {}, skipped: [] };
+    postPropertyDefsPromise(cpsPath, exe) {
         let mtime = 0;
         try {
             mtime = fs.statSync(cpsPath).mtimeMs;
@@ -781,7 +796,13 @@ class QaTestRunner {
             };
             this.postPropertyNamesCache.set(cacheKey, cached);
         }
-        const defs = await cached.defs;
+        return cached.defs;
+    }
+    async machinePropertiesForPost(job, cpsPath, exe) {
+        const machinePromise = readMachineProperties(this.project, job.machine).then(props => Object.fromEntries(Object.entries(props).filter(([key]) => !job.caseKeys.includes(key))));
+        const [machine, defs] = await Promise.all([machinePromise, this.postPropertyDefsPromise(cpsPath, exe)]);
+        if (!Object.keys(machine).length)
+            return { applied: {}, skipped: [] };
         const applied = {};
         const skipped = [];
         for (const [key, value] of Object.entries(machine)) {
@@ -793,7 +814,7 @@ class QaTestRunner {
             else if (!hasMachineScope(def))
                 skipped.push(`${key} (scope: ${[].concat(def.scope ?? 'none').join(', ')})`);
             else
-                applied[key] = convertToPropertyType(value, def);
+                applied[key] = value;
         }
         return { applied, skipped };
     }
@@ -847,8 +868,11 @@ class QaTestRunner {
         fs.writeFileSync(file, version + '\n', 'utf8');
     }
     // ── Running ─────────────────────────────────────────────────
-    /** filter: optional (job) => boolean to run only some jobs of the displayed model. */
-    async run({ filter, title = 'Running QA tests' } = {}) {
+    /**
+     * filter: optional (job) => boolean to run only some jobs of the displayed model.
+     * perUnit: post-library runs only; runs the output unit first and the other unit only when the first has no problems.
+     */
+    async run({ filter, title = 'Running QA tests', perUnit = false } = {}) {
         if (this.running) {
             vscode.window.showWarningMessage('QA tests are already running.');
             return;
@@ -898,6 +922,8 @@ class QaTestRunner {
         this.output.appendLine(`Post engine : ${exe}${version ? ` (${version})` : ''}`);
         if (lib)
             this.output.appendLine('Runner      : run-tests.js (Autodesk mode)');
+        if (lib && perUnit)
+            this.output.appendLine(`Units       : ${UNITS[firstUnitIndex()]} first, ${UNITS[1 - firstUnitIndex()]} only for posts without ${UNITS[firstUnitIndex()]} problems`);
         for (const err of project.errors)
             this.output.appendLine(`JSON error  : ${err}`);
         this.output.appendLine('');
@@ -910,7 +936,7 @@ class QaTestRunner {
         let done = 0;
         if (lib) {
             try {
-                stopped = await this.runQueueWithLibrary(lib, exe, queue, { title, parallel: parallelSetting > 0 ? parallel : undefined, stopOnFailure, singlePost });
+                stopped = await this.runQueueWithLibrary(lib, exe, queue, { title, parallel: parallelSetting > 0 ? parallel : undefined, stopOnFailure, singlePost, perUnit });
             }
             finally {
                 this.finishRun(queue.map(q => q.job), singlePost ? ['ignore_single.json'] : ['ignore_all.json', 'ignore_single.json']);
@@ -924,8 +950,6 @@ class QaTestRunner {
                 title,
                 cancellable: true,
             }, async (progress, token) => {
-                let next = 0;
-                const busy = new Map();
                 const record = (item, result) => {
                     const { engineBusy, ...stored } = result;
                     this.results.set(item.job.id, stored);
@@ -935,55 +959,73 @@ class QaTestRunner {
                         stopped = true;
                     this.fireChanged();
                 };
-                const worker = async () => {
-                    while (next < queue.length && !token.isCancellationRequested && !stopped) {
-                        const item = queue[next++];
-                        this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
-                        this.fireChanged();
-                        const result = await this.runJob(project, exe, item, packagesCache);
-                        done++;
-                        progress.report({ message: `${done}/${queue.length} ${item.job.post}`, increment: 100 / queue.length });
-                        if (result.engineBusy) {
-                            busy.set(item, { result, retries: 0 });
-                            this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
+                const runItems = async (items) => {
+                    let next = 0;
+                    const busy = new Map();
+                    const worker = async () => {
+                        while (next < items.length && !token.isCancellationRequested && !stopped) {
+                            const item = items[next++];
+                            this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
                             this.fireChanged();
-                            continue;
+                            const result = await this.runJob(project, exe, item, packagesCache);
+                            done++;
+                            progress.report({ message: `${done}/${queue.length} ${item.job.post}`, increment: 100 / queue.length });
+                            if (result.engineBusy) {
+                                busy.set(item, { result, retries: 0 });
+                                this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
+                                this.fireChanged();
+                                continue;
+                            }
+                            record(item, result);
                         }
-                        record(item, result);
+                    };
+                    await Promise.all(Array.from({ length: Math.min(parallel, items.length) }, worker));
+                    for (let attempt = 1; attempt <= ENGINE_BUSY_RETRIES && busy.size > 0 && !token.isCancellationRequested && !stopped; attempt++) {
+                        this.output.appendLine(`Post engine was busy for ${busy.size} ${busy.size === 1 ? 'test' : 'tests'}. Running ${busy.size === 1 ? 'it' : 'them'} again one at a time (${attempt}/${ENGINE_BUSY_RETRIES}) ...`);
+                        for (const item of [...busy.keys()]) {
+                            if (token.isCancellationRequested || stopped)
+                                break;
+                            this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
+                            this.fireChanged();
+                            progress.report({ message: `Retrying ${item.job.post}` });
+                            const result = await this.runJob(project, exe, item, packagesCache);
+                            if (result.engineBusy) {
+                                busy.set(item, { result, retries: attempt });
+                                this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
+                                this.fireChanged();
+                                continue;
+                            }
+                            busy.delete(item);
+                            record(item, result);
+                        }
+                    }
+                    for (const [item, { result, retries }] of busy) {
+                        const note = retries > 0
+                            ? `Post engine was busy, still failing after ${retries} ${retries === 1 ? 'retry' : 'retries'} one at a time.`
+                            : 'Post engine was busy, not retried because the run was stopped.';
+                        record(item, { ...result, message: `${note}\n${result.message}` });
                     }
                 };
-                await Promise.all(Array.from({ length: Math.min(parallel, queue.length) }, worker));
-                for (let attempt = 1; attempt <= ENGINE_BUSY_RETRIES && busy.size > 0 && !token.isCancellationRequested && !stopped; attempt++) {
-                    this.output.appendLine(`Post engine was busy for ${busy.size} ${busy.size === 1 ? 'test' : 'tests'}. Running ${busy.size === 1 ? 'it' : 'them'} again one at a time (${attempt}/${ENGINE_BUSY_RETRIES}) ...`);
-                    for (const item of [...busy.keys()]) {
-                        if (token.isCancellationRequested || stopped)
-                            break;
-                        this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
-                        this.fireChanged();
-                        progress.report({ message: `Retrying ${item.job.post}` });
-                        const result = await this.runJob(project, exe, item, packagesCache);
-                        if (result.engineBusy) {
-                            busy.set(item, { result, retries: attempt });
-                            this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
-                            this.fireChanged();
-                            continue;
-                        }
-                        busy.delete(item);
-                        record(item, result);
-                    }
-                }
-                for (const [item, { result, retries }] of busy) {
-                    const note = retries > 0
-                        ? `Post engine was busy, still failing after ${retries} ${retries === 1 ? 'retry' : 'retries'} one at a time.`
-                        : 'Post engine was busy, not retried because the run was stopped.';
-                    record(item, { ...result, message: `${note}\n${result.message}` });
-                }
+                await runItems(queue);
             });
         }
         finally {
             this.finishRun(queue.map(q => q.job), [singlePost ? 'ignore_single.json' : 'ignore_all.json']);
         }
         await this.reportSummary(queue.map(q => q.job), started, version, stopped);
+    }
+    /**
+     * Posts (cpsPath) whose items have problems. New outputs without expected file do not count, so a new test case
+     * still gets both units, like run-tests.js --initialUnit.
+     */
+    postsWithProblems(items) {
+        const posts = new Set();
+        for (const item of items) {
+            const status = this.results.get(item.job.id)?.status;
+            if (this.isProblem(status) && status !== STATUS.missingExpected)
+                posts.add(item.cpsPath);
+        }
+        return posts;
     }
     /** Removes results of jobs that did not finish, notes why jobs were ignored and updates the IN/MM pairs. */
     finishRun(jobs, ignoreFiles = []) {
@@ -1034,9 +1076,14 @@ class QaTestRunner {
         this.fireChanged(true);
         return ok;
     }
-    /** Common run-tests.js arguments, like run-single.bat / run-all.bat. Without parallel, run-tests.js uses one batch per CPU. */
-    libraryArgs(lib, exe, { parallel, stopOnFailure, ignoreFiles }) {
+    /**
+     * Common run-tests.js arguments, like run-single.bat / run-all.bat. Without parallel, run-tests.js uses one batch per CPU.
+     * perUnit adds --initialUnit with the output unit, like the "Run Single per unit" task.
+     */
+    libraryArgs(lib, exe, { parallel, stopOnFailure, ignoreFiles, perUnit = false }) {
         const args = [`--postEngine=${exe}`, `--dataDir=${lib.root}`, `--ignore=${ignoreFiles.join(';')}`, '--stopOnErrorOnly'];
+        if (perUnit)
+            args.push(`--initialUnit=${UNITS[firstUnitIndex()]}`);
         if (parallel)
             args.push(`--parallel=${parallel}`);
         if (stopOnFailure)
@@ -1103,7 +1150,7 @@ class QaTestRunner {
      * Runs the queue like merge_posts.py --mode QA: one run-tests.js per post, several posts at once.
      * run-tests.js splits its jobs into fixed chunks, so one process for many posts leaves most chunks idle.
      */
-    async runQueueWithLibrary(lib, exe, queue, { title, parallel, stopOnFailure, singlePost }) {
+    async runQueueWithLibrary(lib, exe, queue, { title, parallel, stopOnFailure, singlePost, perUnit }) {
         const project = this.project;
         const ignoreNames = singlePost ? ['ignore_single.json'] : ['ignore_all.json', 'ignore_single.json'];
         const ignoreLists = { 'ignore_all.json': project.ignoreAll, 'ignore_single.json': project.ignoreSingle };
@@ -1120,8 +1167,8 @@ class QaTestRunner {
         const posts = [...byPost.entries()];
         if (posts.length === 0)
             return false;
-        const argsFor = (cpsPath, jobs) => {
-            const args = this.libraryArgs(lib, exe, { parallel, stopOnFailure, ignoreFiles });
+        const argsFor = (cpsPath, jobs, branches) => {
+            const args = this.libraryArgs(lib, exe, { parallel: branches, stopOnFailure, ignoreFiles, perUnit });
             const dataFiles = [...project.globalFiles, ...new Set(jobs.map(j => j.entryFile))];
             args.push(...(dataFiles.some(f => f.includes('+')) ? [project.testCasesDir] : dataFiles));
             args.push(`--post=${cpsPath}`);
@@ -1134,13 +1181,47 @@ class QaTestRunner {
         const ctx = { reported: new Set(), stopped: false, expected: posts.reduce((n, [, jobs]) => n + jobs.length, 0) };
         await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title, cancellable: true }, async (progress, token) => {
             Object.assign(ctx, { progress, token });
+            // One budget of post engines for all run-tests.js processes. Each post gets branches (--parallel) in
+            // proportion to its share of the tests not started yet, so the last posts get the free engines.
+            const budget = parallel ?? Math.max(1, os.cpus().length - 2);
+            let remaining = ctx.expected;
+            let free = budget;
+            const waiting = [];
+            const acquire = async (wanted) => {
+                while (free < 1)
+                    await new Promise(resolve => waiting.push(resolve));
+                const granted = Math.min(wanted, free);
+                free -= granted;
+                return granted;
+            };
+            const release = (granted) => {
+                free += granted;
+                waiting.splice(0).forEach(resolve => resolve());
+            };
             let next = 0;
             const worker = async () => {
                 while (next < posts.length && !token.isCancellationRequested && !(stopOnFailure && ctx.stopped)) {
                     const [cpsPath, jobs] = posts[next++];
+                    const wanted = Math.max(1, Math.min(jobs.length, budget, Math.round(jobs.length * budget / remaining)));
+                    remaining -= jobs.length;
+                    const branches = await acquire(wanted);
                     const lines = [];
                     const log = posts.length === 1 ? (line => this.output.appendLine(line)) : (line => lines.push(line));
-                    const { unsupported } = await this.runLibraryProcess(lib, argsFor(cpsPath, jobs), this.jobsByLibraryKey(jobs), ctx, log);
+                    let unsupported;
+                    try {
+                        ({ unsupported } = await this.runLibraryProcess(lib, argsFor(cpsPath, jobs, branches), this.jobsByLibraryKey(jobs), ctx, log));
+                    }
+                    finally {
+                        release(branches);
+                    }
+                    const first = jobs.filter(isFirstUnit).map(job => ({ job, cpsPath }));
+                    if (perUnit && this.postsWithProblems(first).size > 0) {
+                        const skipped = jobs.filter(job => !isFirstUnit(job) && this.results.get(job.id)?.status === STATUS.queued);
+                        for (const job of skipped)
+                            this.results.set(job.id, { status: STATUS.notRun, signature: job.signature, message: secondUnitSkipMessage() });
+                        if (skipped.length)
+                            log(`${UNITS[1 - firstUnitIndex()]} tests not run because the ${UNITS[firstUnitIndex()]} outputs have problems.`);
+                    }
                     if (lines.length) {
                         this.output.appendLine(`── ${path.basename(cpsPath, '.cps')} ──`);
                         lines.filter(l => l && !header.test(l)).forEach(l => this.output.appendLine(l));
@@ -1154,8 +1235,7 @@ class QaTestRunner {
                     }
                 }
             };
-            const postWorkers = Math.max(1, Math.floor(os.cpus().length / 2));
-            await Promise.all(Array.from({ length: Math.min(postWorkers, posts.length) }, worker));
+            await Promise.all(Array.from({ length: Math.min(budget, posts.length) }, worker));
         });
         return ctx.stopped;
     }
@@ -1179,7 +1259,7 @@ class QaTestRunner {
             cpsByPost.set(entry.name, path.join(project.baseDir, `${entry.name}.cps`));
         }
         const parallelSetting = Number(config.get('qaParallel'));
-        const parallel = parallelSetting > 0 ? Math.min(32, parallelSetting) : undefined;
+        const parallel = parallelSetting > 0 ? Math.min(32, parallelSetting) : Math.max(1, os.cpus().length - 2);
         const ignoreFiles = ['ignore_all.json', 'ignore_single.json'].map(f => path.join(lib.root, f));
         const args = [...this.libraryArgs(lib, exe, { parallel, stopOnFailure: !!config.get('qaStopOnFailure'), ignoreFiles }),
             '--onlyChanged', `--dstBranch=${dstBranch}`, `--postDir=${lib.baseDir}`, project.testCasesDir];
