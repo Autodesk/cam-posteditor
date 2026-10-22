@@ -63,6 +63,8 @@ const SEARCH_RESULTS = '__search_results__';
 const PURPOSE_SORT_ORDER = ['Milling', 'Turning', 'Mill / Turn', 'Additive', 'Waterjet / Laser / Plasma', 'Inspection', 'Other'];
 const _mchCache = new Map();
 function getCachedMch(filePath) {
+    if (path.extname(filePath).toLowerCase() === '.f3d')
+        return null;
     const cached = _mchCache.get(filePath);
     try {
         const mtime = fs.statSync(filePath).mtime.getTime();
@@ -208,6 +210,10 @@ function getEmbeddedImageFromMch(filePath) {
     if (!cleaned || !/^[A-Za-z0-9+/]+={0,2}$/.test(cleaned))
         return undefined;
     return `data:image/png;base64,${cleaned}`;
+}
+/** Only .mch and .machine files are JSON machine definitions; CNC files must never be read for tooltips. */
+function isMachineDefinitionFile(name) {
+    return /\.(mch|machine)$/i.test(name || '');
 }
 /** Exclude .machine files that use default Haas vendors from Online Library. */
 function isExcludedMachineFile(fullPath) {
@@ -378,6 +384,8 @@ class FileTreeProvider {
             return true;
         if (!this.isMatchingFile(path.basename(fullPath)))
             return true;
+        if (path.extname(fullPath).toLowerCase() === '.f3d')
+            return false;
         const info = getAxisCountAndPurposeFromMch(fullPath);
         if (!info)
             return true;
@@ -954,14 +962,13 @@ class FileTreeProvider {
                     continue;
                 if (!this.machineMatchesAxisPurposeFilter(fullPath))
                     continue;
-                const label = this.cfg.fileExtensions.some(ext => fileName.toLowerCase().endsWith(ext))
-                    ? (getMachineDisplayLabel(fullPath) ?? fileName)
-                    : fileName;
+                const isMachineFile = isMachineDefinitionFile(fileName);
+                const label = isMachineFile ? (getMachineDisplayLabel(fullPath) ?? fileName) : fileName;
                 const item = new FileTreeItem(label, vscode.TreeItemCollapsibleState.None, fullPath);
                 item.contextValue = 'customFile';
                 item.description = path.dirname(rel);
                 item.command = { command: this.cfg.selectCommand, title: '', arguments: [fullPath] };
-                if (this.cfg.fileExtensions.some(ext => fileName.toLowerCase().endsWith(ext))) {
+                if (isMachineFile) {
                     const img = getEmbeddedImageFromMch(fullPath);
                     const tooltipInfo = getMachineTooltipInfo(fullPath);
                     item.tooltip = makeMachineTooltip(label, `${labelPrefix} › ${rel}`, img, tooltipInfo);
@@ -1241,7 +1248,7 @@ class FileTreeProvider {
             const state = isFile
                 ? vscode.TreeItemCollapsibleState.None
                 : vscode.TreeItemCollapsibleState.Collapsed;
-            const isMachineFile = isFile && this.cfg.fileExtensions.some(ext => name.toLowerCase().endsWith(ext));
+            const isMachineFile = isFile && isMachineDefinitionFile(name);
             const itemLabel = isMachineFile ? (getMachineDisplayLabel(fullPath) ?? name) : name;
             const treeParent = this.cfg.checkboxMode ? element.filePath : undefined;
             const item = new FileTreeItem(itemLabel, state, fullPath, treeParent);

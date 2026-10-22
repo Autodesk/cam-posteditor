@@ -32,6 +32,9 @@ http://cam.autodesk.com/posts
 The documentation of the postprocessor API can be found here:
 https://cam.autodesk.com/posts/reference/index.html
 
+# What's New in Autodesk Post Processor Utility 5.0.3
+- **QA test view**: run your posts with a set of test cases and compare the output with the expected output. See [QA test usage guide](#qa-test-usage-guide).
+- **Post Properties: machine defaults**: when you select a machine that stores post property defaults, the extension offers to apply them. These properties show a machine icon and "machine default" in the Post Properties view, and **Reset** returns to the machine default. Use the machine button in the view title to apply them again.
 # What's New in Autodesk Post Processor Utility 5.0.0
 
 ### Machine Selector
@@ -74,6 +77,97 @@ https://cam.autodesk.com/posts/reference/index.html
 - **Show Properties by group** setting displays properties in the Properties selector organized according to their respective groups.
 ![propertyGroups](https://github.com/Autodesk/cam-posteditor/raw/master/vs-code-extension/res/help/propertiesByGroup.gif)
 
+
+# QA test usage guide
+QA tests run your post with a set of test cases (CNC inputs, properties and machine) and compare the output with the expected output. Use them to check that a change in the post only changes what you intended.
+
+### Turn on the QA test view
+Run **Enable QA testing** from the Command Palette, or turn on the setting `AutodeskPostUtility.qaTestEnabled`. The **QA test** view appears in the Explorer.
+
+### Create a QA project
+A QA project is a folder with this layout:
+
+| Folder | Content |
+|---|---|
+| `test_cases` | Test case files (JSON), for example `test_cases/milling/<post name>.json`, and `common.json` with the defaults for all test cases |
+| `cnc` | Input CNC files, in subfolders such as `cnc/milling` |
+| `machine` | Machine files used by test cases |
+| `expected` | Expected outputs |
+| `output` | Outputs of the last run (not meant for version control) |
+
+- **Create QA project...** creates this layout next to your posts (`tests` folder) or in a folder you choose.
+- **Use existing QA project folder...** uses a folder you already have, for example a post-library `tests` folder.
+- Without a setting, the QA project is found automatically: the extension looks for a `test_cases` folder, or a `tests` folder with `test_cases`, next to or above the open post. `AutodeskPostUtility.qaProjectFolder` sets it explicitly.
+
+### Add test cases
+Open a post and click **Add test case** in the QA test view. The guide asks for:
+1. A short description.
+2. The input folder inside `cnc`.
+3. The input CNC files. Files from outside the project are copied into it.
+4. A machine (optional). Machines from outside the project are copied into it.
+5. An output suffix, so test cases of the same post do not overwrite each other. Leave it empty for the main test case.
+
+Then choose the properties: the post defaults, the properties you changed in the Post Properties view, or pick them one by one. **Save Post Properties view settings as new test case** does the same in one step.
+
+Right-click a test case to edit its properties, inputs, machine, description, suffix or additional post engine flags, to ignore it, to skip the default properties from `common.json`, or to duplicate, remove or open it as JSON.
+
+A test case file looks like this:
+```json
+{
+  "posts": [
+    {
+      "name": "my post",
+      "testCases": [
+        {
+          "description": "Standard operations",
+          "inputFolder": "milling",
+          "input": ["2D Milling", "Drilling Cycles"],
+          "suffix": "",
+          "properties": { "useSmoothing": true },
+          "machine": "tests/machine/my machine.mch"
+        }
+      ]
+    }
+  ]
+}
+```
+- `input` names the CNC files in `cnc/<inputFolder>` without the `.cnc` extension.
+- `machine` is relative to the folder that contains the QA project.
+- Each input is run in inch and metric (setting `AutodeskPostUtility.qaUnits`), unless the test case sets the `unit` property. The output is `output/<inputFolder>/<post>/<post>_<input><suffix>_<IN|MM>.output`, and the expected file has the same path in `expected`.
+
+### Properties
+Properties are applied in this order, later ones win:
+1. `defaultProperties` in `common.json` (unless the test case skips them).
+2. Post properties stored in the test case's `.mch` machine file, but only those the post defines with machine scope. Machine properties that the post does not define, or defines with another scope, are listed as notes in the QA test log.
+3. The test case `properties`.
+
+### Run tests and review results
+- **Run QA tests** runs the tests of the current post. The **...** menu of the view runs selected posts, a folder or all posts with test cases. You can also right-click a `.cps` file or a folder in the Explorer.
+- Each post, test case and output file shows its result: success, output differs, failure, missing input, new (no expected file) or ignored. Results show **changed - run again** when the post, a CNC file, the machine or the test case changed after the run.
+- Click a differing output to **Compare with expected**. The external diff tool setting of the regression test is used here as well.
+- **Accept as expected** copies the output to `expected`. **Accept all new and differing outputs** does this for the whole run. Only accept outputs you have checked.
+- When the inch and metric outputs of a test changed in the same way, the second one shows **same change as ...**, so you only need to review one of them.
+- **Run failed and changed tests again** and **Show only problems** help with large runs. **Show QA test log** opens the full log.
+
+Test case options that need other tools, such as checking simulation results, are skipped and shown as such.
+
+### Settings
+| Setting | Meaning |
+|---|---|
+| `AutodeskPostUtility.qaTestEnabled` | Show the QA test view and commands |
+| `AutodeskPostUtility.qaProjectFolder` | QA project folder. Leave empty to find it automatically |
+| `AutodeskPostUtility.qaPostEngine` | Post engine for the tests. Leave empty to use the Fusion post engine |
+| `AutodeskPostUtility.qaUnits` | Units to test: both, MM or IN |
+| `AutodeskPostUtility.qaParallel` | Tests run at the same time. 0 chooses automatically |
+| `AutodeskPostUtility.qaTimeout` | Time limit in seconds for one post processing run |
+| `AutodeskPostUtility.qaStopOnFailure` | Stop the run at the first failing test |
+
+### Run QA tests from a terminal
+`out/qaRun.js` in the extension folder runs the QA tests without a VS Code window, for example in scripts:
+```
+node qaRun.js [<QA project folder | folder with posts | post.cps>] [--units both|MM|IN] [--engine <post engine>] [--parallel N] [--timeout seconds] [--settings <VS Code settings.json>]
+```
+It reads the QA settings from your VS Code user settings, writes `output/qa-report.md` and `output/qa-report.json` and never accepts outputs. Exit code: 0 all passed, 1 problems or new outputs to review, 2 setup error.
 
 # About
 Autodesk Fusion Post Processor Utility for Visual Studio Code © 2017 Autodesk, Inc.  All rights reserved.  
