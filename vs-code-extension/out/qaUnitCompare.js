@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.diff = diff;
 exports.isSameChange = isSameChange;
+exports.diffPreview = diffPreview;
 const MAX_LINE_EDITS = 1000;
 const MAX_TOKEN_EDITS = 2000;
 const RATIO_TOLERANCE = 0.01;
@@ -132,6 +133,75 @@ function changeOf(expectedText, actualText) {
         blocks.push(...changeBlocks(tokenOps));
     }
     return blocks;
+}
+const MAX_PREVIEW_EDITS = 4000;
+const MAX_PREVIEW_LINE_LENGTH = 200;
+/**
+ * Short unified diff of expected -> actual for reports: hunks with `context` unchanged lines around each change,
+ * cut off after `maxChangedLines` changed lines. Returns { lines, changed, hidden, note }.
+ */
+function diffPreview(expectedText, actualText, { context = 3, maxChangedLines = 40 } = {}) {
+    const a = expectedText.split(/\r?\n/);
+    const b = actualText.split(/\r?\n/);
+    let start = 0;
+    while (start < a.length && start < b.length && a[start] === b[start])
+        start++;
+    let endA = a.length;
+    let endB = b.length;
+    while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) {
+        endA--;
+        endB--;
+    }
+    if (start === endA && start === endB)
+        return { lines: [], changed: 0, hidden: 0, note: 'Only line endings differ.' };
+    const middleA = a.slice(start, endA);
+    const middleB = b.slice(start, endB);
+    const ops = diff(middleA, middleB, MAX_PREVIEW_EDITS)
+        ?? [...middleA.map(value => ({ op: '-', value })), ...middleB.map(value => ({ op: '+', value }))];
+    const before = Math.min(context, start);
+    const entries = [];
+    let lineA = start - before + 1;
+    let lineB = start - before + 1;
+    for (const value of a.slice(start - before, start))
+        entries.push({ op: '=', value, lineA: lineA++, lineB: lineB++ });
+    for (const { op, value } of ops) {
+        entries.push({ op, value, lineA, lineB });
+        if (op !== '+')
+            lineA++;
+        if (op !== '-')
+            lineB++;
+    }
+    for (const value of a.slice(endA, endA + context))
+        entries.push({ op: '=', value, lineA: lineA++, lineB: lineB++ });
+    const changes = [];
+    entries.forEach((e, i) => {
+        if (e.op !== '=')
+            changes.push(i);
+    });
+    const keep = new Array(entries.length).fill(false);
+    for (const i of changes) {
+        for (let j = Math.max(0, i - context); j <= Math.min(entries.length - 1, i + context); j++)
+            keep[j] = true;
+    }
+    const clip = (text) => (text.length > MAX_PREVIEW_LINE_LENGTH ? `${text.slice(0, MAX_PREVIEW_LINE_LENGTH)}…` : text);
+    const lines = [];
+    let shown = 0;
+    let inHunk = false;
+    for (let i = 0; i < entries.length && shown < maxChangedLines; i++) {
+        if (!keep[i]) {
+            inHunk = false;
+            continue;
+        }
+        const e = entries[i];
+        if (!inHunk) {
+            lines.push(`@@ expected line ${e.lineA}, actual line ${e.lineB} @@`);
+            inHunk = true;
+        }
+        lines.push(`${e.op === '=' ? ' ' : e.op}${clip(e.value)}`);
+        if (e.op !== '=')
+            shown++;
+    }
+    return { lines, changed: changes.length, hidden: changes.length - shown, note: '' };
 }
 /** True if expectedA -> actualA is the same change as expectedB -> actualB, apart from unit-dependent values. */
 function isSameChange(expectedA, actualA, expectedB, actualB) {

@@ -14,6 +14,7 @@ const Module = require("module");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { diffPreview } = require("./qaUnitCompare");
 const USAGE = `Usage: node qaRun.js [<QA project folder | folder with posts | post.cps>] [options]
 
 Runs the QA tests and writes <QA project>/output/qa-report.md and qa-report.json.
@@ -193,6 +194,22 @@ const SUMMARY_LABELS = {
     notRun: 'not run',
     stale: 'not run',
 };
+/** Post names, test case descriptions and messages come from files; keep them from turning into Markdown. */
+function escapeMarkdown(text) {
+    return String(text).replace(/[\\`*_[\]<>#|~]/g, '\\$&').replace(/\r?\n/g, ' ');
+}
+function inlineCode(text) {
+    const value = String(text).replace(/\r?\n/g, ' ');
+    const longest = Math.max(0, ...(value.match(/`+/g) ?? []).map(run => run.length));
+    const fence = '`'.repeat(longest + 1);
+    return longest ? `${fence} ${value} ${fence}` : `${fence}${value}${fence}`;
+}
+/** Fenced block that output lines cannot close, indented to stay inside a list item. */
+function codeBlock(language, text, indent = '') {
+    const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map(run => run.length));
+    const fence = '`'.repeat(Math.max(3, longest + 1));
+    return [`${fence}${language}`, ...text.split(/\r?\n/), fence].map(line => `${indent}${line}`);
+}
 function relative(from, file) {
     return file ? path.relative(from, file) || file : '';
 }
@@ -209,6 +226,7 @@ function writeReports(runner, { exe, version, started, target }) {
         return {
             id: job.id,
             post: job.post,
+            caseKey: `${job.entryFile}::${job.entryIndex}::${job.caseIndex}`,
             testCase: job.description || '',
             input: job.input ?? '',
             suffix: job.suffix,
@@ -220,6 +238,7 @@ function writeReports(runner, { exe, version, started, target }) {
             sameChangeAs: twin && result.sameChangeAs ? twin.id : '',
             sameChangeIn: twin && result.sameChangeIn ? twin.id : '',
             twinLabel: twin ? `${twin.post} | ${twin.input ?? ''}${twin.suffix}` : '',
+            twinUnit: twin?.unitLabel ?? '',
             commandLine: result.commandLine ?? '',
             machineProperties: result.machineProperties ?? [],
             machineSkipped: result.machineSkipped ?? [],
@@ -232,6 +251,14 @@ function writeReports(runner, { exe, version, started, target }) {
         return { name: p.name, cpsPath: p.cpsPath, state: p.state ?? '', total: postJobs.length, passed: postCounts.passed ?? 0 };
     });
     const problemRows = jobRows.filter(r => runner.isProblem(r.status));
+    for (const r of problemRows) {
+        if (r.status !== 'differs' || r.sameChangeAs || !r.actual || !r.expected)
+            continue;
+        try {
+            r.diff = diffPreview(fs.readFileSync(r.expected, 'utf8'), fs.readFileSync(r.actual, 'utf8'));
+        }
+        catch { /* files removed after the run */ }
+    }
     const machineNotes = [...new Set(jobRows.filter(r => r.machineSkipped.length)
         .map(r => `Machine "${path.basename(r.machine)}": not applied to "${r.post}": ${r.machineSkipped.join(', ')}`))];
     const postProblems = posts.filter(p => p.state === 'missingPost');
@@ -266,56 +293,76 @@ function writeReports(runner, { exe, version, started, target }) {
     const jsonFile = path.join(outDir, 'qa-report.json');
     fs.writeFileSync(jsonFile, `${JSON.stringify(json, null, 2)}\n`);
     const md = [];
-    md.push('# QA test report', '');
-    md.push(`- Result: **${exitCode === 0 ? 'all passed' : 'problems found'}**`);
-    md.push(`- Summary: ${summary}`);
+    const link = (label, file) => (file ? `[${label}](<${path.relative(outDir, file).split(path.sep).join('/')}>)` : '');
+    md.push(`# QA test report: ${exitCode === 0 ? 'all passed' : 'problems found'}`, '');
+    md.push(`**${escapeMarkdown(summary)}**`, '');
     md.push(`- Date: ${new Date().toLocaleString()} (${seconds} s)`);
-    md.push(`- Project: \`${project.root}\``);
-    md.push(`- Post engine: \`${exe}\`${version ? ` (${version})` : ''}`);
-    md.push(`- Details for every test: \`${jsonFile}\``, '');
+    md.push(`- Project: ${inlineCode(project.root)}`);
+    md.push(`- Post engine: ${version ? `${escapeMarkdown(version)}, ` : ''}${inlineCode(exe)}`);
+    md.push(`- Every test, including command lines: ${link('qa-report.json', jsonFile)}`, '');
     if (postProblems.length) {
         md.push('## Missing posts', '');
         for (const p of postProblems)
-            md.push(`- ${p.name}: \`${p.cpsPath}\` not found`);
+            md.push(`- ${escapeMarkdown(p.name)}: ${inlineCode(p.cpsPath)} not found`);
         md.push('');
     }
-    md.push('## Problems', '');
-    if (problemRows.length === 0)
-        md.push('None.');
-    for (const r of problemRows) {
-        md.push(`### ${(STATUS_LABELS[r.status] ?? r.status).toUpperCase()}: ${r.post} | ${r.input}${r.suffix}`);
-        if (r.testCase)
-            md.push(`- Test case: ${r.testCase}`);
-        if (r.unit)
-            md.push(`- Unit: ${r.unit}`);
-        if (r.sameChangeAs)
-            md.push(`- Same change as ${r.twinLabel} (one review covers both)`);
-        else if (r.sameChangeIn)
-            md.push(`- ${r.twinLabel} changed the same way`);
-        if (r.actual)
-            md.push(`- Actual: \`${r.actual}\``);
-        if (r.expected && r.status !== 'failed')
-            md.push(`- Expected: \`${r.expected}\``);
-        if (r.message)
-            md.push('- Message:', '', '```text', r.message, '```');
-        if (r.machineProperties.length)
-            md.push(`- From machine: ${r.machineProperties.join(', ')}`);
-        if (r.machineSkipped.length)
-            md.push(`- Machine properties not applied: ${r.machineSkipped.join(', ')}`);
-        if (r.commandLine)
-            md.push('- Command:', '', '```text', r.commandLine, '```');
+    const problemPosts = posts.filter(p => p.state || problemRows.some(r => r.post === p.name));
+    md.push('## Posts', '');
+    if (problemPosts.length) {
+        md.push('| Post | Passed | Problems |', '|---|---|---|');
+        for (const p of problemPosts) {
+            const rows = problemRows.filter(r => r.post === p.name);
+            const byStatus = {};
+            for (const r of rows)
+                byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+            const problems = p.state ? (STATUS_LABELS[p.state] ?? p.state)
+                : Object.entries(byStatus).map(([s, n]) => `${n} ${SUMMARY_LABELS[s] ?? s}`).join(', ');
+            md.push(`| ${escapeMarkdown(p.name)} | ${p.state ? '-' : `${p.passed}/${p.total}`} | ${escapeMarkdown(problems)} |`);
+        }
         md.push('');
+    }
+    const passedPosts = posts.length - problemPosts.length;
+    if (passedPosts)
+        md.push(`${passedPosts} ${passedPosts === 1 ? 'post' : 'posts'} passed all tests.`, '');
+    if (problemRows.length)
+        md.push('## Problems', '');
+    for (const postName of [...new Set(problemRows.map(r => r.post))]) {
+        md.push(`### ${escapeMarkdown(postName)}`, '');
+        const postRows = problemRows.filter(r => r.post === postName);
+        for (const caseKey of [...new Set(postRows.map(r => r.caseKey))]) {
+            const caseRows = postRows.filter(r => r.caseKey === caseKey);
+            const first = caseRows[0];
+            md.push(`#### ${escapeMarkdown(first.testCase || '(no description)')}`, '');
+            if (first.machine) {
+                const fromMachine = first.machineProperties.length ? `, properties from machine: ${escapeMarkdown(first.machineProperties.join(', '))}` : '';
+                md.push(`Machine ${inlineCode(path.basename(first.machine))}${fromMachine}`, '');
+            }
+            for (const r of caseRows) {
+                if (r.sameChangeAs)
+                    continue;
+                const twin = r.sameChangeIn ? ` (${escapeMarkdown(r.twinUnit || r.twinLabel)}: same change)` : '';
+                const files = [link('actual', r.actual), r.status !== 'failed' && r.status !== 'missingExpected' ? link('expected', r.expected) : '']
+                    .filter(Boolean).join(' · ');
+                md.push(`- **${escapeMarkdown(`${r.input}${r.suffix}`)}**: ${escapeMarkdown(STATUS_LABELS[r.status] ?? r.status)}${twin}${files ? ` · ${files}` : ''}`);
+                if (r.diff?.note)
+                    md.push(`  ${escapeMarkdown(r.diff.note)}`);
+                else if (r.diff?.lines.length) {
+                    md.push('', ...codeBlock('diff', r.diff.lines.join('\n'), '  '));
+                    if (r.diff.hidden)
+                        md.push(`  … ${r.diff.hidden} more changed ${r.diff.hidden === 1 ? 'line' : 'lines'}`);
+                }
+                if (r.message)
+                    md.push('', ...codeBlock('text', r.message, '  '));
+                md.push('');
+            }
+        }
     }
     if (machineNotes.length) {
         md.push('## Notes', '');
         for (const note of machineNotes)
-            md.push(`- ${note}`);
+            md.push(`- ${escapeMarkdown(note)}`);
         md.push('');
     }
-    md.push('## Posts', '');
-    for (const p of posts)
-        md.push(`- ${p.name}: ${p.state ? STATUS_LABELS[p.state] ?? p.state : `${p.passed}/${p.total} passed`}`);
-    md.push('');
     const mdFile = path.join(outDir, 'qa-report.md');
     fs.writeFileSync(mdFile, md.join('\n'));
     process.stdout.write(`\nQA test report: ${relative(process.cwd(), mdFile)}\nResult: ${summary}\n`);
