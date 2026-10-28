@@ -44,6 +44,7 @@ const os = __importStar(require("os"));
 const config = __importStar(require("./config"));
 const utils_1 = require("./utils");
 const postRunner_1 = require("./postRunner");
+const userLibrary = require("./userLibrary");
 const onlineLibrary_1 = require("./onlineLibrary");
 const lineSelection_1 = require("./lineSelection");
 const fileTreeProvider_1 = require("./providers/fileTreeProvider");
@@ -55,17 +56,11 @@ let _engine;
 function activate(context) {
     const engine = new postRunner_1.PostEngine(context);
     _engine = engine;
-    const onlineLibDir = path.join(engine.resLocation, 'Machines', 'Online Library');
-    utils_1.ensureDir(onlineLibDir);
+    const onlineLibDir = userLibrary.getOnlineLibraryDir();
     const lineSelection = new lineSelection_1.LineSelection(engine);
-    // Restore first (so an update doesn't overwrite the old backup). Backup runs async so startup is not blocked.
-    engine.restoreCustomData();
-    setTimeout(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } }, 2000);
-    let _backupTimer;
-    const refreshBackup = () => {
-        clearTimeout(_backupTimer);
-        _backupTimer = setTimeout(() => { try { engine.backupCustomData(); } catch (_) { /* ignore */ } }, 5000);
-    };
+    // User files live outside the extension folder. Nothing here may stop the extension from starting.
+    prepareUserLibrary(context);
+
     // Setup
     addCPSToJSLanguage();
     let typeDeclarationsInstalled = false;
@@ -150,6 +145,7 @@ function activate(context) {
         rootDirName: 'CNC files',
         fileExtensions: ['.cnc'],
         settingsKey: 'customCNCLocations',
+        userFolderKind: 'cnc',
         selectCommand: 'autodesk.post.setCNC',
         includeAllFilesNode: false,
         includeRecentNode: true,
@@ -159,6 +155,7 @@ function activate(context) {
         rootDirName: 'CNC files',
         fileExtensions: ['.cnc'],
         settingsKey: 'customCNCLocations',
+        userFolderKind: 'cnc',
         selectCommand: 'autodesk.post.setCNC',
         includeAllFilesNode: true,
         includeLocalFusionNode: false,
@@ -170,6 +167,7 @@ function activate(context) {
         rootDirName: 'Machines',
         fileExtensions: ['.machine', '.mch', '.f3d'],
         settingsKey: 'customMachineLocations',
+        userFolderKind: 'machine',
         selectCommand: 'autodesk.post.setMachine',
         includeAllFilesNode: false,
         includeOnlineLibrary: true,
@@ -187,6 +185,13 @@ function activate(context) {
         if (e.affectsConfiguration('AutodeskPostUtility.postExecutablePath')) {
             _engine.clearPostVersionCache();
             _engine.getPostEngineVersion().then(() => { });
+        }
+        if (e.affectsConfiguration('AutodeskPostUtility.customCNCFolder') || e.affectsConfiguration('AutodeskPostUtility.customMachineFolder')) {
+            userLibrary.writeLocationsFile();
+            userLibrary.ensureUserFolders().then(() => {
+                for (const tree of [cncTree, regressionTestTree, machineTree])
+                    tree.refreshFolders();
+            });
         }
     }));
     const propertyListView = vscode.window.createTreeView('propertyList', { treeDataProvider: propertyProvider });
@@ -229,6 +234,7 @@ function activate(context) {
                     progress.report({ message: `Downloading ${done}/${total} machines`, increment: total > 0 ? 100 / total : 0 });
                 }).then(({ cacheDir }) => {
                     if ((0, utils_1.fileExists)(cacheDir)) {
+                        (0, utils_1.ensureDir)(onlineLibDir);
                         for (const name of fs.readdirSync(cacheDir)) {
                             const src = path.join(cacheDir, name);
                             if (fs.statSync(src).isFile())
@@ -669,7 +675,7 @@ function activate(context) {
         catch {
             return;
         }
-        const deleted = await deleteCustomFile(el.filePath, engine);
+        const deleted = await deleteCustomFile(el.filePath);
         if (deleted) {
             const lower = el.filePath.toLowerCase();
             if (lower.endsWith('.cnc'))
@@ -679,19 +685,17 @@ function activate(context) {
                     engine.clearMachineSelection();
                 machineTree.refreshTreeFromMutation();
             }
-            refreshBackup();
         }
     };
     sub.push(vscode.commands.registerCommand('autodesk.post.deleteFile', deleteFileFromTree));
     sub.push(vscode.commands.registerCommand('autodesk.post.deleteCNCFile', deleteFileFromTree));
     sub.push(vscode.commands.registerCommand('autodesk.post.deleteMachineFile', async (el) => {
         if (el?.filePath) {
-            const deleted = await deleteCustomFile(el.filePath, engine);
+            const deleted = await deleteCustomFile(el.filePath);
             if (deleted) {
                 if (el.filePath === engine.machineFile)
                     engine.clearMachineSelection();
                 machineTree.refreshTreeFromMutation();
-                refreshBackup();
             }
         }
     }));
@@ -699,8 +703,8 @@ function activate(context) {
         if (el?.filePath)
             openFolder(el.filePath);
     }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.importCNC', async (el) => { await importCustomFile('cncFile', engine, cncTree, el?.filePath); refreshBackup(); }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.importMachine', async (el) => { await importCustomFile('machineFile', engine, machineTree, el?.filePath); refreshBackup(); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.importCNC', async (el) => { await importCustomFile('cncFile', cncTree, el?.filePath); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.importMachine', async (el) => { await importCustomFile('machineFile', machineTree, el?.filePath); }));
     sub.push(vscode.commands.registerCommand('autodesk.post.editMachineFile', (el) => {
         if (!el?.filePath)
             return;
@@ -708,7 +712,7 @@ function activate(context) {
         if (targetPath.startsWith('__online__:')) {
             try {
                 const m = JSON.parse(targetPath.replace('__online__:', ''));
-                const downloadDir = path.join(engine.resLocation, 'Machines', 'Online Library');
+                const downloadDir = userLibrary.getOnlineLibraryDir();
                 targetPath = path.join(downloadDir, m.filename);
             }
             catch {
@@ -726,6 +730,25 @@ function activate(context) {
         editMachineFile(targetPath);
     }));
     // Tree refresh & folder management
+    sub.push(vscode.commands.registerCommand('autodesk.post.restoreExamples', async () => {
+        const restore = 'Restore deleted files';
+        const reset = 'Restore deleted files and reset changed files';
+        const choice = await vscode.window.showInformationMessage('Restore the example CNC and machine files that come with the extension? Your own files are not changed.', { modal: true }, restore, reset);
+        if (!choice)
+            return;
+        const version = context.extension?.packageJSON?.version ?? '';
+        const r = userLibrary.restoreExamples(context.extensionPath, version, choice === reset);
+        for (const tree of [cncTree, machineTree, regressionTestTree])
+            tree.refreshTreeFromMutation();
+        if (r.skipped === 'newer')
+            vscode.window.showWarningMessage('The example files are managed by a newer version of the extension (in another VS Code). Restore them there.');
+        else if (r.skipped)
+            vscode.window.showWarningMessage('The example files cannot be restored now, another program is using the list of example files. Try again later.');
+        else if (r.failed.length)
+            vscode.window.showWarningMessage(`${r.failed.length} example file(s) could not be restored. First error: ${r.failed[0]}`);
+        else
+            vscode.window.showInformationMessage(r.copied.length ? `${r.copied.length} example file(s) restored.` : 'No example files had to be restored.');
+    }));
     sub.push(vscode.commands.registerCommand('autodesk.post.cncList.addFolder', () => addFolderToTree(cncTree)));
     sub.push(vscode.commands.registerCommand('autodesk.post.cncList.filter', () => promptFilter(cncTree, 'CNC files')));
     sub.push(vscode.commands.registerCommand('autodesk.post.cncList.clearFilter', () => cncTree.clearFilter()));
@@ -738,7 +761,7 @@ function activate(context) {
     }));
     sub.push(vscode.commands.registerCommand('autodesk.post.machineList.filterOnlineLibrary', () => promptOnlineLibraryFilter(machineTree, machineListView)));
     sub.push(vscode.commands.registerCommand('autodesk.post.updateOnlineLibrary', async () => {
-        const onlineLibDir = path.join(engine.resLocation, 'Machines', 'Online Library');
+        const onlineLibDir = userLibrary.getOnlineLibraryDir();
         try {
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
@@ -750,6 +773,7 @@ function activate(context) {
                     progress.report({ message: `Downloading ${done}/${total} machines`, increment: total > 0 ? 100 / total : 0 });
                 });
                 if ((0, utils_1.fileExists)(cacheDir)) {
+                    (0, utils_1.ensureDir)(onlineLibDir);
                     for (const name of fs.readdirSync(cacheDir)) {
                         const src = path.join(cacheDir, name);
                         if (fs.statSync(src).isFile())
@@ -759,21 +783,20 @@ function activate(context) {
                 machineTree.refreshTree(true);
             });
             vscode.window.showInformationMessage('Online Library updated.');
-            refreshBackup();
         }
         catch (e) {
             const msg = e && typeof e === 'object' && 'message' in e ? e.message : String(e ?? 'Unknown error');
             vscode.window.showErrorMessage(`Online Library update failed: ${msg}`);
         }
     }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.createCNCFolder', async (el) => { if (el?.filePath) { await cncTree.createSubfolder(el.filePath); refreshBackup(); } }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.deleteCNCFolder', async (el) => { if (el?.filePath) { await cncTree.deleteFolder(el.filePath); refreshBackup(); } }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.createCNCFolder', async (el) => { if (el?.filePath) { await cncTree.createSubfolder(el.filePath); } }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.deleteCNCFolder', async (el) => { if (el?.filePath) { await cncTree.deleteFolder(el.filePath); } }));
     sub.push(vscode.commands.registerCommand('autodesk.post.removeCNCFolderRef', (el) => { if (el?.filePath)
-        cncTree.removeFolder(el.filePath); }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.createMachineFolder', async (el) => { if (el?.filePath) { await machineTree.createSubfolder(el.filePath); refreshBackup(); } }));
-    sub.push(vscode.commands.registerCommand('autodesk.post.deleteMachineFolder', async (el) => { if (el?.filePath) { await machineTree.deleteFolder(el.filePath); refreshBackup(); } }));
+        cncTree.removeFolder(el.filePath).then(() => userLibrary.writeLocationsFile()); }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.createMachineFolder', async (el) => { if (el?.filePath) { await machineTree.createSubfolder(el.filePath); } }));
+    sub.push(vscode.commands.registerCommand('autodesk.post.deleteMachineFolder', async (el) => { if (el?.filePath) { await machineTree.deleteFolder(el.filePath); } }));
     sub.push(vscode.commands.registerCommand('autodesk.post.removeMachineFolderRef', (el) => { if (el?.filePath)
-        machineTree.removeFolder(el.filePath); }));
+        machineTree.removeFolder(el.filePath).then(() => userLibrary.writeLocationsFile()); }));
     // Properties
     sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.refresh', () => propertyProvider.refreshTree()));
     sub.push(vscode.commands.registerCommand('autodesk.post.propertyList.applyMachineDefaults', () => propertyProvider.applyMachineDefaultsNow()));
@@ -1085,45 +1108,110 @@ function highlightRange(editor, range) {
     vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
 }
 // ── File management helpers ─────────────────────────────────────
-async function deleteCustomFile(filePath, engine) {
+async function deleteCustomFile(filePath) {
     const name = path.basename(filePath);
     const confirm = await vscode.window.showWarningMessage(`Delete file "${name}"?`, { modal: true }, 'Delete');
     if (confirm !== 'Delete')
         return false;
     if ((0, utils_1.fileExists)(filePath)) {
-        fs.unlinkSync(filePath);
+        try {
+            await vscode.workspace.fs.delete(vscode.Uri.file(filePath), { useTrash: true });
+        }
+        catch {
+            try {
+                fs.chmodSync(filePath, 0o666); // read-only files cannot be deleted
+                fs.unlinkSync(filePath);
+            }
+            catch (e) {
+                vscode.window.showErrorMessage(`Could not delete ${name}: ${e && e.message ? e.message : e}`);
+                return false;
+            }
+        }
     }
-    // Also remove from backup
-    const backupDir = filePath.toLowerCase().includes('machine')
-        ? path.join(os.tmpdir(), 'AutodeskPostUtility', 'CustomMachineFiles')
-        : path.join(os.tmpdir(), 'AutodeskPostUtility', 'CustomCNCFiles');
-    const backupFile = path.join(backupDir, path.basename(filePath));
-    if ((0, utils_1.fileExists)(backupFile)) {
-        fs.unlinkSync(backupFile);
-    }
+    userLibrary.rememberDeletedExamples(filePath); // a shipped example that is deleted must not be restored at the next start
     vscode.window.showInformationMessage(`${name} deleted.`);
     return true;
 }
-async function importCustomFile(type, engine, tree, targetPath) {
+/**
+ * Creates the folders, copies the example files and the files of earlier versions to their new place and tells the export
+ * post where the folders are. Nothing in here may stop the extension from starting.
+ */
+function prepareUserLibrary(context) {
+    try {
+        const foldersReady = userLibrary.ensureUserFolders(); // folders on another disk or share are created in the background
+        const version = context.extension?.packageJSON?.version ?? '';
+        const kinds = ['cnc', 'machine'];
+        // all windows of VS Code start at the same time after an update: only one of them copies the files
+        userLibrary.withLock(() => {
+            const synced = userLibrary.syncExamples(context.extensionPath, version);
+            if (synced.failed.length)
+                vscode.window.showWarningMessage(`${synced.failed.length} example file(s) could not be copied. First error: ${synced.failed[0]}`);
+            migrateUserFiles(context, kinds.filter(k => userLibrary.isUsablePath(userLibrary.getCustomFolder(k))));
+        });
+        userLibrary.writeLocationsFile();
+        // a Custom folder on another disk or share: when it was found
+        foldersReady.then(() => {
+            const later = kinds.filter(k => userLibrary.isGuarded(userLibrary.getCustomFolder(k)) && userLibrary.isUsablePath(userLibrary.getCustomFolder(k)));
+            if (later.length)
+                userLibrary.withLock(() => migrateUserFiles(context, later));
+        });
+    }
+    catch (e) {
+        vscode.window.showWarningMessage(`Could not prepare the Custom folders: ${e && e.message ? e.message : e}`);
+    }
+}
+/**
+ * Copies the files of earlier versions into the Custom folders. The first time all places of earlier versions are read,
+ * after that only the extension folder, an older export post still writes there. A kind is done when nothing failed.
+ */
+function migrateUserFiles(context, kinds) {
+    const copied = [];
+    const failed = [];
+    for (const kind of kinds) {
+        const key = 'userLibrary.legacyMigrated.' + kind;
+        const first = !context.globalState.get(key);
+        const result = userLibrary.migrateLegacyFiles(context.extensionPath, first, [kind]);
+        if (first && result.failed.length === 0)
+            context.globalState.update(key, true);
+        copied.push(...result.copied);
+        failed.push(...result.failed);
+    }
+    if (copied.length)
+        vscode.window.showInformationMessage(`Copied ${copied.length} custom CNC/machine file(s) from earlier versions to ${userLibrary.getBaseDir()}.`);
+    if (failed.length)
+        vscode.window.showWarningMessage(`${failed.length} file(s) could not be copied to the Custom folder. First error: ${failed[0]}`);
+}
+async function importCustomFile(type, tree, targetPath) {
     const isMachine = type === 'machineFile';
-    const fileType = isMachine ? 'Machines' : 'CNC files';
     const filters = isMachine
         ? { 'Machine Configuration file': ['machine', 'mch', 'f3d'] }
         : { 'Autodesk CAM intermediate file': ['cnc'] };
     // Use the right-clicked folder if it's a directory, otherwise fall back to Custom
+    const custom = userLibrary.getCustomFolder(isMachine ? 'machine' : 'cnc');
+    if (!(await userLibrary.checkReachable(targetPath || custom))) {
+        vscode.window.showErrorMessage(`The folder ${targetPath || custom} cannot be reached.`);
+        return;
+    }
     let destDir;
     if (targetPath && (0, utils_1.fileExists)(targetPath)) {
         destDir = fs.statSync(targetPath).isDirectory() ? targetPath : path.dirname(targetPath);
     }
     if (!destDir) {
-        destDir = path.join(engine.resLocation, fileType, 'Custom');
+        destDir = custom;
     }
-    (0, utils_1.ensureDir)(destDir);
+    try {
+        (0, utils_1.ensureDir)(destDir);
+    }
+    catch (e) {
+        vscode.window.showErrorMessage(`Cannot create the folder ${destDir}: ${e && e.message ? e.message : e}`);
+        return;
+    }
     const uris = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, filters });
     if (!uris?.length)
         return;
     let log = '';
     const noMachine = [];
+    const failed = [];
     for (const uri of uris) {
         const src = uri.fsPath;
         if ((0, utils_1.fileExists)(src)) {
@@ -1132,12 +1220,23 @@ async function importCustomFile(type, engine, tree, targetPath) {
                 continue;
             }
             const dest = path.join(destDir, path.basename(src));
-            fs.copyFileSync(src, dest);
-            log += `"${path.basename(src)}"\n`;
+            try {
+                if ((0, utils_1.fileExists)(dest))
+                    fs.chmodSync(dest, 0o666); // a read-only file cannot be replaced
+                fs.copyFileSync(src, dest);
+                fs.chmodSync(dest, 0o666); // the copy of a read-only file is writable
+                log += `"${path.basename(src)}"\n`;
+            }
+            catch (e) {
+                failed.push(`${path.basename(src)}: ${e && e.message ? e.message : e}`);
+            }
         }
     }
     if (noMachine.length) {
         vscode.window.showWarningMessage(`Not imported, no machine definition (.mch) in: ${noMachine.join(', ')}`);
+    }
+    if (failed.length) {
+        vscode.window.showErrorMessage(`Could not import: ${failed.join('; ')}`);
     }
     if (log) {
         vscode.window.showInformationMessage(`Imported to ${path.basename(destDir)}:\n${log}`);
@@ -1150,6 +1249,7 @@ async function addFolderToTree(tree) {
         return;
     await tree.addFolder(uris[0].fsPath);
     tree.refreshTreeFromMutation();
+    userLibrary.writeLocationsFile();
 }
 function promptFilter(tree, listType, view) {
     const input = vscode.window.createInputBox();
@@ -1326,10 +1426,6 @@ function openFolder(itemPath) {
 }
 function deactivate() {
     if (_engine) {
-        try {
-            _engine.backupCustomData();
-        }
-        catch (_) { /* ignore */ }
         _engine.clearRegressionTestFolders();
         _engine = undefined;
     }

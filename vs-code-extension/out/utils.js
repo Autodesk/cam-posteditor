@@ -40,7 +40,6 @@ exports.execFileAsync = execFileAsync;
 exports.fileExists = fileExists;
 exports.ensureDir = ensureDir;
 exports.removeFilesInFolder = removeFilesInFolder;
-exports.copyFolderSync = copyFolderSync;
 exports.getFilesFromDirRecursive = getFilesFromDirRecursive;
 exports.f3dHasMachine = f3dHasMachine;
 exports.getHash = getHash;
@@ -95,19 +94,6 @@ function removeFilesInFolder(dir) {
         }
         else {
             removeFilesInFolder(full);
-        }
-    }
-}
-function copyFolderSync(from, to) {
-    ensureDir(to);
-    for (const entry of fs.readdirSync(from)) {
-        const src = path.join(from, entry);
-        const dest = path.join(to, entry);
-        if (fs.lstatSync(src).isFile()) {
-            fs.copyFileSync(src, dest);
-        }
-        else {
-            copyFolderSync(src, dest);
         }
     }
 }

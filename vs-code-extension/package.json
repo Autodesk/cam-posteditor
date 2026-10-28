@@ -92,6 +92,11 @@
 				"category": "Autodesk Post Utility"
 			},
 			{
+				"command": "autodesk.post.restoreExamples",
+				"title": "Restore example files",
+				"category": "Autodesk Post Utility"
+			},
+			{
 				"command": "autodesk.post.cncList.addFolder",
 				"title": "Add a custom folder to the CNC file list",
 				"shortTitle": "Add folder",
@@ -489,6 +494,11 @@
 					"group": "navigation"
 				},
 				{
+					"command": "autodesk.post.restoreExamples",
+					"when": "view == cncList || view == machineList",
+					"group": "9_maintenance"
+				},
+				{
 					"command": "autodesk.post.cncList.filter",
 					"when": "view == cncList",
 					"group": "navigation"
@@ -666,6 +676,10 @@
 					"when": "view == cncList && viewItem == customFolder"
 				},
 				{
+					"command": "autodesk.post.createCNCFolder",
+					"when": "view == cncList && viewItem == defaultFolder"
+				},
+				{
 					"command": "autodesk.post.importMachine",
 					"when": "view == machineList"
 				},
@@ -688,6 +702,10 @@
 				{
 					"command": "autodesk.post.createMachineFolder",
 					"when": "view == machineList && viewItem == customFolder"
+				},
+				{
+					"command": "autodesk.post.createMachineFolder",
+					"when": "view == machineList && viewItem == defaultFolder"
 				},
 				{
 					"command": "autodesk.post.changeProperty",
@@ -939,6 +957,18 @@
 				"AutodeskPostUtility.customCNCLocations": {
 					"type": "object",
 					"description": "Object containing custom CNC folder locations (managed by Add custom CNC folder)"
+				},
+				"AutodeskPostUtility.customCNCFolder": {
+					"type": "string",
+					"default": "",
+					"scope": "machine",
+					"markdownDescription": "Absolute path of the **Custom** folder in the CNC Selector. Files exported with *export cnc file to vs code.cps* and imported files are stored here. Leave empty to use `%APPDATA%/Autodesk/Post Utility/CNC files/Custom`."
+				},
+				"AutodeskPostUtility.customMachineFolder": {
+					"type": "string",
+					"default": "",
+					"scope": "machine",
+					"markdownDescription": "Absolute path of the **Custom** folder in the Machine Selector. Leave empty to use `%APPDATA%/Autodesk/Post Utility/Machines/Custom`."
 				},
 				"AutodeskPostUtility.customMachineLocations": {
 					"type": "object",

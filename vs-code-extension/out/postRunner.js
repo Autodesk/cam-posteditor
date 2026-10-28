@@ -50,6 +50,7 @@ const process = __importStar(require("process"));
 const cp = __importStar(require("child_process"));
 const config = __importStar(require("./config"));
 const utils_1 = require("./utils");
+const userLibrary = require("./userLibrary");
 const MACHINE_EXTENSIONS = ['.machine', '.mch', '.f3d'];
 /** Return "vendor model" from .mch/.machine JSON when present, else undefined (caller uses filename). Matches tree label. */
 function getMachineDisplayLabelFromPath(filePath) {
@@ -191,7 +192,6 @@ class PostEngine {
         this.postExecutable = '';
         this.secondaryPostExecutable = '';
         this.propertyCache = new Map();
-        this.resLocation = path.join(context.extensionPath, 'res');
         this.tmpDir = os.tmpdir();
         this.workDir = path.join(this.tmpDir, 'AutodeskPostUtility');
         this.outputDir = path.join(this.workDir, 'OutputFiles');
@@ -200,15 +200,14 @@ class PostEngine {
         this.debugOutputPath = path.join(this.outputDir, 'debuggedfile.nc2');
         this.secondaryOutputPath = path.join(this.outputDir, 'secondarydebuggedfile.nc');
         this.secondaryLogPath = path.join(this.outputDir, 'secondarydebuggedfile.log');
-        this.customCNCDir = path.join(this.workDir, 'CustomCNCFiles');
-        this.customMachinesDir = path.join(this.workDir, 'CustomMachineFiles');
-        this.cncFilesBackupDir = path.join(this.workDir, 'CNCFilesBackup');
-        this.machinesBackupDir = path.join(this.workDir, 'MachinesBackup');
         this.propertyTempDir = path.join(this.workDir, 'Properties');
         const regressionTestRoot = path.join(this.workDir, 'Regression test');
         this.regressionTestOutputDir = path.join(regressionTestRoot, 'output');
         this.regressionTestReferenceDir = path.join(regressionTestRoot, 'reference');
-        (0, utils_1.ensureDir)(this.outputDir);
+        try {
+            (0, utils_1.ensureDir)(this.outputDir);
+        }
+        catch { /* created again when a post is run */ }
     }
     /** Clear regression test output and reference folders (e.g. on window close). */
     clearRegressionTestFolders() {
@@ -240,13 +239,23 @@ class PostEngine {
         return this.postExecutable;
     }
     ensurePostKernel() {
-        const fromConfig = config.get('postExecutablePath');
-        if (fromConfig !== this.postExecutable) {
-            this.postExecutable = fromConfig;
-            this._cachedPostVersion = null;
+        // locatePostExe() calls getPostEngineVersion(), which calls this again. The setting only changes a moment after
+        // it was written, so without this the two keep calling each other until the call stack overflows.
+        if (this._ensuringPostKernel)
+            return;
+        this._ensuringPostKernel = true;
+        try {
+            const fromConfig = config.get('postExecutablePath');
+            if (fromConfig !== this.postExecutable) {
+                this.postExecutable = fromConfig;
+                this._cachedPostVersion = null;
+            }
+            if (!(0, utils_1.fileExists)(this.postExecutable)) {
+                this.locatePostExe(true);
+            }
         }
-        if (!(0, utils_1.fileExists)(this.postExecutable)) {
-            this.locatePostExe(true);
+        finally {
+            this._ensuringPostKernel = false;
         }
     }
     async locatePostExe(autoFind) {
@@ -398,16 +407,19 @@ class PostEngine {
         this.machineChangeHandler?.();
     }
     async selectCNCFromQuickPick(followUpCommand = '') {
-        const rootDir = path.join(this.resLocation, 'CNC files');
-        await this.browseDirectory(rootDir, followUpCommand);
+        const rootDir = userLibrary.getExamplesDir('cnc');
+        await this.browseDirectory(rootDir, followUpCommand, [userLibrary.getCustomFolder('cnc')]);
     }
-    async browseDirectory(dir, followUpCommand) {
-        if (!(0, utils_1.fileExists)(dir))
+    /** @param extraDirs more folders to offer next to the folders in dir (the Custom folder is not below the Examples folder) */
+    async browseDirectory(dir, followUpCommand, extraDirs = []) {
+        const extra = extraDirs.filter(d => userLibrary.isUsablePath(d) && (0, utils_1.fileExists)(d));
+        if (!(0, utils_1.fileExists)(dir) && extra.length === 0)
             return;
-        const entries = fs.readdirSync(dir);
+        const entries = (0, utils_1.fileExists)(dir) ? fs.readdirSync(dir) : [];
         const dirs = entries
             .filter(e => fs.statSync(path.join(dir, e)).isDirectory())
-            .map(e => path.join(dir, e));
+            .map(e => path.join(dir, e))
+            .concat(extra);
         if (dirs.length > 0) {
             const names = dirs.map(d => path.basename(d));
             names.push('Browse...');
@@ -421,7 +433,7 @@ class PostEngine {
                 }
             }
             else {
-                await this.browseDirectory(path.join(dir, picked), followUpCommand);
+                await this.browseDirectory(dirs.find(d => path.basename(d) === picked), followUpCommand);
             }
         }
         else {
@@ -565,10 +577,8 @@ class PostEngine {
         return base;
     }
     getWatchedDirs() {
-        const dirs = [path.join(this.resLocation, 'CNC files')];
-        const custom = config.get('customCNCLocations') ?? {};
-        if (custom.folders)
-            dirs.push(...custom.folders.filter(f => (0, utils_1.fileExists)(f)));
+        const dirs = [userLibrary.getExamplesDir('cnc')];
+        dirs.push(...userLibrary.getUserFolders('cnc').filter(f => userLibrary.isUsablePath(f) && (0, utils_1.fileExists)(f)));
         return dirs;
     }
     async runPostForFile(cncPath, outputPath, forRegressionTest = false) {
@@ -1695,146 +1705,6 @@ class PostEngine {
         fs.writeFileSync(targetFile, lines.join(''));
         const status = foundProblem ? 'Completed with errors' : 'Success';
         vscode.window.showInformationMessage(`${status}, updated postprocessor: ${targetFile}`);
-    }
-    // ── Custom data backup/restore ──────────────────────────────────
-    /** Returns a hash of current backup-relevant state (dirs + settings) to skip full backup when unchanged. */
-    _computeBackupStateHash() {
-        const parts = [];
-        const collectDir = (dir, excludeSubdir) => {
-            if (!(0, utils_1.fileExists)(dir))
-                return;
-            const entries = [];
-            const walk = (current, relPrefix) => {
-                try {
-                    for (const d of fs.readdirSync(current, { withFileTypes: true })) {
-                        const full = path.join(current, d.name);
-                        const rel = relPrefix ? path.join(relPrefix, d.name) : d.name;
-                        if (d.isFile()) {
-                            try { entries.push(`F:${rel}:${fs.statSync(full).mtime.getTime()}`); }
-                            catch { /* skip */ }
-                        }
-                        else if (d.isDirectory() && d.name !== excludeSubdir) {
-                            entries.push(`D:${rel}`);
-                            walk(full, rel);
-                        }
-                    }
-                }
-                catch { /* skip */ }
-            };
-            walk(dir, '');
-            entries.sort();
-            parts.push(entries.join('\n'));
-        };
-        collectDir(path.join(this.resLocation, 'CNC files'), null);
-        collectDir(path.join(this.resLocation, 'Machines'), 'Online Library');
-        const cncLocations = config.get('customCNCLocations');
-        const machLocations = config.get('customMachineLocations');
-        parts.push(JSON.stringify(cncLocations ?? {}));
-        parts.push(JSON.stringify(machLocations ?? {}));
-        return (0, utils_1.getHash)(parts.join('::'));
-    }
-    backupCustomData() {
-        const currentHash = this._computeBackupStateHash();
-        const hashPath = path.join(this.workDir, 'BackupStateHash.txt');
-        try {
-            if ((0, utils_1.fileExists)(hashPath) && fs.readFileSync(hashPath, 'utf-8').trim() === currentHash)
-                return;
-        }
-        catch { /* proceed with backup */ }
-        const cncResDir = path.join(this.resLocation, 'CNC files');
-        const machResDir = path.join(this.resLocation, 'Machines');
-        const cncFullBackupExisted = (0, utils_1.fileExists)(this.cncFilesBackupDir);
-        const machFullBackupExisted = (0, utils_1.fileExists)(this.machinesBackupDir);
-        if ((0, utils_1.fileExists)(cncResDir)) {
-            if (cncFullBackupExisted)
-                fs.rmSync(this.cncFilesBackupDir, { recursive: true, force: true });
-            fs.mkdirSync(this.cncFilesBackupDir, { recursive: true });
-            (0, utils_1.copyFolderSync)(cncResDir, this.cncFilesBackupDir);
-        }
-        if ((0, utils_1.fileExists)(machResDir)) {
-            if (machFullBackupExisted)
-                fs.rmSync(this.machinesBackupDir, { recursive: true, force: true });
-            fs.mkdirSync(this.machinesBackupDir, { recursive: true });
-            (0, utils_1.copyFolderSync)(machResDir, this.machinesBackupDir);
-            const onlineLibInBackup = path.join(this.machinesBackupDir, 'Online Library');
-            if ((0, utils_1.fileExists)(onlineLibInBackup))
-                fs.rmSync(onlineLibInBackup, { recursive: true, force: true });
-        }
-        if (!cncFullBackupExisted)
-            this.copyCustomFiles(path.join(this.resLocation, 'CNC files', 'Custom'), this.customCNCDir, true);
-        if (!machFullBackupExisted)
-            this.copyCustomFiles(path.join(this.resLocation, 'Machines', 'Custom'), this.customMachinesDir, true);
-        const cncLocations = config.get('customCNCLocations');
-        const machLocations = config.get('customMachineLocations');
-        if (cncLocations && typeof cncLocations === 'object' && Array.isArray(cncLocations.folders) && cncLocations.folders.length > 0) {
-            fs.writeFileSync(path.join(this.workDir, 'CustomCNCLocations.json'), JSON.stringify(cncLocations, null, 0), 'utf-8');
-        }
-        if (machLocations && typeof machLocations === 'object' && Array.isArray(machLocations.folders) && machLocations.folders.length > 0) {
-            fs.writeFileSync(path.join(this.workDir, 'CustomMachineLocations.json'), JSON.stringify(machLocations, null, 0), 'utf-8');
-        }
-        try {
-            fs.writeFileSync(hashPath, currentHash, 'utf-8');
-        }
-        catch { /* ignore */ }
-    }
-    restoreCustomData() {
-        const cncResDir = path.join(this.resLocation, 'CNC files');
-        const machResDir = path.join(this.resLocation, 'Machines');
-        if ((0, utils_1.fileExists)(this.cncFilesBackupDir)) {
-            (0, utils_1.ensureDir)(cncResDir);
-            (0, utils_1.copyFolderSync)(this.cncFilesBackupDir, cncResDir);
-        }
-        else if ((0, utils_1.fileExists)(this.customCNCDir)) {
-            const cncCustom = path.join(cncResDir, 'Custom');
-            if (!(0, utils_1.fileExists)(cncCustom)) {
-                (0, utils_1.ensureDir)(cncCustom);
-                this.copyCustomFiles(this.customCNCDir, cncCustom, false);
-            }
-        }
-        if ((0, utils_1.fileExists)(this.machinesBackupDir)) {
-            (0, utils_1.ensureDir)(machResDir);
-            (0, utils_1.copyFolderSync)(this.machinesBackupDir, machResDir);
-        }
-        else if ((0, utils_1.fileExists)(this.customMachinesDir)) {
-            const machCustom = path.join(machResDir, 'Custom');
-            if (!(0, utils_1.fileExists)(machCustom)) {
-                (0, utils_1.ensureDir)(machCustom);
-                this.copyCustomFiles(this.customMachinesDir, machCustom, false);
-            }
-        }
-        const cncBackupPath = path.join(this.workDir, 'CustomCNCLocations.json');
-        const machBackupPath = path.join(this.workDir, 'CustomMachineLocations.json');
-        if ((0, utils_1.fileExists)(cncBackupPath)) {
-            try {
-                const current = config.get('customCNCLocations');
-                const backed = JSON.parse(fs.readFileSync(cncBackupPath, 'utf-8'));
-                const currentFolders = current && Array.isArray(current.folders) ? current.folders : [];
-                if (Array.isArray(backed.folders) && backed.folders.length > 0 && currentFolders.length === 0) {
-                    config.update('customCNCLocations', backed, true);
-                }
-            }
-            catch { /* ignore */ }
-        }
-        if ((0, utils_1.fileExists)(machBackupPath)) {
-            try {
-                const current = config.get('customMachineLocations');
-                const backed = JSON.parse(fs.readFileSync(machBackupPath, 'utf-8'));
-                const currentFolders = current && Array.isArray(current.folders) ? current.folders : [];
-                if (Array.isArray(backed.folders) && backed.folders.length > 0 && currentFolders.length === 0) {
-                    config.update('customMachineLocations', backed, true);
-                }
-            }
-            catch { /* ignore */ }
-        }
-    }
-    copyCustomFiles(source, destination, clearFirst) {
-        if (!(0, utils_1.fileExists)(source))
-            return;
-        (0, utils_1.ensureDir)(destination);
-        if (clearFirst) {
-            (0, utils_1.removeFilesInFolder)(destination);
-        }
-        (0, utils_1.copyFolderSync)(source, destination);
     }
 }
 exports.PostEngine = PostEngine;

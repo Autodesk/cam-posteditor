@@ -1,5 +1,11 @@
 
 ## 5.0.3
+Fixed:
+
+  - **Extension failed to start** in certain scenarios.
+  - **First start without a configured post executable** blocked VS Code's extension host for minutes. It now returns at once.
+  - **A folder on a network share or another disk that cannot be reached** (Custom folder or a folder added with **Add folder**) can no longer block VS Code.
+
 Added:
 
   - **Post Properties: machine defaults**: when you select a machine that stores post property defaults, the extension offers to apply them. These properties show a machine icon and "machine default", and **Reset** returns to the machine default. New title bar button **Apply property defaults from the selected machine**.

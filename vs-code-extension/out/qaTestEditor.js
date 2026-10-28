@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 const utils_1 = require("./utils");
+const userLibrary = require("./userLibrary");
 const qa = require("./qaTestRunner");
 const SUFFIX_PATTERN = /^[A-Za-z0-9_-]*$/;
 const MACHINE_EXTENSIONS = ['.mch', '.machine', '.f3d'];
@@ -395,9 +396,8 @@ class QaTestEditor {
             for (const f of files)
                 items.push({ label: path.basename(f, '.cnc'), description: path.relative(dir, path.dirname(f)) || undefined, file: f, external: true });
         };
-        addSource('From the extension\'s CNC library (copied into the project)', path.join(this.engine.resLocation, 'CNC files'));
-        const custom = config.get('customCNCLocations') ?? {};
-        for (const dir of custom.folders ?? [])
+        addSource('From the extension\'s CNC library (copied into the project)', userLibrary.getExamplesDir('cnc'));
+        for (const dir of userLibrary.getUserFolders('cnc').filter(d => userLibrary.isUsablePath(d)))
             addSource(`From ${dir} (copied into the project)`, dir);
         for (const missing of current.filter(n => !projectNames.has(n)))
             items.unshift({ label: missing, description: 'file is missing in the project', picked: true, missing: true });
@@ -466,9 +466,9 @@ class QaTestEditor {
         };
         addSource('In this QA project', path.join(project.root, 'machine'), false);
         addSource('From the post library machines folder', path.join(project.baseDir, 'machines'), false);
-        addSource('From the extension\'s machine library (copied into the project)', path.join(this.engine.resLocation, 'Machines'), true);
-        const custom = config.get('customMachineLocations') ?? {};
-        for (const dir of custom.folders ?? [])
+        addSource('From the extension\'s machine library (copied into the project)', userLibrary.getExamplesDir('machine'), true);
+        addSource('From the online machine library (copied into the project)', userLibrary.getOnlineLibraryDir(), true);
+        for (const dir of userLibrary.getUserFolders('machine').filter(d => userLibrary.isUsablePath(d)))
             addSource(`From ${dir} (copied into the project)`, dir, !qa.isInside(project.baseDir, dir));
         items.push(separator(''));
         items.push({ label: '$(folder-opened) Browse...', browse: true });
