@@ -506,7 +506,7 @@ function migrateLegacyFiles(extensionPath, full, kinds = KIND_KEYS) {
 // shipped (with the hash of their content) and which of them the user deleted.
 const isRelativeFile = (s) => typeof s === 'string' && s !== '' && !s.includes('..') && !path.isAbsolute(s) && !/^[a-zA-Z]:/.test(s);
 const fileList = (x) => (Array.isArray(x) ? x.filter(isRelativeFile) : []);
-const hashFile = (f) => crypto.createHash('md5').update(fs.readFileSync(f)).digest('hex');
+const hashFile = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
 /** {relative path: hash}. A list of paths (older format) has no hashes. */
 function fileMap(x) {
     const map = {};
@@ -599,7 +599,7 @@ function syncExamples(extensionPath, version, options = {}) {
             for (const d of Object.keys(stamp.deleted))
                 stamp.deleted[d] = [];
         const lists = {};
-        const hash = crypto.createHash('md5');
+        const hash = crypto.createHash('sha256');
         let complete = true;
         for (const kind of KIND_KEYS) {
             const dirName = KINDS[kind].dirName;

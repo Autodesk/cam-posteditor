@@ -266,7 +266,7 @@ class QaTestEditor {
         return suffixes;
     }
     validateSuffix(value, postName, except) {
-        if (!SUFFIX_PATTERN.test(value))
+        if (!SUFFIX_PATTERN.test(value)) // nosemgrep: regex_dos -- linear pattern without nested quantifiers
             return 'Use only letters, digits, "_" and "-".';
         if (this.allSuffixes(postName, except).includes(value))
             return value === '' ? 'Another test case already uses no suffix. Enter a suffix such as "_misc".' : `Suffix "${value}" is already used by another test case of this post.`;
@@ -340,7 +340,7 @@ class QaTestEditor {
     }
     // ── Pickers ─────────────────────────────────────────────────
     cncFolders() {
-        const cncRoot = path.join(this.project.root, 'cnc');
+        const cncRoot = path.join(this.project.root, 'cnc'); // nosemgrep: join_resolve_path_traversal -- fixed folder name or checked path
         const folders = new Set();
         for (const rel of (0, utils_1.getFilesFromDirRecursive)(cncRoot, ['.cnc'])) {
             const dir = path.dirname(rel);
@@ -375,7 +375,7 @@ class QaTestEditor {
     }
     /** Multi-select of CNC inputs. Files from outside the project are copied into cnc/<inputFolder>. Returns input names. */
     async pickInputs(inputFolder, current, title) {
-        const folderDir = qa.resolveInside(path.join(this.project.root, 'cnc'), inputFolder);
+        const folderDir = qa.resolveInside(path.join(this.project.root, 'cnc'), inputFolder); // nosemgrep: join_resolve_path_traversal -- fixed folder name
         if (!folderDir)
             return undefined;
         const items = [];
@@ -434,7 +434,7 @@ class QaTestEditor {
         return names;
     }
     async copyIntoProject(source, targetDir) {
-        const dest = path.join(targetDir, path.basename(source));
+        const dest = path.join(targetDir, path.basename(source)); // nosemgrep: join_resolve_path_traversal -- fixed folder name or checked path
         if ((0, utils_1.fileExists)(dest)) {
             if (sameFileContent(source, dest))
                 return dest;
@@ -464,8 +464,8 @@ class QaTestEditor {
                 items.push({ label: path.basename(f, path.extname(f)), description: copy ? path.relative(dir, path.dirname(f)) || undefined : rel, file: f, copy, picked: rel === current });
             }
         };
-        addSource('In this QA project', path.join(project.root, 'machine'), false);
-        addSource('From the post library machines folder', path.join(project.baseDir, 'machines'), false);
+        addSource('In this QA project', path.join(project.root, 'machine'), false); // nosemgrep: join_resolve_path_traversal -- fixed folder name or checked path
+        addSource('From the post library machines folder', path.join(project.baseDir, 'machines'), false); // nosemgrep: join_resolve_path_traversal -- fixed folder name or checked path
         addSource('From the extension\'s machine library (copied into the project)', userLibrary.getExamplesDir('machine'), true);
         addSource('From the online machine library (copied into the project)', userLibrary.getOnlineLibraryDir(), true);
         for (const dir of userLibrary.getUserFolders('machine').filter(d => userLibrary.isUsablePath(d)))
@@ -494,7 +494,7 @@ class QaTestEditor {
         if (!file)
             return '';
         if (copy) {
-            const dest = await this.copyIntoProject(file, path.join(project.root, 'machine'));
+            const dest = await this.copyIntoProject(file, path.join(project.root, 'machine')); // nosemgrep: join_resolve_path_traversal -- fixed folder name or checked path
             if (!dest)
                 return undefined;
             file = dest;
@@ -724,7 +724,7 @@ class QaTestEditor {
         }
         else {
             const capability = qa.getCapabilityFolder(post.cpsPath);
-            file = qa.resolveInside(this.project.testCasesDir, path.join(capability, `${post.name}.json`));
+            file = qa.resolveInside(this.project.testCasesDir, capability, `${post.name}.json`);
             if (!file) {
                 vscode.window.showErrorMessage(`Cannot create a test case file for post name "${post.name}".`);
                 return;

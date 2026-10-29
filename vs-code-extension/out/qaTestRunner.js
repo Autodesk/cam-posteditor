@@ -80,11 +80,12 @@ function isInside(parent, child) {
     const rel = path.relative(parent, child);
     return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
-/** Resolves a relative path from test data against base; returns undefined if it escapes base. */
-function resolveInside(base, rel) {
-    if (typeof rel !== 'string')
+/** Resolves relative path segments from test data against base; returns undefined if the result escapes base. */
+function resolveInside(base, ...parts) {
+    if (parts.some(p => typeof p !== 'string'))
         return undefined;
-    const resolved = path.resolve(base, rel);
+    // nosemgrep: join_resolve_path_traversal -- the result is checked against base below
+    const resolved = path.resolve(base, ...parts);
     return isInside(base, resolved) ? resolved : undefined;
 }
 function toPosixRelative(from, to) {
@@ -510,17 +511,17 @@ function isPlatformIgnored(project, postName, input) {
 }
 function getJobPaths(project, job) {
     const outFolder = job.outputFolder || job.inputFolder;
-    const sub = job.checkError ? path.join(outFolder, job.post, 'error_messages') : path.join(outFolder, job.post);
+    const sub = job.checkError ? [outFolder, job.post, 'error_messages'] : [outFolder, job.post];
     const fileName = `${job.post}_${job.input}${job.suffix}.output`;
-    const outputRoot = path.join(project.root, 'output');
-    const expectedRoot = path.join(project.root, 'expected');
+    // each file must stay inside its own folder (output, expected, cnc, properties), not only inside the project
+    const folder = (name) => path.join(project.root, name); // nosemgrep: join_resolve_path_traversal -- fixed folder name
     return {
-        actual: resolveInside(outputRoot, path.join(sub, fileName)),
-        expected: resolveInside(expectedRoot, path.join(sub, fileName)),
-        cnc: resolveInside(path.join(project.root, 'cnc'), path.join(job.inputFolder, `${job.input}.cnc`)),
+        actual: resolveInside(folder('output'), ...sub, fileName),
+        expected: resolveInside(folder('expected'), ...sub, fileName),
+        cnc: resolveInside(folder('cnc'), job.inputFolder, `${job.input}.cnc`),
         machine: job.machine ? resolveInside(project.baseDir, job.machine) : undefined,
         propertiesFile: job.propertiesFile
-            ? resolveInside(path.join(project.root, 'properties'), path.join(job.inputFolder, job.propertiesFile))
+            ? resolveInside(folder('properties'), job.inputFolder, job.propertiesFile)
             : undefined,
     };
 }
@@ -1154,7 +1155,7 @@ class QaTestRunner {
         const project = this.project;
         const ignoreNames = singlePost ? ['ignore_single.json'] : ['ignore_all.json', 'ignore_single.json'];
         const ignoreLists = { 'ignore_all.json': project.ignoreAll, 'ignore_single.json': project.ignoreSingle };
-        const ignoreFiles = ignoreNames.map(f => path.join(lib.root, f));
+        const ignoreFiles = ignoreNames.map(f => path.join(lib.root, f)); // nosemgrep: join_resolve_path_traversal -- fixed file names
         const byPost = new Map();
         for (const item of queue) {
             if (ignoreNames.some(f => ignoreLists[f].includes(item.job.post))) {
@@ -1260,7 +1261,7 @@ class QaTestRunner {
         }
         const parallelSetting = Number(config.get('qaParallel'));
         const parallel = parallelSetting > 0 ? Math.min(32, parallelSetting) : Math.max(1, os.cpus().length - 2);
-        const ignoreFiles = ['ignore_all.json', 'ignore_single.json'].map(f => path.join(lib.root, f));
+        const ignoreFiles = ['ignore_all.json', 'ignore_single.json'].map(f => path.join(lib.root, f)); // nosemgrep: join_resolve_path_traversal -- fixed file names
         const args = [...this.libraryArgs(lib, exe, { parallel, stopOnFailure: !!config.get('qaStopOnFailure'), ignoreFiles }),
             '--onlyChanged', `--dstBranch=${dstBranch}`, `--postDir=${lib.baseDir}`, project.testCasesDir];
         const version = await this.getEngineVersion(exe);
