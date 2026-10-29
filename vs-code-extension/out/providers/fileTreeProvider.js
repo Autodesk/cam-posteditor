@@ -42,6 +42,7 @@ const path = __importStar(require("path"));
 const process = __importStar(require("process"));
 const config = __importStar(require("../config"));
 const utils_1 = require("../utils");
+const userLibrary = require("../userLibrary");
 const onlineLibrary_1 = require("../onlineLibrary");
 class FileTreeItem extends vscode.TreeItem {
     constructor(label, collapsibleState, filePath = '', 
@@ -63,6 +64,8 @@ const SEARCH_RESULTS = '__search_results__';
 const PURPOSE_SORT_ORDER = ['Milling', 'Turning', 'Mill / Turn', 'Additive', 'Waterjet / Laser / Plasma', 'Inspection', 'Other'];
 const _mchCache = new Map();
 function getCachedMch(filePath) {
+    if (path.extname(filePath).toLowerCase() === '.f3d')
+        return null;
     const cached = _mchCache.get(filePath);
     try {
         const mtime = fs.statSync(filePath).mtime.getTime();
@@ -208,6 +211,10 @@ function getEmbeddedImageFromMch(filePath) {
     if (!cleaned || !/^[A-Za-z0-9+/]+={0,2}$/.test(cleaned))
         return undefined;
     return `data:image/png;base64,${cleaned}`;
+}
+/** Only .mch and .machine files are JSON machine definitions; CNC files must never be read for tooltips. */
+function isMachineDefinitionFile(name) {
+    return /\.(mch|machine)$/i.test(name || '');
 }
 /** Exclude .machine files that use default Haas vendors from Online Library. */
 function isExcludedMachineFile(fullPath) {
@@ -378,6 +385,8 @@ class FileTreeProvider {
             return true;
         if (!this.isMatchingFile(path.basename(fullPath)))
             return true;
+        if (path.extname(fullPath).toLowerCase() === '.f3d')
+            return false;
         const info = getAxisCountAndPurposeFromMch(fullPath);
         if (!info)
             return true;
@@ -455,6 +464,7 @@ class FileTreeProvider {
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.files = [];
         this.fsWatchers = [];
+        this.watchedDirs = new Set();
         this.filterText = '';
         this.selectionMap = new Map();
         /** When set, online library list is filtered by axis and/or purpose. */
@@ -463,16 +473,20 @@ class FileTreeProvider {
         this._onOnlineLibraryExpandWhenEmpty = null;
         this.lastFileListHash = '';
         this.customFolderPaths = new Set();
-        this.rootDir = path.join(context.extensionPath, 'res', cfg.rootDirName);
+        // The shipped files are copied from the extension folder to the Examples folder at startup (see userLibrary.js).
+        this.rootDir = userLibrary.getExamplesDir(cfg.userFolderKind);
+        this.onlineLibraryDir = userLibrary.getOnlineLibraryDir();
         this.loadFiles();
         this.lastFileListHash = this.computeFileListHash();
         // Primary: fs.watch for instant updates
         for (const dir of this.getWatchedDirs()) {
             this.watchDirectory(dir);
         }
-        // Fallback: poll every 30s in case fs.watch misses something
+        // A folder on another disk or share was found or lost
+        this._reachabilitySubscription = userLibrary.onReachabilityChange(() => this.refreshFolders());
+        // Fallback: poll every 30s in case fs.watch misses something. The folders are checked first, so that no file call waits for a share that is gone.
         this.pollInterval = setInterval(() => {
-            this.refreshTree();
+            userLibrary.recheckAll().then(() => this.refreshTree());
         }, 30000);
         if (this.cfg.checkboxMode && this.cfg.selectionStorageKey !== 'regressionTestSelection') {
             this.restoreSelection();
@@ -491,9 +505,20 @@ class FileTreeProvider {
             clearTimeout(this.refreshTimer);
         if (this.pollInterval)
             clearInterval(this.pollInterval);
+        if (this._reachabilitySubscription)
+            this._reachabilitySubscription();
+    }
+    /** A folder became reachable or was lost: watch the folders that can be used and read them again. */
+    refreshFolders() {
+        for (const dir of this.getWatchedDirs())
+            this.watchDirectory(dir);
+        this.refreshTreeFromMutation();
     }
     watchDirectory(dir) {
         if (!(0, utils_1.fileExists)(dir))
+            return;
+        const key = path.normalize(dir).toLowerCase();
+        if (this.watchedDirs.has(key))
             return;
         try {
             const watcher = fs.watch(dir, { recursive: true }, (_event, filename) => {
@@ -505,8 +530,15 @@ class FileTreeProvider {
                     this.refreshTree();
                 }, 500);
             });
-            watcher.on('error', () => { });
+            watcher.on('error', () => {
+                this.watchedDirs.delete(key);
+                try {
+                    watcher.close();
+                }
+                catch { /* ignore */ }
+            });
             this.fsWatchers.push(watcher);
+            this.watchedDirs.add(key);
         }
         catch { /* directory not watchable, polling fallback will cover it */ }
     }
@@ -564,16 +596,32 @@ class FileTreeProvider {
         }
         catch { /* skip */ }
     }
-    getCustomFolders() {
+    /** Folders added with "Add folder". */
+    getLinkedFolders() {
         const stateKey = 'customFolders.' + this.cfg.settingsKey;
         const fromState = this.context.globalState.get(stateKey);
         if (Array.isArray(fromState) && fromState.length > 0)
-            return fromState;
+            return fromState.filter(f => typeof f === 'string');
         const custom = config.get(this.cfg.settingsKey) ?? {};
-        return Array.isArray(custom.folders) ? custom.folders : [];
+        return Array.isArray(custom.folders) ? custom.folders.filter(f => typeof f === 'string') : [];
+    }
+    /** The default Custom folder (always shown, cannot be removed) followed by the linked folders. */
+    getCustomFolders() {
+        const linked = this.getLinkedFolders();
+        if (!this.cfg.userFolderKind)
+            return linked;
+        const def = userLibrary.getCustomFolder(this.cfg.userFolderKind);
+        const norm = (p) => path.normalize(p).toLowerCase();
+        // folders on another disk or on a network share are only used when they were found (see userLibrary.js)
+        return [def, ...linked.filter(f => norm(f) !== norm(def))].filter(f => userLibrary.isUsablePath(f));
+    }
+    isDefaultFolder(folderPath) {
+        return !!this.cfg.userFolderKind && path.normalize(folderPath).toLowerCase() === path.normalize(userLibrary.getCustomFolder(this.cfg.userFolderKind)).toLowerCase();
     }
     getWatchedDirs() {
-        const dirs = [this.rootDir];
+        const dirs = userLibrary.isUsablePath(this.rootDir) ? [this.rootDir] : [];
+        if (this.cfg.includeOnlineLibrary && userLibrary.isUsablePath(this.onlineLibraryDir) && (0, utils_1.fileExists)(this.onlineLibraryDir))
+            dirs.push(this.onlineLibraryDir);
         const folders = this.getCustomFolders().filter(f => (0, utils_1.fileExists)(f));
         if (folders.length)
             dirs.push(...folders);
@@ -582,9 +630,11 @@ class FileTreeProvider {
     loadFiles() {
         this.files = [];
         this.customFolderPaths.clear();
-        if ((0, utils_1.fileExists)(this.rootDir)) {
+        if (userLibrary.isUsablePath(this.rootDir) && (0, utils_1.fileExists)(this.rootDir)) {
             this.files = this.findEntries(this.rootDir);
         }
+        if (this.cfg.includeOnlineLibrary && userLibrary.isUsablePath(this.onlineLibraryDir) && (0, utils_1.fileExists)(this.onlineLibraryDir))
+            this.files.push([ONLINE_LIBRARY, this.onlineLibraryDir]);
         const existing = this.getCustomFolders().filter(f => (0, utils_1.fileExists)(f));
         if (existing.length > 0) {
             this.customFolderPaths = new Set(existing);
@@ -636,7 +686,7 @@ class FileTreeProvider {
             return undefined;
         if (parentPath === RECENT_PATH)
             return new FileTreeItem(RECENT_LABEL, vscode.TreeItemCollapsibleState.Collapsed, RECENT_PATH);
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (parentPath === onlineLibraryDir) {
             const parentItem = new FileTreeItem(ONLINE_LIBRARY, vscode.TreeItemCollapsibleState.Collapsed, parentPath);
             parentItem.contextValue = 'onlineLibrary';
@@ -678,7 +728,7 @@ class FileTreeProvider {
         if (element.label === LOCAL_FUSION) {
             return this.buildLocalFusionItems();
         }
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (element.filePath === onlineLibraryDir) {
             const files = (0, utils_1.fileExists)(onlineLibraryDir)
                 ? (0, utils_1.getFilesFromDirRecursive)(onlineLibraryDir, this.cfg.fileExtensions)
@@ -702,6 +752,8 @@ class FileTreeProvider {
             const vendorName = sep >= 0 ? key.slice(sep + 1) : '(No vendor)';
             return this.buildOnlineLibraryPurposeVendorItems(purposeName, vendorName);
         }
+        if (userLibrary.isGuarded(element.filePath))
+            return userLibrary.checkReachable(element.filePath).then(ok => (ok ? this.buildChildItems(element) : []));
         return this.buildChildItems(element);
     }
     refreshTree(force) {
@@ -776,17 +828,18 @@ class FileTreeProvider {
     }
     async addFolder(folderPath) {
         const stateKey = 'customFolders.' + this.cfg.settingsKey;
-        const list = this.getCustomFolders();
-        if (list.indexOf(folderPath) >= 0)
+        const list = this.getLinkedFolders();
+        if (list.indexOf(folderPath) >= 0 || this.isDefaultFolder(folderPath))
             return;
         list.push(folderPath);
         await this.context.globalState.update(stateKey, list);
         await config.update(this.cfg.settingsKey, { folders: list }, true).catch(() => { });
-        this.watchDirectory(folderPath);
+        if (await userLibrary.checkReachable(folderPath))
+            this.watchDirectory(folderPath);
     }
     async removeFolder(folderPath) {
         const stateKey = 'customFolders.' + this.cfg.settingsKey;
-        const list = this.getCustomFolders().filter(f => f !== folderPath);
+        const list = this.getLinkedFolders().filter(f => f !== folderPath);
         await this.context.globalState.update(stateKey, list);
         await config.update(this.cfg.settingsKey, { folders: list }, true).catch(() => { });
         this.refreshTreeFromMutation();
@@ -816,6 +869,7 @@ class FileTreeProvider {
         if (confirm !== 'Delete')
             return;
         fs.rmSync(folderPath, { recursive: true, force: true });
+        userLibrary.rememberDeletedExamples(folderPath);
         vscode.window.showInformationMessage(`Folder "${name}" deleted.`);
         this.refreshTreeFromMutation();
     }
@@ -895,7 +949,7 @@ class FileTreeProvider {
         }
         if (this.cfg.includeRecentNode !== false && this.cfg.recentStorageKey) {
             const recent = this.context.globalState.get('recentFiles.' + this.cfg.recentStorageKey);
-            const arr = Array.isArray(recent) ? recent.filter(p => typeof p === 'string' && (0, utils_1.fileExists)(p)) : [];
+            const arr = Array.isArray(recent) ? recent.filter(p => typeof p === 'string' && userLibrary.isUsablePath(p) && (0, utils_1.fileExists)(p)) : [];
             if (arr.length > 0) {
                 if (!this._recentNode) {
                     this._recentNode = new FileTreeItem(RECENT_LABEL, vscode.TreeItemCollapsibleState.Collapsed, RECENT_PATH);
@@ -914,7 +968,7 @@ class FileTreeProvider {
         if (this.cfg.includeLocalFusionNode) {
             items.push(new FileTreeItem(LOCAL_FUSION, vscode.TreeItemCollapsibleState.Collapsed));
         }
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         for (const [name, fullPath] of this.files) {
             if (!this.cfg.includeOnlineLibrary && path.normalize(fullPath) === path.normalize(onlineLibraryDir))
                 continue;
@@ -934,7 +988,7 @@ class FileTreeProvider {
             const normFull = path.normalize(fullPath);
             const normOnline = path.normalize(onlineLibraryDir);
             const isOnlineLibraryNode = !isFile && (normFull === normOnline || name === ONLINE_LIBRARY);
-            item.contextValue = isFile ? 'customFile' : (isOnlineLibraryNode ? 'onlineLibrary' : (this.customFolderPaths.has(fullPath) ? 'customFolder' : 'openFolder'));
+            item.contextValue = isFile ? 'customFile' : (isOnlineLibraryNode ? 'onlineLibrary' : (this.customFolderPaths.has(fullPath) ? (this.isDefaultFolder(fullPath) ? 'defaultFolder' : 'customFolder') : 'openFolder'));
             items.push(item);
         }
         return items;
@@ -954,14 +1008,13 @@ class FileTreeProvider {
                     continue;
                 if (!this.machineMatchesAxisPurposeFilter(fullPath))
                     continue;
-                const label = this.cfg.fileExtensions.some(ext => fileName.toLowerCase().endsWith(ext))
-                    ? (getMachineDisplayLabel(fullPath) ?? fileName)
-                    : fileName;
+                const isMachineFile = isMachineDefinitionFile(fileName);
+                const label = isMachineFile ? (getMachineDisplayLabel(fullPath) ?? fileName) : fileName;
                 const item = new FileTreeItem(label, vscode.TreeItemCollapsibleState.None, fullPath);
                 item.contextValue = 'customFile';
                 item.description = path.dirname(rel);
                 item.command = { command: this.cfg.selectCommand, title: '', arguments: [fullPath] };
-                if (this.cfg.fileExtensions.some(ext => fileName.toLowerCase().endsWith(ext))) {
+                if (isMachineFile) {
                     const img = getEmbeddedImageFromMch(fullPath);
                     const tooltipInfo = getMachineTooltipInfo(fullPath);
                     item.tooltip = makeMachineTooltip(label, `${labelPrefix} › ${rel}`, img, tooltipInfo);
@@ -970,6 +1023,8 @@ class FileTreeProvider {
             }
         };
         addFromDir(this.rootDir, 'Built-in');
+        if (this.cfg.includeOnlineLibrary)
+            addFromDir(this.onlineLibraryDir, ONLINE_LIBRARY);
         for (const [, folderPath] of this.files) {
             if (this.customFolderPaths.has(folderPath)) {
                 addFromDir(folderPath, path.basename(folderPath));
@@ -1044,7 +1099,7 @@ class FileTreeProvider {
         const isMachine = ext.some(e => /\.(mch|machine)$/i.test(e));
         for (let i = 0; i < paths.length && items.length < RECENT_MAX; i++) {
             const fullPath = paths[i];
-            if (!fullPath || typeof fullPath !== 'string' || !(0, utils_1.fileExists)(fullPath))
+            if (!fullPath || typeof fullPath !== 'string' || !userLibrary.isUsablePath(fullPath) || !(0, utils_1.fileExists)(fullPath))
                 continue;
             const name = path.basename(fullPath);
             if (!ext.some(e => name.toLowerCase().endsWith(e.toLowerCase())))
@@ -1086,7 +1141,7 @@ class FileTreeProvider {
         });
     }
     buildOnlineLibraryItems() {
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (!(0, utils_1.fileExists)(onlineLibraryDir))
             return [];
         const files = (0, utils_1.getFilesFromDirRecursive)(onlineLibraryDir, this.cfg.fileExtensions);
@@ -1114,14 +1169,14 @@ class FileTreeProvider {
             return a.localeCompare(b);
         });
         return purposes.map(purpose => {
-            const item = new FileTreeItem(purpose, vscode.TreeItemCollapsibleState.Collapsed, ONLINE_PURPOSE_PREFIX + purpose, path.join(this.rootDir, ONLINE_LIBRARY));
+            const item = new FileTreeItem(purpose, vscode.TreeItemCollapsibleState.Collapsed, ONLINE_PURPOSE_PREFIX + purpose, this.onlineLibraryDir);
             item.contextValue = 'purposeGroup';
             item.description = `${byPurpose.get(purpose).length} machine(s)`;
             return item;
         });
     }
     buildOnlineLibraryVendorItems(vendorName) {
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (!(0, utils_1.fileExists)(onlineLibraryDir))
             return [];
         const noVendorLabel = '(No vendor)';
@@ -1154,7 +1209,7 @@ class FileTreeProvider {
         return items;
     }
     buildOnlineLibraryPurposeVendorGroups(purposeName) {
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (!(0, utils_1.fileExists)(onlineLibraryDir))
             return [];
         const files = (0, utils_1.getFilesFromDirRecursive)(onlineLibraryDir, this.cfg.fileExtensions);
@@ -1185,7 +1240,7 @@ class FileTreeProvider {
         });
     }
     buildOnlineLibraryPurposeVendorItems(purposeName, vendorName) {
-        const onlineLibraryDir = path.join(this.rootDir, ONLINE_LIBRARY);
+        const onlineLibraryDir = this.onlineLibraryDir;
         if (!(0, utils_1.fileExists)(onlineLibraryDir))
             return [];
         const noVendorLabel = '(No vendor)';
@@ -1241,7 +1296,7 @@ class FileTreeProvider {
             const state = isFile
                 ? vscode.TreeItemCollapsibleState.None
                 : vscode.TreeItemCollapsibleState.Collapsed;
-            const isMachineFile = isFile && this.cfg.fileExtensions.some(ext => name.toLowerCase().endsWith(ext));
+            const isMachineFile = isFile && isMachineDefinitionFile(name);
             const itemLabel = isMachineFile ? (getMachineDisplayLabel(fullPath) ?? name) : name;
             const treeParent = this.cfg.checkboxMode ? element.filePath : undefined;
             const item = new FileTreeItem(itemLabel, state, fullPath, treeParent);
@@ -1261,7 +1316,9 @@ class FileTreeProvider {
             }
             items.push(item);
         }
-        return items;
+        // folders first, then files (the order within both groups is kept)
+        const isFolder = (i) => (i.collapsibleState !== vscode.TreeItemCollapsibleState.None ? 1 : 0);
+        return items.sort((x, y) => isFolder(y) - isFolder(x));
     }
     findEntries(dir) {
         if (!(0, utils_1.fileExists)(dir))
