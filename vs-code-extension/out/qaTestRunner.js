@@ -10,6 +10,7 @@ exports.getPostCapabilities = getPostCapabilities;
 exports.getCapabilityFolder = getCapabilityFolder;
 exports.resolveInside = resolveInside;
 exports.readMachineProperties = readMachineProperties;
+exports.readPostError = readPostError;
 exports.hasMachineScope = hasMachineScope;
 exports.isInside = isInside;
 exports.toPosixRelative = toPosixRelative;
@@ -525,6 +526,68 @@ function getJobPaths(project, job) {
             : undefined,
     };
 }
+/**
+ * Reads the error of a failed post from the log file that the post engine writes next to the output.
+ * postPath is the post of the job: a syntax error stops the engine before it writes the paths of the post to the log.
+ * Returns { message, details, file, line, operation, where, functionName, logFile, logLine } or undefined if the log has no error.
+ */
+function readPostError(logFile, postPath) {
+    let text;
+    try {
+        text = fs.readFileSync(logFile, 'utf8');
+    }
+    catch {
+        return undefined;
+    }
+    const lines = text.split(/\r?\n/);
+    const isRule = (l) => /^#{10,}$/.test(l.trim());
+    // the engine puts the error between two lines of '#'; without them, all "Error:" lines are used
+    const start = lines.findIndex(isRule);
+    const end = start >= 0 ? lines.findIndex((l, i) => i > start && isRule(l)) : -1;
+    const block = start >= 0 && end > start ? lines.slice(start + 1, end) : lines.filter(l => /^Error:/.test(l));
+    const value = (re) => { for (const l of block) { const m = re.exec(l.trim()); if (m) return m; } return undefined; };
+    const at = value(/^Error at line:\s*(\d+)(?:\s*\((.+)\))?$/); // without a file name: the post itself
+    const operation = value(/^Error in operation:\s*'?(.*?)'?$/);
+    const where = value(/^Failed while processing\s+(.*?)\.?$/);
+    const messages = block.map(l => l.trim()).filter(l => /^Error:/.test(l) && !/^Error (at line|in operation):/.test(l)
+        && !/^Error: Failed to (invoke|execute|post)/.test(l)).map(l => l.replace(/^Error:\s*/, ''));
+    if (!messages.length)
+        return undefined;
+    const error = {
+        message: messages[0], details: messages.slice(1), line: at ? Number(at[1]) : undefined,
+        operation: operation?.[1], where: where?.[1], logFile,
+        logLine: start >= 0 ? start + 1 : Math.max(0, lines.findIndex(l => /^Error:/.test(l))),
+    };
+    if (at) {
+        // the log names only the file (or none for the post itself); it is the post or one of its include files
+        const header = (key) => lines.find(l => l.startsWith(key))?.slice(key.length).trim();
+        const configuration = header('Configuration path:') || postPath;
+        const folders = [configuration && path.dirname(configuration), ...(header('Include paths:') ?? '').split(';')].filter(Boolean);
+        error.file = configuration && (!at[2] || path.basename(configuration).toLowerCase() === at[2].toLowerCase())
+            ? configuration
+            : folders.map(f => path.join(f, at[2])).find(f => (0, utils_1.fileExists)(f)); // nosemgrep: join_resolve_path_traversal -- only opened in the editor
+        error.functionName = error.file ? enclosingFunction(error.file, error.line) : undefined;
+    }
+    return error;
+}
+/** The name of the top-level function that contains the line (1-based), or undefined. The log only names the entry function. */
+function enclosingFunction(file, line) {
+    let lines;
+    try {
+        lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+    }
+    catch {
+        return undefined;
+    }
+    for (let i = Math.min(line, lines.length) - 1; i >= 0; i--) {
+        const m = /^function\s+([\w$]+)\s*\(/.exec(lines[i]) || /^(?:var\s+)?([\w$.]+)\s*=\s*function\s*\(/.exec(lines[i]);
+        if (m)
+            return m[1];
+        if (i < line - 1 && /^\}/.test(lines[i]))
+            return undefined; // the line is outside of a function
+    }
+    return undefined;
+}
 // ── Comparison (ports of run-tests.js compareFiles / checkContains) ─
 function splitLines(text) {
     return text.match(/[^\r\n]+/g) ?? [];
@@ -645,6 +708,28 @@ class QaTestRunner {
     }
     getResult(job) {
         return this.results.get(job.id);
+    }
+    /** The error of a failed job, read from the log file of the post engine; undefined if there is none. */
+    getPostError(job) {
+        const actual = this.getResult(job)?.actual || (this.project && getJobPaths(this.project, job).actual);
+        if (!actual || !/\.output$/i.test(actual))
+            return undefined;
+        // the tree asks on every refresh: read a log again only when the post engine has written it again
+        const logFile = actual.replace(/\.output$/i, '.log');
+        let mtime;
+        try {
+            mtime = fs.statSync(logFile).mtimeMs;
+        }
+        catch {
+            return undefined;
+        }
+        this._postErrors ??= new Map();
+        const cached = this._postErrors.get(logFile);
+        if (cached?.mtime === mtime)
+            return cached.error;
+        const error = readPostError(logFile, this.model?.posts.find(p => p.name === job.post)?.cpsPath);
+        this._postErrors.set(logFile, { mtime, error });
+        return error;
     }
     /** Marks the second unit of a test as "same change" when its IN and MM outputs changed in the same way. */
     updateUnitPairs(ranJobs) {

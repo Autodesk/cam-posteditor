@@ -34,7 +34,8 @@ function registerQaTestCommands(context, engine) {
     const runner = new qa.QaTestRunner(context, engine);
     const provider = new qaTestProvider_1.QaTestProvider(runner);
     const editor = new qaTestEditor_1.QaTestEditor(runner, engine);
-    const view = vscode.window.createTreeView('qaTestList', { treeDataProvider: provider, showCollapseAll: true });
+    // own collapse button (collapseCases): the built-in one also closes the posts
+    const view = vscode.window.createTreeView('qaTestList', { treeDataProvider: provider, showCollapseAll: false });
     context.subscriptions.push(view);
     // Shows whether the library post engine matches jenkins/packages.txt.
     const engineStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
@@ -382,6 +383,22 @@ function registerQaTestCommands(context, engine) {
     };
     runner.onDidChange(updateEditorContext);
     context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateEditorContext));
+    /** Opens a file with the cursor on a line (1-based). */
+    const openFileAtLine = async (file, line, options = {}) => {
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
+        const pos = new vscode.Position(Math.max(0, Math.min((line || 1) - 1, doc.lineCount - 1)), 0);
+        const editor = await vscode.window.showTextDocument(doc, { selection: new vscode.Range(pos, pos), preview: false, ...options });
+        editor.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+    };
+    /** The post at the line of the error, highlighted like a jump from the output (left editor group). */
+    const openPostAtError = (file, line) => vscode.commands.executeCommand('autodesk.post.openPostAtLine', file, line);
+    /** The post at the line of the error, with the log at the error block in the editor group to the right. */
+    const openErrorWithLog = async (error) => {
+        if (!(error.file && error.line))
+            return openFileAtLine(error.logFile, error.logLine + 1);
+        await openPostAtError(error.file, error.line);
+        await openFileAtLine(error.logFile, error.logLine + 1, { viewColumn: vscode.ViewColumn.Two, preserveFocus: true, preview: true });
+    };
     reg('openJob', async (node) => {
         const job = node?.job;
         if (!job)
@@ -393,6 +410,10 @@ function registerQaTestCommands(context, engine) {
         }
         else if (status === qa.STATUS.missingExpected) {
             await vscode.window.showTextDocument(vscode.Uri.file(r.actual), { preview: true });
+        }
+        else if (status === qa.STATUS.failed && runner.getPostError(job)) {
+            // the error is in the tooltip, so a click goes straight to it: the line in the post and the log beside it
+            await openErrorWithLog(runner.getPostError(job));
         }
         else if (status === qa.STATUS.failed || status === qa.STATUS.missingInput || status === qa.STATUS.skipped) {
             const choice = await vscode.window.showErrorMessage(r?.message || job.skipReason || 'The test could not run.', 'Show output', 'Open post');
@@ -433,6 +454,26 @@ function registerQaTestCommands(context, engine) {
     });
     reg('acceptAll', () => runner.acceptJobs(runner.allJobs(), true));
     reg('showOutput', () => runner.output.show(true));
+    reg('collapseCases', () => provider.collapseCases());
+    const errorOf = (node) => node?.job ? runner.getPostError(node.job) : undefined;
+    reg('goToError', (node) => {
+        const error = errorOf(node);
+        if (error?.file && error.line)
+            return openPostAtError(error.file, error.line);
+        if (error)
+            return openFileAtLine(error.logFile, error.logLine + 1); // no line in the post: the log has the details
+        vscode.window.showInformationMessage('There is no log with an error for this test.');
+    });
+    reg('showLog', (node) => {
+        const error = errorOf(node);
+        if (error)
+            return openFileAtLine(error.logFile, error.logLine + 1);
+        vscode.window.showInformationMessage('There is no log with an error for this test.');
+    });
+    reg('openPost', (node) => {
+        if (node?.post?.cpsPath)
+            vscode.window.showTextDocument(vscode.Uri.file(node.post.cpsPath));
+    });
     reg('problemsOnly', () => { runner.problemsOnly = true; runner.fireChanged(true); });
     reg('showAll', () => { runner.problemsOnly = false; runner.fireChanged(true); });
     reg('refresh', () => {
