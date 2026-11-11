@@ -57,6 +57,27 @@ class QaTestProvider {
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         runner.onDidChange(() => this._onDidChangeTreeData.fire());
+        /** Part of the ids of test cases: a new value makes VS Code forget the expand state of all of them. */
+        this.caseGeneration = 0;
+        /** The same for the posts; only changed when the view has several posts. */
+        this.postGeneration = 0;
+        this.postsCollapsed = false;
+        /** Problems-only view: its own ids, new each time it is turned on, so that its test cases open again. */
+        this.filterGeneration = 0;
+        this.filterCollapsed = false;
+        this.lastProblemsOnly = false;
+    }
+    /** Collapses all test cases, but leaves the posts open. */
+    collapseCases() {
+        this.caseGeneration++;
+        // with several posts, "one level" is the list of posts: close them too
+        if (this.runner.model.posts.length > 1) {
+            this.postGeneration++;
+            this.postsCollapsed = true;
+        }
+        if (this.runner.problemsOnly)
+            this.filterCollapsed = true;
+        this._onDidChangeTreeData.fire();
     }
     refresh() {
         this._onDidChangeTreeData.fire();
@@ -66,6 +87,12 @@ class QaTestProvider {
         if (!element) {
             if (!runner.project)
                 return [];
+            const problemsOnly = !!runner.problemsOnly;
+            if (problemsOnly && !this.lastProblemsOnly) {
+                this.filterGeneration++;
+                this.filterCollapsed = false;
+            }
+            this.lastProblemsOnly = problemsOnly;
             return runner.model.posts
                 .filter(p => !runner.problemsOnly || this.postHasProblems(p))
                 .map(p => ({ kind: 'post', post: p }));
@@ -97,10 +124,14 @@ class QaTestProvider {
     }
     postItem(postModel) {
         const hasCases = postModel.cases.length > 0;
-        const expanded = this.runner.model.posts.length === 1 || this.postHasProblems(postModel);
+        const single = this.runner.model.posts.length === 1;
+        const problemsOnly = !!this.runner.problemsOnly;
+        const expanded = single || (this.postHasProblems(postModel) && (problemsOnly ? !this.filterCollapsed : !this.postsCollapsed));
         const item = new vscode.TreeItem(postModel.name, !hasCases ? vscode.TreeItemCollapsibleState.None
             : expanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed);
-        item.id = `post:${postModel.cpsPath}`;
+        // new ids after "Collapse test cases" (several posts) and for each problems-only view, like the test cases
+        item.id = single ? `post:${postModel.cpsPath}`
+            : `post:${postModel.cpsPath}:${this.postGeneration}${problemsOnly ? `:problems${this.filterGeneration}` : ''}`;
         item.tooltip = postModel.cpsPath;
         item.contextValue = postModel.state === 'noTestCases' ? 'qaPost qaPostEmpty' : 'qaPost';
         if (postModel.state) {
@@ -127,9 +158,12 @@ class QaTestProvider {
     }
     caseItem(c) {
         const tc = c.testCase;
-        const expanded = this.caseHasProblems(c);
+        // problems-only view: the test cases with problems open (until "Collapse test cases");
+        // full view: they open only until "Collapse test cases" was used
+        const problemsOnly = !!this.runner.problemsOnly;
+        const expanded = this.caseHasProblems(c) && (problemsOnly ? !this.filterCollapsed : this.caseGeneration === 0);
         const item = new vscode.TreeItem(tc.description || '(no description)', expanded ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.Collapsed);
-        item.id = `case:${c.entry.file}:${c.entry.index}:${c.caseIndex}`;
+        item.id = `case:${c.entry.file}:${c.entry.index}:${c.caseIndex}:${this.caseGeneration}${problemsOnly ? `:problems${this.filterGeneration}` : ''}`;
         const desc = [];
         const inputs = Array.isArray(tc.input) ? tc.input.length : 0;
         desc.push(`${inputs} input${inputs === 1 ? '' : 's'}`);
@@ -172,7 +206,9 @@ class QaTestProvider {
         const status = this.runner.getJobStatus(job);
         const result = this.runner.getResult(job);
         const item = new vscode.TreeItem(`${job.input}${job.suffix}`, vscode.TreeItemCollapsibleState.None);
-        item.id = `job:${job.id}`;
+        // with the status in the id, VS Code makes a new row when the status changes: otherwise it can keep
+        // the hover of the old row (for example "running") until the run ends
+        item.id = `job:${job.id}:${status}`;
         const sameChangeAs = status === 'differs' ? result?.sameChangeAs : undefined;
         const sameChangeIn = status === 'differs' ? result?.sameChangeIn : undefined;
         item.description = sameChangeAs ? `same change as ${sameChangeAs} - click to compare`
@@ -181,10 +217,16 @@ class QaTestProvider {
                     : (STATUS_TEXT[status] ?? status);
         item.iconPath = sameChangeAs ? new vscode.ThemeIcon('diff', new vscode.ThemeColor('disabledForeground')) : icon(status);
         item.contextValue = `qaJob qaJob-${status}`;
-        const lines = [`${job.post}_${job.input}${job.suffix}.output`, `Status: ${item.description}`];
-        if (sameChangeAs || sameChangeIn)
-            lines.push(`The ${job.unitLabel} output changed in the same way as ${sameChangeAs ?? sameChangeIn}. Accepting either one accepts both.`);
-        if (result?.message)
+        const tooltip = this.jobTooltipLines(job, result, item.description, sameChangeAs ?? sameChangeIn, true).join('\n');
+        item.tooltip = (status === 'failed' && this.errorTooltip(job)) || tooltip;
+        item.command = { command: 'autodesk.post.qaTest.openJob', title: 'Open', arguments: [element] };
+        return item;
+    }
+    jobTooltipLines(job, result, description, sameChange, withMessage) {
+        const lines = [`${job.post}_${job.input}${job.suffix}.output`, `Status: ${description}`];
+        if (sameChange)
+            lines.push(`The ${job.unitLabel} output changed in the same way as ${sameChange}. Accepting either one accepts both.`);
+        if (withMessage && result?.message)
             lines.push('', result.message);
         if (result?.machineProperties?.length)
             lines.push('', `From machine: ${result.machineProperties.join(', ')}`);
@@ -194,9 +236,38 @@ class QaTestProvider {
             lines.push('', result.commandLine);
         else if (job.skipReason)
             lines.push('', `Not supported in the extension: ${job.skipReason}`);
-        item.tooltip = lines.join('\n');
-        item.command = { command: 'autodesk.post.qaTest.openJob', title: 'Open', arguments: [element] };
-        return item;
+        return lines;
     }
+    /** The tooltip of a failed job with the error from the log of the post engine; undefined if the log has no error. */
+    errorTooltip(job) {
+        const error = this.runner.getPostError(job);
+        if (!error)
+            return undefined;
+        const lines = this.jobTooltipLines(job, this.runner.getResult(job), STATUS_TEXT.failed, undefined, false);
+        const md = new vscode.MarkdownString(undefined, true);
+        md.supportHtml = true; // only for the colour of the error
+        const text = (s) => { md.appendText(s); md.appendMarkdown('  \n'); };
+        // the same name as the row, so that the tooltip can be matched with its test; the red error replaces the status line
+        md.appendMarkdown(`**${escapeMarkdown(`${job.input}${job.suffix}`)}**  \n`);
+        text([job.description || '(no description)', job.post].join(' · '));
+        md.appendMarkdown(`\n---\n\n#### <span style="color:#f14c4c;">Error: ${escapeMarkdown(error.message)}</span>\n\n`);
+        for (const d of error.details)
+            text(d);
+        // no link: a click on the row opens the post at this line together with the matching log
+        if (error.line)
+            text(`Line ${error.line}${error.file ? ` in ${path.basename(error.file)}` : ''}`);
+        if (error.functionName)
+            text(`In function: ${error.functionName}()`);
+        if (error.operation)
+            text(`Operation: ${error.operation}`);
+        md.appendMarkdown('\n---\n\n');
+        text(`Output: ${lines[0]}`);
+        for (const l of lines.slice(2).filter(l => l !== ''))
+            text(l);
+        return md;
+    }
+}
+function escapeMarkdown(s) {
+    return s.replace(/[\\`*_{}[\]()#+\-.!|<>$]/g, '\\$&');
 }
 exports.QaTestProvider = QaTestProvider;
