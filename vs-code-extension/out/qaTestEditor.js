@@ -187,6 +187,11 @@ function patchTestCases(file, entryIndex, op) {
     else
         fs.writeFileSync(file, patched, 'utf8');
 }
+/** The QA project belongs to the open folder; stored in the user settings it would replace the project of every other folder. */
+function saveProjectFolder(root) {
+    const hasWorkspace = (vscode.workspace.workspaceFolders?.length ?? 0) > 0;
+    return config.update('qaProjectFolder', root, !hasWorkspace);
+}
 class QaTestEditor {
     constructor(runner, engine) {
         this.runner = runner;
@@ -239,7 +244,9 @@ class QaTestEditor {
         const doc = readJsonWithStyle(c.entry.file);
         const post = doc.data.posts?.[c.entry.index];
         const testCase = post?.testCases?.[c.caseIndex];
-        if (!post || post.name !== c.entry.name || !testCase) {
+        // the node addresses the case by index: a case moved or inserted in the file must not be edited in its place
+        const sameCase = testCase && (testCase.description ?? '') === (c.testCase.description ?? '') && (testCase.suffix ?? '') === (c.testCase.suffix ?? '');
+        if (!post || post.name !== c.entry.name || !sameCase) {
             vscode.window.showWarningMessage('The test case file was changed outside the QA test view. The view has been refreshed, please try again.');
             this.runner.reload();
             return undefined;
@@ -309,7 +316,7 @@ class QaTestEditor {
         if (!(0, utils_1.fileExists)(gitignore))
             fs.writeFileSync(gitignore, 'output/\n', 'utf8');
         if (qa.findProjectRoot(active) !== root)
-            await config.update('qaProjectFolder', root, true);
+            await saveProjectFolder(root);
         this.runner.setPosts(active && active.toLowerCase().endsWith('.cps') ? [active] : [], { auto: true, startPath: root });
         const postName = active && active.toLowerCase().endsWith('.cps') ? path.basename(active, path.extname(active)) : undefined;
         const actions = postName && offerFirstTestCase ? [`Add test case for ${postName}`] : [];
@@ -333,7 +340,7 @@ class QaTestEditor {
                 (0, utils_1.ensureDir)(path.join(root, sub));
             writeJsonWithStyle(path.join(root, 'test_cases', 'common.json'), { data: DEFAULT_COMMON, indent: 2, newline: '\n' });
         }
-        await config.update('qaProjectFolder', root, true);
+        await saveProjectFolder(root);
         this.runner.setPosts(this.runner.model.cpsPaths ?? [], { auto: this.runner.model.auto, startPath: root });
         vscode.window.showInformationMessage(`Using QA project ${root}.`);
         return true;
@@ -815,8 +822,11 @@ class QaTestEditor {
         const value = await vscode.window.showInputBox({ title: 'Test case description', value: loaded.testCase.description ?? '', validateInput: v => (v.trim() ? undefined : 'Enter a description.') });
         if (value === undefined)
             return;
-        loaded.testCase.description = value.trim();
-        this.saveCase(loaded);
+        const fresh = this.loadCase(node);
+        if (!fresh)
+            return;
+        fresh.testCase.description = value.trim();
+        this.saveCase(fresh);
     }
     async editSuffix(node) {
         const loaded = this.loadCase(node);
@@ -833,9 +843,12 @@ class QaTestEditor {
         });
         if (value === undefined || value === oldSuffix)
             return;
+        const fresh = this.loadCase(node);
+        if (!fresh)
+            return;
         const oldJobs = c.jobs.map(j => ({ job: j, paths: qa.getJobPaths(this.project, j) }));
-        loaded.testCase.suffix = value;
-        this.saveCase(loaded);
+        fresh.testCase.suffix = value;
+        this.saveCase(fresh);
         const existing = oldJobs.filter(o => o.paths.expected && (0, utils_1.fileExists)(o.paths.expected));
         if (existing.length === 0)
             return;
@@ -857,11 +870,14 @@ class QaTestEditor {
         const value = await vscode.window.showInputBox({ title: 'Additional post engine flags', prompt: 'Extra command line options for the post engine, e.g. --shorten 200. Leave empty for none.', value: loaded.testCase.additionalFlags ?? '' });
         if (value === undefined)
             return;
+        const fresh = this.loadCase(node);
+        if (!fresh)
+            return;
         if (value.trim())
-            loaded.testCase.additionalFlags = value.trim();
+            fresh.testCase.additionalFlags = value.trim();
         else
-            delete loaded.testCase.additionalFlags;
-        this.saveCase(loaded);
+            delete fresh.testCase.additionalFlags;
+        this.saveCase(fresh);
     }
     async toggleIgnored(node) {
         const loaded = this.loadCase(node);
@@ -902,6 +918,8 @@ class QaTestEditor {
         });
         if (suffix === undefined)
             return;
+        if (!this.loadCase(node))
+            return;
         const copy = (0, utils_1.deepClone)(loaded.testCase);
         copy.description = description.trim();
         copy.suffix = suffix;
@@ -920,7 +938,7 @@ class QaTestEditor {
         const expectedCount = c.jobs.filter(j => { const e = qa.getJobPaths(this.project, j).expected; return e && (0, utils_1.fileExists)(e); }).length;
         const buttons = expectedCount ? ['Remove', 'Remove and delete expected files'] : ['Remove'];
         const choice = await vscode.window.showWarningMessage(`Remove test case "${loaded.testCase.description || loaded.testCase.suffix}"?`, { modal: true, detail: expectedCount ? `It has ${expectedCount} expected output file(s).` : undefined }, ...buttons);
-        if (!choice)
+        if (!choice || !this.loadCase(node))
             return;
         if (choice === 'Remove and delete expected files')
             this.runner.deleteExpectedFiles(c.jobs);

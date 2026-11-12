@@ -499,6 +499,34 @@ function createJobs(project, entry, caseIndex) {
     }
     return jobs;
 }
+/**
+ * Jobs run in parallel and each one deletes and rewrites its output file, so two jobs with the same output file
+ * would read each other's output. The first job keeps the file, the others are returned as duplicates.
+ */
+function splitDuplicateOutputs(project, queue) {
+    const caseInsensitive = process.platform === 'win32' || process.platform === 'darwin';
+    const owners = new Map();
+    const unique = [];
+    const duplicates = [];
+    for (const item of queue) {
+        const { job } = item;
+        const writesOutput = !(job.ignored || item.postIgnored || job.skipReason);
+        const actual = writesOutput ? getJobPaths(project, job).actual : undefined;
+        if (!actual) {
+            unique.push(item);
+            continue;
+        }
+        const key = caseInsensitive ? actual.toLowerCase() : actual;
+        const first = owners.get(key);
+        if (first) {
+            duplicates.push({ item, first });
+            continue;
+        }
+        owners.set(key, item);
+        unique.push(item);
+    }
+    return { unique, duplicates };
+}
 function isPlatformIgnored(project, postName, input) {
     return project.ignored.some(item => {
         if (!Array.isArray(item.platforms) || !item.platforms.includes(process.platform))
@@ -958,11 +986,24 @@ class QaTestRunner {
      * filter: optional (job) => boolean to run only some jobs of the displayed model.
      * perUnit: post-library runs only; runs the output unit first and the other unit only when the first has no problems.
      */
-    async run({ filter, title = 'Running QA tests', perUnit = false } = {}) {
+    async run(options = {}) {
         if (this.running) {
             vscode.window.showWarningMessage('QA tests are already running.');
             return;
         }
+        // set before the first await: a second run started while this one waits for a dialog must be refused
+        this.running = true;
+        try {
+            await this.runExclusive(options);
+        }
+        finally {
+            if (this.running) {
+                this.running = false;
+                this.fireChanged(true);
+            }
+        }
+    }
+    async runExclusive({ filter, title = 'Running QA tests', perUnit = false } = {}) {
         if (!this.project) {
             const choice = await vscode.window.showWarningMessage('No QA project found (a folder containing "test_cases"). Create one?', 'Create QA project');
             if (choice)
@@ -999,7 +1040,6 @@ class QaTestRunner {
         for (const { job } of queue)
             this.results.set(job.id, { status: STATUS.queued, signature: job.signature });
         this.fireChanged(true);
-        this.running = true;
         const version = await this.getEngineVersion(exe);
         const started = Date.now();
         this.output.clear();
@@ -1053,7 +1093,7 @@ class QaTestRunner {
                             const item = items[next++];
                             this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
                             this.fireChanged();
-                            const result = await this.runJob(project, exe, item, packagesCache);
+                            const result = await this.runJobSafe(project, exe, item, packagesCache);
                             done++;
                             progress.report({ message: `${done}/${queue.length} ${item.job.post}`, increment: 100 / queue.length });
                             if (result.engineBusy) {
@@ -1074,7 +1114,7 @@ class QaTestRunner {
                             this.results.set(item.job.id, { status: STATUS.running, signature: item.job.signature });
                             this.fireChanged();
                             progress.report({ message: `Retrying ${item.job.post}` });
-                            const result = await this.runJob(project, exe, item, packagesCache);
+                            const result = await this.runJobSafe(project, exe, item, packagesCache);
                             if (result.engineBusy) {
                                 busy.set(item, { result, retries: attempt });
                                 this.results.set(item.job.id, { status: STATUS.queued, signature: item.job.signature });
@@ -1092,7 +1132,18 @@ class QaTestRunner {
                         record(item, { ...result, message: `${note}\n${result.message}` });
                     }
                 };
-                await runItems(queue);
+                const { unique, duplicates } = splitDuplicateOutputs(project, queue);
+                for (const { item, first } of duplicates) {
+                    const owner = `test case ${first.job.caseIndex + 1}${first.job.description ? ` ("${first.job.description}")` : ''} of ${first.job.post} in ${path.basename(first.job.entryFile)}`;
+                    record(item, {
+                        status: STATUS.failed,
+                        signature: item.job.signature,
+                        finished: Date.now(),
+                        message: `Writes the same output file as ${owner}. Give one of the test cases a different "suffix".`,
+                    });
+                    done++;
+                }
+                await runItems(unique);
             });
         }
         finally {
@@ -1380,6 +1431,15 @@ class QaTestRunner {
         this.fireChanged(true);
         const reportedIds = new Set(reportedJobs.map(j => j.id));
         await this.reportSummary(this.allJobs().filter(j => reportedIds.has(j.id)), started, version, result.stopped, { log: false });
+    }
+    /** runJob that reports an unexpected error as a failed job, so one broken job cannot end the run while others still run. */
+    async runJobSafe(project, exe, item, packagesCache) {
+        try {
+            return await this.runJob(project, exe, item, packagesCache);
+        }
+        catch (e) {
+            return { signature: item.job.signature, finished: Date.now(), status: STATUS.failed, message: `The test could not be run: ${e && e.message ? e.message : e}` };
+        }
     }
     async runJob(project, exe, { job, cpsPath, postIgnored }, packagesCache = new Map()) {
         const base = { signature: job.signature, finished: Date.now() };
