@@ -37,6 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertyProvider = void 0;
 const vscode = __importStar(require("vscode"));
+const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const config = __importStar(require("../config"));
 const utils_1 = require("../utils");
@@ -56,6 +57,7 @@ class PropertyProvider {
                 this.lastCpsPath = '';
             this.engine.clearPropertyCache(doc.fileName);
         });
+        this.engine.machineChangeHandler = () => this.onMachineChanged();
     }
     refresh() {
         this._onDidChangeTreeData.fire();
@@ -108,6 +110,7 @@ class PropertyProvider {
             if (!cache)
                 return [];
         }
+        void this.syncMachine(cache);
         const groupByGroup = config.get('showPropertiesByGroup') === true;
         if (element && typeof element === 'object' && '_group' in element) {
             let items = this.buildItems(cache, element._group);
@@ -189,7 +192,7 @@ class PropertyProvider {
         const key = parts[0];
         const currentValue = parts.slice(1).join(':');
         if (reset) {
-            const defaultVal = this.extractValue(cache.defaults.properties[key]);
+            const defaultVal = this.getEffectiveDefault(cache, key);
             this.setPropertyValue(cache, key, defaultVal);
             vscode.window.setStatusBarMessage(`Reset of property '${key}' was successful`, 5000);
             this.onPropertyChanged();
@@ -255,17 +258,28 @@ class PropertyProvider {
             let cache;
             if (existing && this.defaultsMatch(existing.defaults, data)) {
                 // Defaults unchanged: preserve user modifications
-                cache = { defaults: (0, utils_1.deepClone)(data), changed: existing.changed };
+                cache = { defaults: (0, utils_1.deepClone)(data), changed: existing.changed, machine: existing.machine, machineOffered: existing.machineOffered };
             }
             else {
                 // New or defaults changed: start from new defaults but re-apply any user overrides
                 const newChanged = (0, utils_1.deepClone)(data);
+                let machine;
+                if (existing?.machine) {
+                    const values = {};
+                    for (const [k, v] of Object.entries(existing.machine.values)) {
+                        if (!(k in newChanged.properties))
+                            continue;
+                        values[k] = v;
+                        this.setPropertyValue({ changed: newChanged }, k, v);
+                    }
+                    machine = { file: existing.machine.file, values };
+                }
                 if (existing) {
                     for (const key of Object.keys(newChanged.properties)) {
                         if (!(key in existing.changed.properties))
                             continue;
                         const userVal = this.extractValue(existing.changed.properties[key]);
-                        const oldDefault = this.extractValue(existing.defaults.properties[key]);
+                        const oldDefault = this.getEffectiveDefault(existing, key);
                         // Only re-apply if the user had actually overridden this property
                         if (userVal === undefined || String(userVal) === String(oldDefault))
                             continue;
@@ -276,7 +290,7 @@ class PropertyProvider {
                             newChanged.properties[key] = userVal;
                     }
                 }
-                cache = { defaults: (0, utils_1.deepClone)(data), changed: newChanged };
+                cache = { defaults: (0, utils_1.deepClone)(data), changed: newChanged, machine, machineOffered: existing?.machineOffered };
             }
             this.engine.setPropertyCache(cpsPath, cache);
             return cache;
@@ -301,7 +315,9 @@ class PropertyProvider {
                     continue;
             }
             const value = this.extractValue(props[key]);
-            const defaultValue = this.extractValue(defaults[key]);
+            const defaultValue = this.getEffectiveDefault(cache, key);
+            const machineValues = cache.machine?.values;
+            const isMachineControlled = !!machineValues && key in machineValues;
             if (value === undefined) {
                 vscode.window.showErrorMessage(`Property '${key}' is invalid: no default value defined.`);
                 continue;
@@ -311,11 +327,21 @@ class PropertyProvider {
             if (String(value) !== String(defaultValue)) {
                 treeItem.iconPath = this.getModifiedIcon();
             }
+            else if (isMachineControlled) {
+                treeItem.iconPath = this.getMachineDefaultIcon();
+            }
+            if (isMachineControlled) {
+                treeItem.description = String(value) !== String(defaultValue) ? `machine default: ${defaultValue}` : 'machine default';
+            }
             // Add tooltip from property definitions
             const def = defs[key];
-            if (typeof def === 'object' && def !== null && def.description) {
-                treeItem.tooltip = def.description;
+            let tooltip = typeof def === 'object' && def !== null && def.description ? String(def.description) : '';
+            if (isMachineControlled) {
+                const note = `Default set by machine '${path.basename(cache.machine.file, path.extname(cache.machine.file))}': ${machineValues[key]}`;
+                tooltip = tooltip ? `${tooltip}\n\n${note}` : note;
             }
+            if (tooltip)
+                treeItem.tooltip = tooltip;
             treeItem.contextValue = 'property';
             treeItem.command = {
                 command: 'autodesk.post.directSelect',
@@ -325,6 +351,123 @@ class PropertyProvider {
             items.push(treeItem);
         }
         return items;
+    }
+    // ── Machine property defaults ───────────────────────────────────
+    /** Default after machine overrides: used for the modified marker and for Reset. */
+    getEffectiveDefault(cache, key) {
+        const values = cache.machine?.values;
+        if (values && key in values)
+            return values[key];
+        return this.extractValue(cache.defaults.properties[key]);
+    }
+    /** Reads post.default.properties from a .mch file; returns {} for missing/unparseable files (e.g. XML .machine). */
+    readMachineProperties(machineFile) {
+        try {
+            const mch = JSON.parse(fs.readFileSync(machineFile, 'utf-8'));
+            const props = mch?.post?.default?.properties;
+            return props && typeof props === 'object' ? props : {};
+        }
+        catch {
+            return {};
+        }
+    }
+    coerceToDefaultType(value, cpsDefault) {
+        if (typeof cpsDefault === 'number') {
+            const n = Number(value);
+            return isNaN(n) ? value : n;
+        }
+        if (typeof cpsDefault === 'string')
+            return String(value);
+        if (typeof cpsDefault === 'boolean' && typeof value === 'string') {
+            if (value === 'true')
+                return true;
+            if (value === 'false')
+                return false;
+        }
+        return value;
+    }
+    /** Machine-defined values limited to properties that exist in the current post. */
+    collectMachineValues(cache, machineFile) {
+        const values = {};
+        for (const [key, raw] of Object.entries(this.readMachineProperties(machineFile))) {
+            if (!(key in cache.changed.properties))
+                continue;
+            values[key] = this.coerceToDefaultType(raw, this.extractValue(cache.defaults.properties[key]));
+        }
+        return values;
+    }
+    /** Reverts properties still holding the machine default to the post default and drops machine control. */
+    releaseMachineDefaults(cache) {
+        if (!cache.machine)
+            return;
+        for (const [key, val] of Object.entries(cache.machine.values)) {
+            if (key in cache.changed.properties && String(this.extractValue(cache.changed.properties[key])) === String(val)) {
+                this.setPropertyValue(cache, key, this.extractValue(cache.defaults.properties[key]));
+            }
+        }
+        delete cache.machine;
+    }
+    /** Brings the cache in line with the selected machine, asking before overwriting property values. Returns true if the cache changed. */
+    async syncMachine(cache) {
+        const machineFile = this.engine.machineFile;
+        if (cache.machine && cache.machine.file !== machineFile) {
+            this.releaseMachineDefaults(cache);
+            cache.machineOffered = undefined;
+            this._onDidChangeTreeData.fire();
+        }
+        if (!machineFile || cache.machineOffered === machineFile)
+            return;
+        cache.machineOffered = machineFile;
+        const values = this.collectMachineValues(cache, machineFile);
+        const keys = Object.keys(values);
+        if (keys.length === 0)
+            return;
+        const differing = keys.filter(k => String(this.extractValue(cache.changed.properties[k])) !== String(values[k]));
+        if (differing.length > 0) {
+            const name = path.basename(machineFile, path.extname(machineFile));
+            const defined = `${keys.length} post propert${keys.length === 1 ? 'y' : 'ies'}`;
+            const changes = differing.length === keys.length
+                ? ''
+                : ` ${differing.length} of them ${differing.length === 1 ? 'has' : 'have'} a different value now.`;
+            const answer = await vscode.window.showInformationMessage(`Machine '${name}' defines default values for ${defined}.${changes} Update the property defaults?`, 'Update', 'Not Now');
+            if (answer !== 'Update')
+                return;
+        }
+        // The user may have switched machines while the prompt was open
+        if (this.engine.machineFile !== machineFile)
+            return;
+        cache.machine = { file: machineFile, values };
+        for (const [key, val] of Object.entries(values))
+            this.setPropertyValue(cache, key, val);
+        this._onDidChangeTreeData.fire();
+    }
+    async onMachineChanged() {
+        const cpsPath = this.engine.getCpsPath() || this.lastCpsPath;
+        const cache = cpsPath ? this.engine.getPropertyCache(cpsPath) : undefined;
+        if (!cache)
+            return;
+        cache.machineOffered = undefined;
+        await this.syncMachine(cache);
+    }
+    async applyMachineDefaultsNow() {
+        if (!this.engine.machineFile) {
+            vscode.window.showInformationMessage('Select a machine first.');
+            return;
+        }
+        const cpsPath = this.engine.getCpsPath() || this.lastCpsPath;
+        const cache = cpsPath ? this.engine.getPropertyCache(cpsPath) : undefined;
+        if (!cache) {
+            vscode.window.showErrorMessage('Post processor properties not loaded.');
+            return;
+        }
+        if (Object.keys(this.collectMachineValues(cache, this.engine.machineFile)).length === 0) {
+            vscode.window.showInformationMessage('The selected machine does not define defaults for any properties of this post.');
+            return;
+        }
+        cache.machineOffered = undefined;
+        await this.syncMachine(cache);
+        if (cache.machine)
+            this.onPropertyChanged();
     }
     extractValue(prop) {
         if (typeof prop === 'object' && prop !== null && 'value' in prop) {
@@ -357,6 +500,9 @@ class PropertyProvider {
     }
     getModifiedIcon() {
         return this.context.asAbsolutePath(path.join('res', 'icons', 'status-modified.svg'));
+    }
+    getMachineDefaultIcon() {
+        return this.context.asAbsolutePath(path.join('res', 'icons', 'machine-default.svg'));
     }
 }
 exports.PropertyProvider = PropertyProvider;

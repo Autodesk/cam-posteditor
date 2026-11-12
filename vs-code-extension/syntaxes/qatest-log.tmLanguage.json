@@ -1,0 +1,16 @@
+{
+	"name": "QA test log",
+	"scopeName": "text.log.qatest",
+	"patterns": [
+		{ "match": "^(SUCCESS|RECREATED)\\s+:.*$", "name": "markup.inserted.qatest-green" },
+		{ "match": "^(FAILURE|OUTPUT DIFFERS|SIM STREAM MISSING|SIM STREAM ERRORS|SIM STREAM DIFFERS|LOG OUTPUT DIFFERS|SIMPLE LOG OUTPUT DIFFERS|EXPECTED ERRORS NOT FOUND|INTERROGATION OUTPUT DIFFERS)\\s+:.*$", "name": "token.error-token.qatest-red" },
+		{ "match": "^(IGNORED|UNSUPPORTED|SKIPPED)\\s+:.*$", "name": "token.warn-token.qatest-yellow" },
+		{ "match": "^(MISSING INPUT|MISSING POST)\\s+:.*$", "name": "token.info-token.qatest-cyan" },
+		{ "match": "^(INITIALIZED SIM|INITIALIZED|MISSING EXPECTED)\\s+:.*$", "name": "token.debug-token.qatest-magenta" },
+		{ "match": "^TESTS SUCCEED\\b", "name": "markup.inserted.qatest-green" },
+		{ "match": "^TESTS FAIL\\b", "name": "token.error-token.qatest-red" },
+		{ "match": "^\\s*Error:.*$", "name": "token.error-token.qatest-red" },
+		{ "match": "^\\s*\\^+\\s*$", "name": "token.error-token.qatest-red" },
+		{ "match": "^── .* ──$", "name": "markup.heading.qatest" }
+	]
+}
