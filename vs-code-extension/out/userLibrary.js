@@ -28,6 +28,7 @@ exports.isUsablePath = isUsablePath;
 exports.checkReachable = checkReachable;
 exports.recheckAll = recheckAll;
 exports.onReachabilityChange = onReachabilityChange;
+exports.makeWritable = makeWritable;
 const fs = require("fs");
 const crypto = require("crypto");
 const path = require("path");
@@ -110,14 +111,28 @@ const isWithin = (dir, p) => {
     const rel = path.relative(dir, p);
     return rel === '' || isInside(rel);
 };
-const volumeOf = (p) => path.parse(path.resolve(p)).root;
+/**
+ * The mount the path is on. Windows: the drive or \\server\share\. Elsewhere every path has the root "/", so the first
+ * folders are used instead: /Volumes/NAS, /mnt/share, /media/user/disk, /run/media/user/disk.
+ */
+const volumeOf = (p) => {
+    const abs = path.resolve(p);
+    const root = path.parse(abs).root;
+    if (process.platform === 'win32')
+        return root;
+    const parts = abs.split(path.sep).filter(Boolean);
+    const depth = parts[0] === 'media' ? 3 : parts[0] === 'run' && parts[1] === 'media' ? 4 : 2;
+    return root + parts.slice(0, depth).join(path.sep);
+};
+/** The key is also checked again by recheckAll, so it has to stay a usable path where names are case-sensitive. */
+const volumeKey = (volume) => (process.platform === 'win32' ? lower(volume) : volume);
 /** True for a path that may be on a network share or on a disk that is not there: everything outside the user profile and the temp folder. */
 function isGuarded(p) {
     const abs = path.resolve(p);
     return !isWithin(os.homedir(), abs) && !isWithin(os.tmpdir(), abs);
 }
 function setReachable(volume, ok) {
-    const key = lower(volume);
+    const key = volumeKey(volume);
     const before = reachable.get(key);
     reachable.set(key, ok);
     if (before !== ok)
@@ -136,7 +151,7 @@ function checkReachable(p) {
     if (!isGuarded(p))
         return Promise.resolve(true);
     const volume = volumeOf(p);
-    const key = lower(volume);
+    const key = volumeKey(volume);
     if (!checking.has(key)) {
         const check = fs.promises.stat(volume).then(() => true, () => false).then((ok) => {
             checking.delete(key);
@@ -160,7 +175,7 @@ function checkReachable(p) {
 function isUsablePath(p) {
     if (!isGuarded(p))
         return true;
-    const known = reachable.get(lower(volumeOf(p)));
+    const known = reachable.get(volumeKey(volumeOf(p)));
     if (known === undefined)
         void checkReachable(p);
     return known === true;
@@ -203,6 +218,12 @@ function ensureUserFolders() {
     })).then(() => undefined);
 }
 // ── Writing files ───────────────────────────────────────────────
+/** Adds write permission for the owner only: a fixed 0o666 would make the file writable for every user on macOS and Linux. */
+function makeWritable(file) {
+    const mode = fs.statSync(file).mode;
+    if ((mode & 0o200) === 0)
+        fs.chmodSync(file, (mode | 0o200) & 0o777);
+}
 /** Writes through a temporary file, so that nobody (another window, a post, a killed VS Code) sees a half written file. */
 function writeTextAtomic(file, text) {
     (0, utils_1.ensureDir)(path.dirname(file));
@@ -210,7 +231,7 @@ function writeTextAtomic(file, text) {
     try {
         fs.writeFileSync(tmp, text, 'utf-8');
         try {
-            fs.chmodSync(file, 0o666); // a read-only target cannot be replaced
+            makeWritable(file); // a read-only target cannot be replaced
         }
         catch { /* does not exist */ }
         fs.renameSync(tmp, file);
@@ -238,9 +259,9 @@ function copyFileAtomic(src, dest) {
     const tmp = `${dest}.${process.pid}.${Date.now().toString(36)}.tmp`;
     try {
         fs.copyFileSync(src, tmp);
-        fs.chmodSync(tmp, 0o666);
+        makeWritable(tmp);
         try {
-            fs.chmodSync(dest, 0o666); // a read-only target cannot be replaced
+            makeWritable(dest); // a read-only target cannot be replaced
         }
         catch { /* does not exist */ }
         fs.renameSync(tmp, dest);
@@ -409,28 +430,51 @@ function listShipped(extensionPath, dirName) {
     return out;
 }
 // ── Migration of files from earlier versions ────────────────────
-/** Copies one file unless the destination exists. Never overwrites. */
-function copyOne(src, dest, result) {
+/**
+ * Copies one file unless the destination exists. A file of the user is never overwritten, with two exceptions:
+ *  - the destination was copied in this run from another place of an earlier version and src is newer,
+ *  - move: src is in the extension folder, where an older export post writes, and is newer than the destination.
+ * With move the source is removed afterwards, so that it is not copied again at the next start.
+ */
+function copyOne(src, dest, result, move = false) {
     try {
-        if (fs.existsSync(dest))
-            return;
-        (0, utils_1.ensureDir)(path.dirname(dest));
-        copyFileAtomic(src, dest);
-        result.copied.push(dest);
+        const srcTime = fs.statSync(src).mtimeMs;
+        if (fs.existsSync(dest)) {
+            const copiedFrom = result.sources.get(dest);
+            const newer = copiedFrom !== undefined ? srcTime > copiedFrom : move && srcTime > fs.statSync(dest).mtimeMs;
+            if (newer) {
+                copyFileAtomic(src, dest);
+                result.sources.set(dest, srcTime);
+            }
+        }
+        else {
+            (0, utils_1.ensureDir)(path.dirname(dest));
+            copyFileAtomic(src, dest);
+            result.sources.set(dest, srcTime);
+            result.copied.push(dest);
+        }
     }
     catch (e) {
         result.failed.push(`${src}: ${msg(e)}`);
+        return;
+    }
+    if (move) {
+        try {
+            makeWritable(src);
+            fs.unlinkSync(src);
+        }
+        catch { /* copied again at the next start, which does no harm */ }
     }
 }
 /** Copies all files below 'from' that do not exist below 'to' yet and that isShipped does not claim. relPath is relative to the shipped folder. */
-function copyMissing(from, to, result, isShipped, relPath) {
+function copyMissing(from, to, result, isShipped, relPath, move = false) {
     for (const d of readFolder(from, result)) {
         const src = path.join(from, d.name);
         const kind = entryKind(d, src);
         if (kind === 'dir')
-            copyMissing(src, path.join(to, d.name), result, isShipped, relPath + '/' + d.name);
+            copyMissing(src, path.join(to, d.name), result, isShipped, relPath + '/' + d.name, move);
         else if (kind === 'file' && !(isShipped && isShipped(relPath + '/' + d.name)))
-            copyOne(src, path.join(to, d.name), result);
+            copyOne(src, path.join(to, d.name), result, move);
     }
 }
 /**
@@ -444,16 +488,17 @@ function copyMissing(from, to, result, isShipped, relPath) {
  * @param kinds 'cnc' and / or 'machine': the Custom folders to copy into (default both)
  */
 function migrateLegacyFiles(extensionPath, full, kinds = KIND_KEYS) {
-    const result = { copied: [], failed: [] };
+    const result = { copied: [], failed: [], sources: new Map() };
     const workDir = path.join(os.tmpdir(), 'AutodeskPostUtility');
     const siblings = [];
     if (full) {
         try {
             const own = lower(path.basename(extensionPath));
-            for (const d of fs.readdirSync(path.dirname(extensionPath), { withFileTypes: true })) {
-                if (d.isDirectory() && lower(d.name) !== own && lower(d.name).startsWith('autodesk.hsm-post-processor'))
-                    siblings.push(path.join(path.dirname(extensionPath), d.name, 'res'));
-            }
+            const names = fs.readdirSync(path.dirname(extensionPath), { withFileTypes: true })
+                .filter(d => d.isDirectory() && lower(d.name) !== own && lower(d.name).startsWith('autodesk.hsm-post-processor'))
+                .map(d => d.name)
+                .sort((a, b) => b.localeCompare(a, undefined, { numeric: true })); // newest version first
+            siblings.push(...names.map(n => path.join(path.dirname(extensionPath), n, 'res')));
         }
         catch { /* nothing to migrate from */ }
     }
@@ -472,19 +517,22 @@ function migrateLegacyFiles(extensionPath, full, kinds = KIND_KEYS) {
         }
         const roots = [currentRoot];
         if (full) {
-            roots.push(path.join(workDir, kind === 'cnc' ? 'CNCFilesBackup' : 'MachinesBackup'));
+            // installed versions before the backups in %TEMP%, which 5.0.x did not update when nothing seemed changed
             roots.push(...siblings.map(s => path.join(s, dirName)));
+            roots.push(path.join(workDir, kind === 'cnc' ? 'CNCFilesBackup' : 'MachinesBackup'));
         }
         for (const root of roots) {
+            // loose files and Custom of this version are written by an older export post: moved, not copied
+            const move = root === currentRoot;
             for (const d of readFolder(root, result)) {
                 const from = path.join(root, d.name);
                 const kindOfEntry = entryKind(d, from);
                 if (kindOfEntry === 'file') {
-                    copyOne(from, path.join(custom, d.name), result);
+                    copyOne(from, path.join(custom, d.name), result, move);
                 }
                 else if (kindOfEntry === 'dir' && lower(d.name) !== 'online library') {
                     if (lower(d.name) === 'custom')
-                        copyMissing(from, custom, result, undefined, d.name);
+                        copyMissing(from, custom, result, undefined, d.name, move);
                     else if (root === currentRoot)
                         continue; // the folders of this version of the extension ship with it
                     else if (!shippedNames.has(lower(d.name)))
@@ -659,7 +707,7 @@ function syncExamples(extensionPath, version, options = {}) {
                 const old = path.join(target, ...rel.split('/'));
                 try {
                     if (hash && fs.existsSync(old) && hashFile(old) === hash) {
-                        fs.chmodSync(old, 0o666);
+                        makeWritable(old);
                         fs.unlinkSync(old);
                         removeEmptyFolders(path.dirname(old), target);
                     }

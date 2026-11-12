@@ -1119,7 +1119,7 @@ async function deleteCustomFile(filePath) {
         }
         catch {
             try {
-                fs.chmodSync(filePath, 0o666); // read-only files cannot be deleted
+                userLibrary.makeWritable(filePath); // read-only files cannot be deleted
                 fs.unlinkSync(filePath);
             }
             catch (e) {
@@ -1222,9 +1222,9 @@ async function importCustomFile(type, tree, targetPath) {
             const dest = path.join(destDir, path.basename(src));
             try {
                 if ((0, utils_1.fileExists)(dest))
-                    fs.chmodSync(dest, 0o666); // a read-only file cannot be replaced
+                    userLibrary.makeWritable(dest); // a read-only file cannot be replaced
                 fs.copyFileSync(src, dest);
-                fs.chmodSync(dest, 0o666); // the copy of a read-only file is writable
+                userLibrary.makeWritable(dest); // the copy of a read-only file is writable
                 log += `"${path.basename(src)}"\n`;
             }
             catch (e) {
