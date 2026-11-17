@@ -1247,6 +1247,7 @@ class QaTestRunner {
         let unsupported = false;
         let runArgs = args;
         for (let attempt = 0; attempt < 3 && !ctx.token.isCancellationRequested; attempt++) {
+            const seen = new Set(); // result ids that this process has reported
             const { code, stderr } = await qaLibrary.runTests(lib, runArgs, line => {
                 log(line);
                 if (line.includes('MISMATCH DETECTED, TESTS STOPPED'))
@@ -1257,6 +1258,7 @@ class QaTestRunner {
                 const jobs = parsed && jobsByKey.get(parsed.key);
                 if (!jobs)
                     return;
+                seen.add(parsed.key);
                 const mapped = qaLibrary.mapResult(parsed.status);
                 for (const job of jobs) {
                     const paths = getJobPaths(project, job);
@@ -1265,7 +1267,7 @@ class QaTestRunner {
                 }
                 ctx.progress.report({ message: ctx.expected ? `${ctx.reported.size}/${ctx.expected} ${jobs[0].post}` : `${ctx.reported.size} ${jobs[0].post}` });
                 this.fireChanged();
-            }, ctx.token);
+            }, ctx.token, () => seen.size >= jobsByKey.size);
             if (code === 0 || !ENGINE_BUSY.test(stderr))
                 break;
             log(`Post engine was busy. Retrying with --parallel=1 (${attempt + 1}/2) ...`);
