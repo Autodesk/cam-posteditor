@@ -210,8 +210,10 @@ function mapResult(name) {
 /**
  * Runs run-tests.js with VS Code's own Node runtime. args are passed without a shell.
  * onLine is called for every stdout line. Resolves with { code, stderr }.
+ * allReported (optional) tells after every line whether run-tests.js has reported all its jobs: from then on it gets
+ * a few seconds to end, otherwise it is stopped.
  */
-function runTests(lib, args, onLine, token) {
+function runTests(lib, args, onLine, token, allReported) {
     return new Promise(resolve => {
         const child = cp.spawn(process.execPath, [lib.runTestsJs, ...args], {
             cwd: lib.root,
@@ -221,22 +223,33 @@ function runTests(lib, args, onLine, token) {
         token?.onCancellationRequested(() => child.kill());
         let stderr = '';
         let buffer = '';
+        let timer;
+        const finish = (code) => {
+            clearTimeout(timer);
+            if (buffer)
+                onLine(buffer);
+            buffer = '';
+            resolve({ code, stderr });
+        };
         child.stdout.on('data', d => {
             buffer += d.toString();
             const lines = buffer.split(/\r?\n/);
             buffer = lines.pop();
             lines.forEach(onLine);
+            if (!timer && allReported?.())
+                timer = setTimeout(() => {
+                    onLine('run-tests.js reported all results but did not end within 5 seconds. It was stopped.');
+                    child.kill();
+                    finish(stderr ? 1 : 0);
+                }, 5000);
         });
         child.stderr.on('data', d => {
             stderr += d.toString();
             onLine(d.toString().trimEnd());
         });
         child.on('error', e => resolve({ code: -1, stderr: e.message }));
-        child.on('close', code => {
-            if (buffer)
-                onLine(buffer);
-            resolve({ code, stderr });
-        });
+        // 'close' waits for processes that run-tests.js started and that still hold its output: 'exit' does not
+        child.on('exit', code => setTimeout(() => finish(code), 200));
     });
 }
 // ── Git ─────────────────────────────────────────────────────────
